@@ -8,6 +8,22 @@ playground-elm
 
 The purpose of this playground is to explore, study and assess the [elm] language.
 
+## Demo site
+
+Visit the :small_blue_diamond: [demo site](https://ccamel.github.io/playground-elm/index.html) and play in your browser. The demo is a pure [SPA]  (100% clientside application) written in [elm].
+
+## Building and Running
+
+As the project is generated from [elm-app](https://github.com/tom76kimo/generator-elm-app#readme) generator, more help can be found in the github of that project.
+
+The build can be launched with:
+
+```bash
+npm run build
+```
+
+Then, open `./dist/index.html` file in your browser.
+
 ## Technologies
 
 [![elm-logo][elm-logo]][elm] ELM language
