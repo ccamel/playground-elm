@@ -1,7 +1,6 @@
 language: node_js
 
 node_js:
-  - "node"
   - "4"
 
 os:
@@ -12,6 +11,10 @@ sudo: false
 cache:
   directories:
     - tests/elm-stuff/build-artifacts
+
+branches:
+  except:
+    - gh-pages
 
 env: ELM_VERSION=0.18.0
 
@@ -37,3 +40,10 @@ install:
 
 script:
   - npm run build
+
+deploy:
+  provider: script
+  skip_cleanup: true
+  script: ./scripts/deploy-to-gh-pages.sh
+  on:
+    branch: master
