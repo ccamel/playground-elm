@@ -10405,24 +10405,24 @@
 		return A2(_evancz$url_parser$UrlParser$customParam, name, _evancz$url_parser$UrlParser$intParamHelp);
 	};
 
-	var _user$project$Messages$GoToMainPage = {ctor: 'GoToMainPage'};
-	var _user$project$Messages$GoToAboutPage = {ctor: 'GoToAboutPage'};
-	var _user$project$Messages$OnLocationChange = function (a) {
-		return {ctor: 'OnLocationChange', _0: a};
-	};
-
+	var _user$project$Routing$About = {ctor: 'About'};
+	var _user$project$Routing$Home = {ctor: 'Home'};
 	var _user$project$Routing$NotFoundRoute = {ctor: 'NotFoundRoute'};
-	var _user$project$Routing$AboutPage = {ctor: 'AboutPage'};
-	var _user$project$Routing$MainPage = {ctor: 'MainPage'};
+	var _user$project$Routing$Page = function (a) {
+		return {ctor: 'Page', _0: a};
+	};
 	var _user$project$Routing$matchers = _evancz$url_parser$UrlParser$oneOf(
 		{
 			ctor: '::',
-			_0: A2(_evancz$url_parser$UrlParser$map, _user$project$Routing$MainPage, _evancz$url_parser$UrlParser$top),
+			_0: A2(
+				_evancz$url_parser$UrlParser$map,
+				_user$project$Routing$Page(_user$project$Routing$Home),
+				_evancz$url_parser$UrlParser$top),
 			_1: {
 				ctor: '::',
 				_0: A2(
 					_evancz$url_parser$UrlParser$map,
-					_user$project$Routing$AboutPage,
+					_user$project$Routing$Page(_user$project$Routing$About),
 					_evancz$url_parser$UrlParser$s('about')),
 				_1: {ctor: '[]'}
 			}
@@ -10436,6 +10436,13 @@
 		}
 	};
 
+	var _user$project$Messages$GoToPage = function (a) {
+		return {ctor: 'GoToPage', _0: a};
+	};
+	var _user$project$Messages$OnLocationChange = function (a) {
+		return {ctor: 'OnLocationChange', _0: a};
+	};
+
 	var _user$project$Models$initialModel = function (route) {
 		return {route: route};
 	};
@@ -10446,28 +10453,29 @@
 	var _user$project$Update$update = F2(
 		function (msg, model) {
 			var _p0 = msg;
-			switch (_p0.ctor) {
-				case 'OnLocationChange':
-					var newRoute = _user$project$Routing$parseLocation(_p0._0);
-					return {
-						ctor: '_Tuple2',
-						_0: _elm_lang$core$Native_Utils.update(
-							model,
-							{route: newRoute}),
-						_1: _elm_lang$core$Platform_Cmd$none
-					};
-				case 'GoToAboutPage':
+			if (_p0.ctor === 'OnLocationChange') {
+				var newRoute = _user$project$Routing$parseLocation(_p0._0);
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{route: newRoute}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			} else {
+				if (_p0._0.ctor === 'About') {
 					return {
 						ctor: '_Tuple2',
 						_0: model,
 						_1: _elm_lang$navigation$Navigation$newUrl('#about')
 					};
-				default:
+				} else {
 					return {
 						ctor: '_Tuple2',
 						_0: model,
 						_1: _elm_lang$navigation$Navigation$newUrl('/')
 					};
+				}
 			}
 		});
 
@@ -10511,7 +10519,8 @@
 							_elm_lang$html$Html$button,
 							{
 								ctor: '::',
-								_0: _elm_lang$html$Html_Events$onClick(_user$project$Messages$GoToMainPage),
+								_0: _elm_lang$html$Html_Events$onClick(
+									_user$project$Messages$GoToPage(_user$project$Routing$Home)),
 								_1: {
 									ctor: '::',
 									_0: _elm_lang$html$Html_Attributes$class('btn btn-primary btn-lg'),
@@ -10520,7 +10529,7 @@
 							},
 							{
 								ctor: '::',
-								_0: _elm_lang$html$Html$text('Go To About Page'),
+								_0: _elm_lang$html$Html$text('Go To Home Page'),
 								_1: {ctor: '[]'}
 							}),
 						_1: {ctor: '[]'}
@@ -10570,7 +10579,8 @@
 								_elm_lang$html$Html$button,
 								{
 									ctor: '::',
-									_0: _elm_lang$html$Html_Events$onClick(_user$project$Messages$GoToAboutPage),
+									_0: _elm_lang$html$Html_Events$onClick(
+										_user$project$Messages$GoToPage(_user$project$Routing$About)),
 									_1: {
 										ctor: '::',
 										_0: _elm_lang$html$Html_Attributes$class('btn btn-primary btn-lg'),
@@ -10590,13 +10600,14 @@
 		});
 	var _user$project$View$page = function (model) {
 		var _p0 = model.route;
-		switch (_p0.ctor) {
-			case 'MainPage':
+		if (_p0.ctor === 'Page') {
+			if (_p0._0.ctor === 'Home') {
 				return _user$project$View$mainPage;
-			case 'AboutPage':
+			} else {
 				return _user$project$View$aboutPage;
-			default:
-				return _user$project$View$notFoundView;
+			}
+		} else {
+			return _user$project$View$notFoundView;
 		}
 	};
 	var _user$project$View$view = function (model) {
