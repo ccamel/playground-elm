@@ -1,9 +1,9 @@
 module Messages exposing (..)
 
 import Navigation exposing (Location)
-
+import Routing
 
 type Msg
     = OnLocationChange Location
-    | GoToAboutPage
-    | GoToMainPage
+    | GoToPage Routing.Page
+

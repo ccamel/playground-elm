@@ -4,17 +4,20 @@ import Navigation exposing (Location)
 import UrlParser exposing (..)
 
 
+type Page
+    = Home
+    | About
+
 type Route
-    = MainPage
-    | AboutPage
+    = Page Page
     | NotFoundRoute
 
 
 matchers : Parser (Route -> a) a
 matchers =
     oneOf
-        [ map MainPage top
-        , map AboutPage (s "about")
+        [ map (Page Home) top
+        , map (Page About) (s "about")
         ]
 
 

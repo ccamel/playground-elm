@@ -1,6 +1,6 @@
 module Update exposing (..)
 
-import Routing exposing (parseLocation)
+import Routing exposing (Page(About, Home), parseLocation)
 import Messages exposing (Msg(..))
 import Models exposing (Model)
 import Navigation
@@ -16,8 +16,8 @@ update msg model =
             in
                 ( { model | route = newRoute }, Cmd.none )
 
-        GoToAboutPage ->
+        GoToPage About ->
             ( model, Navigation.newUrl "#about" )
 
-        GoToMainPage ->
+        GoToPage Home ->
             ( model, Navigation.newUrl "/" )
