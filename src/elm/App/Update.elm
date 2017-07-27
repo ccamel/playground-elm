@@ -1,8 +1,8 @@
-module Update exposing (..)
+module App.Update exposing (..)
 
-import Routing exposing (Page(About, Home), parseLocation)
-import Messages exposing (Msg(..))
-import Models exposing (Model)
+import App.Routing exposing (Page(About, Home), parseLocation)
+import App.Messages exposing (Msg(..))
+import App.Models exposing (Model)
 import Navigation
 
 

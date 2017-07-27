@@ -1,11 +1,11 @@
-module View exposing (..)
+module App.View exposing (..)
 
 import Html exposing (Html, div, text, button, h1, p)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
-import Messages exposing (Msg(..))
-import Models exposing (Model)
-import Routing exposing (Page(About, Home), Route(..))
+import App.Messages exposing (Msg(..))
+import App.Models exposing (Model)
+import App.Routing exposing (Page(About, Home), Route(..))
 
 
 view : Model -> Html Msg

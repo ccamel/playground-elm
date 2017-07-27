@@ -1,11 +1,11 @@
 {
     "version": "0.0.1",
-    "summary": "helpful summary of your project, less than 80 characters",
-    "repository": "https://github.com/user/project.git",
+    "summary": "My playground elm",
+    "repository": "https://github.com/ccamel/playground-elm.git",
     "source-directories": [
-        "src"
+        "src/elm"
     ],
-    "license": "BSD3",
+    "license": "MIT",
     "exposed-modules": [],
     "dependencies": {
         "elm-lang/core": "5.1.1 <= v < 6.0.0",
