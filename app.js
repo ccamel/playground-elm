@@ -10479,6 +10479,41 @@
 			return {stopPropagation: a, preventDefault: b};
 		});
 
+	var _ccamel$playground_elm$App_View$forkMeOnGitHub = A2(
+		_elm_lang$html$Html$a,
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html_Attributes$href('https://github.com/ccamel/playground-elm'),
+			_1: {ctor: '[]'}
+		},
+		{
+			ctor: '::',
+			_0: A2(
+				_elm_lang$html$Html$img,
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html_Attributes$alt('Fork me on GitHub'),
+					_1: {
+						ctor: '::',
+						_0: A2(_elm_lang$html$Html_Attributes$attribute, 'data:data-canonical-src', 'https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png'),
+						_1: {
+							ctor: '::',
+							_0: _elm_lang$html$Html_Attributes$src('https://camo.githubusercontent.com/38ef81f8aca64bb9a64448d0d70f1308ef5341ab/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6461726b626c75655f3132313632312e706e67'),
+							_1: {
+								ctor: '::',
+								_0: A2(_elm_lang$html$Html_Attributes$attribute, 'style', 'position: absolute; top: 0; right: 0; border: 0;'),
+								_1: {ctor: '[]'}
+							}
+						}
+					}
+				},
+				{ctor: '[]'}),
+			_1: {
+				ctor: '::',
+				_0: _elm_lang$html$Html$text(''),
+				_1: {ctor: '[]'}
+			}
+		});
 	var _ccamel$playground_elm$App_View$notFoundView = A2(
 		_elm_lang$html$Html$div,
 		{ctor: '[]'},
@@ -10496,46 +10531,50 @@
 		},
 		{
 			ctor: '::',
-			_0: A2(
-				_elm_lang$html$Html$div,
-				{
-					ctor: '::',
-					_0: _elm_lang$html$Html_Attributes$class('container'),
-					_1: {ctor: '[]'}
-				},
-				{
-					ctor: '::',
-					_0: A2(
-						_elm_lang$html$Html$h1,
-						{ctor: '[]'},
-						{
-							ctor: '::',
-							_0: _elm_lang$html$Html$text('This is <about> page'),
-							_1: {ctor: '[]'}
-						}),
-					_1: {
+			_0: _ccamel$playground_elm$App_View$forkMeOnGitHub,
+			_1: {
+				ctor: '::',
+				_0: A2(
+					_elm_lang$html$Html$div,
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html_Attributes$class('container'),
+						_1: {ctor: '[]'}
+					},
+					{
 						ctor: '::',
 						_0: A2(
-							_elm_lang$html$Html$button,
+							_elm_lang$html$Html$h1,
+							{ctor: '[]'},
 							{
 								ctor: '::',
-								_0: _elm_lang$html$Html_Events$onClick(
-									_ccamel$playground_elm$App_Messages$GoToPage(_ccamel$playground_elm$App_Routing$Home)),
-								_1: {
-									ctor: '::',
-									_0: _elm_lang$html$Html_Attributes$class('btn btn-primary btn-lg'),
-									_1: {ctor: '[]'}
-								}
-							},
-							{
-								ctor: '::',
-								_0: _elm_lang$html$Html$text('Go To Home Page'),
+								_0: _elm_lang$html$Html$text('This is <about> page'),
 								_1: {ctor: '[]'}
 							}),
-						_1: {ctor: '[]'}
-					}
-				}),
-			_1: {ctor: '[]'}
+						_1: {
+							ctor: '::',
+							_0: A2(
+								_elm_lang$html$Html$button,
+								{
+									ctor: '::',
+									_0: _elm_lang$html$Html_Events$onClick(
+										_ccamel$playground_elm$App_Messages$GoToPage(_ccamel$playground_elm$App_Routing$Home)),
+									_1: {
+										ctor: '::',
+										_0: _elm_lang$html$Html_Attributes$class('btn btn-primary btn-lg'),
+										_1: {ctor: '[]'}
+									}
+								},
+								{
+									ctor: '::',
+									_0: _elm_lang$html$Html$text('Go To Home Page'),
+									_1: {ctor: '[]'}
+								}),
+							_1: {ctor: '[]'}
+						}
+					}),
+				_1: {ctor: '[]'}
+			}
 		});
 	var _ccamel$playground_elm$App_View$mainPage = A2(
 		_elm_lang$html$Html$div,
@@ -10546,57 +10585,61 @@
 		},
 		{
 			ctor: '::',
-			_0: A2(
-				_elm_lang$html$Html$div,
-				{
-					ctor: '::',
-					_0: _elm_lang$html$Html_Attributes$class('container'),
-					_1: {ctor: '[]'}
-				},
-				{
-					ctor: '::',
-					_0: A2(
-						_elm_lang$html$Html$h1,
-						{ctor: '[]'},
-						{
-							ctor: '::',
-							_0: _elm_lang$html$Html$text('Welcome to Elm Main page'),
-							_1: {ctor: '[]'}
-						}),
-					_1: {
+			_0: _ccamel$playground_elm$App_View$forkMeOnGitHub,
+			_1: {
+				ctor: '::',
+				_0: A2(
+					_elm_lang$html$Html$div,
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html_Attributes$class('container'),
+						_1: {ctor: '[]'}
+					},
+					{
 						ctor: '::',
 						_0: A2(
-							_elm_lang$html$Html$p,
+							_elm_lang$html$Html$h1,
 							{ctor: '[]'},
 							{
 								ctor: '::',
-								_0: _elm_lang$html$Html$text('A delightful language for reliable webapps.'),
+								_0: _elm_lang$html$Html$text('Welcome to Elm Main page'),
 								_1: {ctor: '[]'}
 							}),
 						_1: {
 							ctor: '::',
 							_0: A2(
-								_elm_lang$html$Html$button,
+								_elm_lang$html$Html$p,
+								{ctor: '[]'},
 								{
 									ctor: '::',
-									_0: _elm_lang$html$Html_Events$onClick(
-										_ccamel$playground_elm$App_Messages$GoToPage(_ccamel$playground_elm$App_Routing$About)),
-									_1: {
-										ctor: '::',
-										_0: _elm_lang$html$Html_Attributes$class('btn btn-primary btn-lg'),
-										_1: {ctor: '[]'}
-									}
-								},
-								{
-									ctor: '::',
-									_0: _elm_lang$html$Html$text('Go To About Page'),
+									_0: _elm_lang$html$Html$text('A delightful language for reliable webapps.'),
 									_1: {ctor: '[]'}
 								}),
-							_1: {ctor: '[]'}
+							_1: {
+								ctor: '::',
+								_0: A2(
+									_elm_lang$html$Html$button,
+									{
+										ctor: '::',
+										_0: _elm_lang$html$Html_Events$onClick(
+											_ccamel$playground_elm$App_Messages$GoToPage(_ccamel$playground_elm$App_Routing$About)),
+										_1: {
+											ctor: '::',
+											_0: _elm_lang$html$Html_Attributes$class('btn btn-primary btn-lg'),
+											_1: {ctor: '[]'}
+										}
+									},
+									{
+										ctor: '::',
+										_0: _elm_lang$html$Html$text('Go To About Page'),
+										_1: {ctor: '[]'}
+									}),
+								_1: {ctor: '[]'}
+							}
 						}
-					}
-				}),
-			_1: {ctor: '[]'}
+					}),
+				_1: {ctor: '[]'}
+			}
 		});
 	var _ccamel$playground_elm$App_View$page = function (model) {
 		var _p0 = model.route;
