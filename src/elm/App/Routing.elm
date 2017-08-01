@@ -1,6 +1,7 @@
 module App.Routing exposing (..)
 
 import Navigation exposing (Location)
+import Page.About
 import UrlParser exposing (..)
 
 
@@ -17,7 +18,7 @@ matchers : Parser (Route -> a) a
 matchers =
     oneOf
         [ map (Page Home) top
-        , map (Page About) (s "about")
+        , map (Page About) (s (.hash Page.About.info))
         ]
 
 

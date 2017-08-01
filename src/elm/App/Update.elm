@@ -1,9 +1,12 @@
 module App.Update exposing (..)
 
-import App.Routing exposing (Page(About, Home), parseLocation)
+import App.Routing exposing (Page(About, Home), Route(..), parseLocation)
 import App.Messages exposing (Msg(..))
 import App.Models exposing (Model)
+import Maybe exposing (map)
 import Navigation
+import Page.About
+import String exposing (cons)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -13,11 +16,27 @@ update msg model =
             let
                 newRoute =
                     parseLocation location
+
+                clearedModel = { model | aboutPage = Nothing }
             in
-                ( { model | route = newRoute }, Cmd.none )
+                case newRoute of
+                     NotFoundRoute ->
+                        ( { clearedModel | route = newRoute }, Cmd.none )
+
+                     Page Home ->
+                        ( { clearedModel | route = newRoute }, Cmd.none )
+
+                     Page About ->
+                        ( { clearedModel | route = newRoute, aboutPage = Just Page.About.initialModel  }, Cmd.none )
+
 
         GoToPage About ->
-            ( model, Navigation.newUrl "#about" )
+            ( model, Page.About.info
+                      |> .hash
+                      |> cons '#'
+                      |> Navigation.newUrl )
 
         GoToPage Home ->
             ( model, Navigation.newUrl "/" )
+
+        AboutPageMsg m -> ( { model | aboutPage = map (Page.About.update m) model.aboutPage }, Cmd.none)

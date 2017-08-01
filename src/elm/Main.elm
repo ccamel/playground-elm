@@ -2,6 +2,7 @@ module Main exposing (..)
 
 import App.Messages exposing (Msg(..))
 import App.Models exposing (Model, initialModel)
+import App.Subscriptions exposing (subscriptions)
 import Navigation exposing (Location)
 import App.Routing exposing (Route)
 import App.Update exposing (update)
@@ -15,15 +16,6 @@ init location =
             App.Routing.parseLocation location
     in
         ( initialModel currentRoute, Cmd.none )
-
-
-
--- SUBSCRIPTIONS
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.none
 
 
 
