@@ -30,3 +30,19 @@ parseLocation location =
 
         Nothing ->
             NotFoundRoute
+
+
+hash : Route -> String
+hash page =
+    case page of
+        Page About -> (.hash Page.About.info)
+        Page Home -> "home"
+        _ -> ""
+
+describe : Route -> String
+describe page =
+    case page of
+        Page Home -> ""
+        Page About -> ""
+        _ -> ""
+
