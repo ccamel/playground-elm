@@ -1,15 +1,13 @@
 module App.View exposing (..)
 
+import App.Pages exposing (emptyNode, pageDescription, pageHash, pageName, pageSrc, pageView, pages)
 import Html exposing (Html, a, button, div, h1, h2, h3, hr, i, img, li, p, section, span, text, ul)
 import Html.Attributes exposing (alt, attribute, class, href, id, src, style, target, type_)
 import Html.Events exposing (onClick)
-import App.Messages exposing (Msg(..))
+import App.Messages exposing (Msg(..), Page(About))
 import App.Models exposing (Model)
-import App.Routing exposing (Page(About, Home), Route(..))
-import Page.About
+import App.Routing exposing (Route(..))
 
-emptyNode : Html msg
-emptyNode = Html.text ""
 
 -- the main view
 view : Model -> Html Msg
@@ -21,13 +19,13 @@ view model =
                 -- nav bar
                 [ div [ class "container d-flex justify-content-between" ]
                     [ div [ class "navbar-brand" ]
-                        [ text ("playground-elm/" ++ (App.Routing.hash model.route)) ]
+                        [ text ("playground-elm/" ++ hash model.route) ]
 
                      , case model.route of
-                        Page Home -> emptyNode
+                        Home -> emptyNode
                         _ -> ul [ class "nav navbar-nav navbar-right" ]
                                 [ li []
-                                  [ a [ href "#", onClick (GoToPage Home) ] [ text "Home" ] ]
+                                  [ a [ href "#", onClick (GoToHome) ] [ text "Home" ] ]
                                 ]
                     ]
 
@@ -69,7 +67,7 @@ view model =
                             ]
                         ]
                         -- content
-                        , div [ id (App.Routing.hash model.route) ] [
+                        , div [ id (contentId model.route) ] [
                           content model
                         ]
         ]
@@ -78,53 +76,35 @@ view model =
 content : Model -> Html Msg
 content model =
         case model.route of
-            Page Home ->
-                homePage model
-
-            Page About ->
-                case model.aboutPage of
-                    Just p ->
-                        Html.map AboutPageMsg (Page.About.view p)
-                    Nothing ->
-                        emptyNode
-
-            NotFoundRoute ->
-                notFoundView
+            Home -> homePage model
+            Page page -> pageView page model
+            NotFoundRoute -> notFoundView
 
 -- the home page displaying all available pages as "album" entries
 homePage :  Model -> Html Msg
 homePage model =
          div [ class "text-muted" ]
             [ div [ class "container" ]
-                [ div [ class "row" ]
-                  [
-                    div [ class "col-sm-3" ]
-                        [ div [ class "card" ]
-                            [ div [ class "card-block" ] [
-                                h3 [ class "card-title" ]
-                                    [ text ("~ " ++ (.name Page.About.info)) ]
-                                , p [ class "card-text" ]
-                                    [ Html.map AboutPageMsg (.description Page.About.info) ]
-                                , a [ href "#about", onClick (GoToPage About) ] [ text "» Go" ]
-                                , span [style [("padding-left", "15px")] ] [] -- FIXME: not pretty
-                                , linkToGitHub (Page About)
-                                ]
-                            ]
-                        ]
-                    , div [ class "col-sm-3" ]
-                      [
-                        div [ class "card" ]
-                         [ div [ class "card-block" ] [
-                             h3 [ class "card-title" ]
-                                 [ text ("~ " ++ "mystery") ]
-                             , p [ class "card-text" ]
-                                 [ text "Coming soon" ]
-                             ]
-                         ]
-                      ]
-                    ]
+                [
+                    div [ class "row" ] (pages |> List.map (pageCard model))
                 ]
             ]
+
+pageCard :  Model -> Page -> Html Msg
+pageCard model page =
+    div [ class "col-sm-3" ]
+        [ div [ class "card" ]
+            [ div [ class "card-block" ] [
+                h3 [ class "card-title" ]
+                    [ text ("~ " ++ (pageName page)) ]
+                , p [ class "card-text" ]
+                    [ pageDescription page ]
+                , a [ href ("#" ++ (pageHash page)), onClick (GoToPage page) ] [ text "» Go" ]
+                , span [style [("padding-left", "15px")] ] [] -- FIXME: not pretty
+                , linkToGitHub (Page About)
+                ]
+            ]
+        ]
 
 -- the special not found view displayed when routing has found no matching
 notFoundView : Html msg
@@ -152,13 +132,24 @@ linkToGitHub route =
   let
     url = "https://github.com/ccamel/playground-elm/blob/master/src/elm/"
     link = case route of
-               Page Home ->
-                   url ++ "App/View.elm"
-
-               Page About ->
-                   url ++ (.srcRel Page.About.info)
-
-               NotFoundRoute ->
-                   url ++ "Main.elm"
+               Home -> url ++ "App/View.elm"
+               Page page -> url ++ pageSrc page
+               NotFoundRoute -> url ++ "Main.elm"
   in
     a [ href link ] [ text "» Source" ]
+
+contentId : Route -> String
+contentId route =
+   case route of
+     Home -> "home"
+     Page p -> pageHash p
+     NotFoundRoute -> "?"
+
+hash: Route -> String
+hash route =
+   case route of
+     Home -> ""
+     Page p -> pageHash p
+     NotFoundRoute -> ""
+
+

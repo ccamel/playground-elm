@@ -1,10 +1,16 @@
 module App.Messages exposing (..)
 
 import Navigation exposing (Location)
-import App.Routing
 import Page.About
+
+type Page
+    = About
+
 
 type Msg
     = OnLocationChange Location
-    | GoToPage App.Routing.Page
+    | GoToHome
+    | GoToPage Page
+
+    -- messages for pages
     | AboutPageMsg Page.About.Msg

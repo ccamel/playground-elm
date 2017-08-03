@@ -1,10 +1,9 @@
 module App.Subscriptions exposing (..)
 
-import App.Messages exposing (Msg(AboutPageMsg))
+import App.Messages exposing (Msg(AboutPageMsg), Page(About))
 import App.Models exposing (Model)
-import App.Routing exposing (Page(About, Home), Route(..))
-import Maybe exposing (map, withDefault)
-import Page.About
+import App.Pages exposing (pageSubscriptions)
+import App.Routing exposing (Route(..))
 import Platform.Sub
 
 subscriptions : Model -> Sub Msg
@@ -13,22 +12,11 @@ subscriptions model =
         mainSubscriptions model,
 
         case model.route of
-            NotFoundRoute ->
-                Sub.none
-
-            Page Home ->
-                Sub.none
-
-            Page About ->
-                case model.aboutPage of
-                   Just x ->
-                       x
-                         |> Page.About.subscriptions
-                         |> Sub.map AboutPageMsg
-
-                   Nothing ->
-                     Sub.none
+            NotFoundRoute -> Sub.none
+            Home -> Sub.none
+            Page page -> pageSubscriptions page model
     ]
 
 mainSubscriptions : Model -> Sub Msg
 mainSubscriptions model = Sub.none
+

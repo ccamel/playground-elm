@@ -1,7 +1,7 @@
 module App.Update exposing (..)
 
-import App.Routing exposing (Page(About, Home), Route(..), parseLocation)
-import App.Messages exposing (Msg(..))
+import App.Routing exposing (Route(..), parseLocation)
+import App.Messages exposing (Msg(..), Page(About))
 import App.Models exposing (Model)
 import Maybe exposing (map)
 import Navigation
@@ -23,7 +23,7 @@ update msg model =
                      NotFoundRoute ->
                         ( { clearedModel | route = newRoute }, Cmd.none )
 
-                     Page Home ->
+                     Home ->
                         ( { clearedModel | route = newRoute }, Cmd.none )
 
                      Page About ->
@@ -36,7 +36,7 @@ update msg model =
                       |> cons '#'
                       |> Navigation.newUrl )
 
-        GoToPage Home ->
+        GoToHome ->
             ( model, Navigation.newUrl "/" )
 
         AboutPageMsg m -> ( { model | aboutPage = map (Page.About.update m) model.aboutPage }, Cmd.none)
