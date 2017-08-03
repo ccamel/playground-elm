@@ -523,7 +523,7 @@
 
 
 	// module
-	exports.push([module.id, "body {\n\n}\n\n.navbar {\n    margin-bottom: 0;\n}\n\n.jumbotron {\n    padding-top: 6rem;\n    padding-bottom: 6rem;\n    margin-bottom: 0;\n    background-color: #fff;\n}\n\n.jumbotron p:last-child {\n    margin-bottom: 0;\n}\n\n.jumbotron-heading {\n    font-weight: 300;\n}\n\n.jumbotron .container {\n    max-width: 80rem;\n}\n\n.card {\n    padding: 0.75rem;\n    margin-bottom: 2rem;\n    border: 0;\n    background-color: #f5f5f5;\n}\n\n.card-text {\n    font-size: 85%;\n}\n\nfooter {\n    padding-top: 3rem;\n    padding-bottom: 3rem;\n}\n\nfooter p {\n    margin-bottom: .25rem;\n}\n\n.iconic {\n    width: 140px;\n    height: 140px;\n    background-color: #eceeef;\n    border-radius: 100%;\n    text-align: center;\n    vertical-align: middle;\n    display: table-cell;\n}", ""]);
+	exports.push([module.id, "body {\n\n}\n\n.navbar {\n    margin-bottom: 0;\n}\n\n.jumbotron {\n    padding-top: 6rem;\n    padding-bottom: 6rem;\n    margin-bottom: 0;\n    background-color: #fff;\n}\n\n.jumbotron p:last-child {\n    margin-bottom: 0;\n}\n\n.jumbotron-heading {\n    font-weight: 300;\n}\n\n.jumbotron .container {\n    max-width: 80rem;\n}\n\n.card {\n    padding: 0.75rem;\n    margin-bottom: 2rem;\n    border: 0;\n    background-color: #f5f5f5;\n}\n\n.card-text {\n    font-size: 85%;\n}\n\nfooter {\n    padding-top: 2em;\n    position: absolute;\n    bottom: 0;\n    width: 100%;\n    height: 80px;\n    background-color: #222;\n    border-color: #080808;\n}\n\nfooter a {\n    color: #BBB;\n}\n\nfooter a:hover {\n    color: #FFF;\n}\n\n.iconic {\n    width: 140px;\n    height: 140px;\n    background-color: #eceeef;\n    border-radius: 100%;\n    text-align: center;\n    vertical-align: middle;\n    display: table-cell;\n}", ""]);
 
 	// exports
 
@@ -11674,7 +11674,143 @@
 								_0: _ccamel$playground_elm$App_View$content(model),
 								_1: {ctor: '[]'}
 							}),
-						_1: {ctor: '[]'}
+						_1: {
+							ctor: '::',
+							_0: A2(
+								_elm_lang$html$Html$footer,
+								{
+									ctor: '::',
+									_0: _elm_lang$html$Html_Attributes$class('footer'),
+									_1: {ctor: '[]'}
+								},
+								{
+									ctor: '::',
+									_0: A2(
+										_elm_lang$html$Html$div,
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html_Attributes$class('container'),
+											_1: {ctor: '[]'}
+										},
+										{
+											ctor: '::',
+											_0: A2(
+												_elm_lang$html$Html$ul,
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html_Attributes$class('list-inline pull-right'),
+													_1: {ctor: '[]'}
+												},
+												{
+													ctor: '::',
+													_0: A2(
+														_elm_lang$html$Html$li,
+														{
+															ctor: '::',
+															_0: _elm_lang$html$Html_Attributes$class('text-muted'),
+															_1: {ctor: '[]'}
+														},
+														{
+															ctor: '::',
+															_0: _elm_lang$html$Html$text('© 2017 Chris Camel - MIT License'),
+															_1: {ctor: '[]'}
+														}),
+													_1: {
+														ctor: '::',
+														_0: A2(
+															_elm_lang$html$Html$li,
+															{
+																ctor: '::',
+																_0: _elm_lang$html$Html_Attributes$class('text-muted'),
+																_1: {ctor: '[]'}
+															},
+															{
+																ctor: '::',
+																_0: _elm_lang$html$Html$text('  •  '),
+																_1: {ctor: '[]'}
+															}),
+														_1: {
+															ctor: '::',
+															_0: A2(
+																_elm_lang$html$Html$li,
+																{ctor: '[]'},
+																{
+																	ctor: '::',
+																	_0: A2(
+																		_elm_lang$html$Html$a,
+																		{
+																			ctor: '::',
+																			_0: _elm_lang$html$Html_Attributes$href('https://github.com/ccamel'),
+																			_1: {ctor: '[]'}
+																		},
+																		{
+																			ctor: '::',
+																			_0: A2(
+																				_elm_lang$html$Html$i,
+																				{
+																					ctor: '::',
+																					_0: _elm_lang$html$Html_Attributes$class('fa fa-github fa-2x'),
+																					_1: {ctor: '[]'}
+																				},
+																				{ctor: '[]'}),
+																			_1: {ctor: '[]'}
+																		}),
+																	_1: {ctor: '[]'}
+																}),
+															_1: {
+																ctor: '::',
+																_0: A2(
+																	_elm_lang$html$Html$li,
+																	{
+																		ctor: '::',
+																		_0: _elm_lang$html$Html_Attributes$class('text-muted'),
+																		_1: {ctor: '[]'}
+																	},
+																	{
+																		ctor: '::',
+																		_0: _elm_lang$html$Html$text('  •  '),
+																		_1: {ctor: '[]'}
+																	}),
+																_1: {
+																	ctor: '::',
+																	_0: A2(
+																		_elm_lang$html$Html$li,
+																		{ctor: '[]'},
+																		{
+																			ctor: '::',
+																			_0: A2(
+																				_elm_lang$html$Html$a,
+																				{
+																					ctor: '::',
+																					_0: _elm_lang$html$Html_Attributes$href('https://www.linkedin.com/in/christophe-camel'),
+																					_1: {ctor: '[]'}
+																				},
+																				{
+																					ctor: '::',
+																					_0: A2(
+																						_elm_lang$html$Html$i,
+																						{
+																							ctor: '::',
+																							_0: _elm_lang$html$Html_Attributes$class('fa fa-linkedin-square fa-2x'),
+																							_1: {ctor: '[]'}
+																						},
+																						{ctor: '[]'}),
+																					_1: {ctor: '[]'}
+																				}),
+																			_1: {ctor: '[]'}
+																		}),
+																	_1: {ctor: '[]'}
+																}
+															}
+														}
+													}
+												}),
+											_1: {ctor: '[]'}
+										}),
+									_1: {ctor: '[]'}
+								}),
+							_1: {ctor: '[]'}
+						}
 					}
 				}
 			});
