@@ -3,7 +3,6 @@ module App.Subscriptions exposing (..)
 import App.Messages exposing (Msg(AboutPageMsg))
 import App.Models exposing (Model)
 import App.Routing exposing (Page(About, Home), Route(..))
-import Html
 import Maybe exposing (map, withDefault)
 import Page.About
 import Platform.Sub

@@ -1,8 +1,6 @@
 module Page.Common exposing (..)
 
-import Html exposing (Html, a, text)
-import Html.Attributes exposing (href)
-import Html.Events exposing (onClick)
+import Html exposing (Html)
 
 type alias PageInfo a = {
       name : String

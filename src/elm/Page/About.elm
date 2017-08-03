@@ -2,7 +2,6 @@ module Page.About exposing (..)
 
 import Html exposing (Html, a, div, h2, h3, hr, i, img, li, p, text, ul)
 import Html.Attributes exposing (alt, attribute, class, href, src, style)
-import Html.Events exposing (onClick)
 import Page.Common
 
 

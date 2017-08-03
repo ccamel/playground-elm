@@ -7,8 +7,8 @@ import App.Messages exposing (Msg(..))
 import App.Models exposing (Model)
 import App.Routing exposing (Page(About, Home), Route(..))
 import Page.About
-import String exposing (cons)
 
+emptyNode : Html msg
 emptyNode = Html.text ""
 
 -- the main view
