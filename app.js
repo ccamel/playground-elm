@@ -10070,6 +10070,18 @@
 	var _ccamel$playground_elm$Page_About$Model = {};
 	var _ccamel$playground_elm$Page_About$Reset = {ctor: 'Reset'};
 
+	var _ccamel$playground_elm$App_Messages$About = {ctor: 'About'};
+	var _ccamel$playground_elm$App_Messages$AboutPageMsg = function (a) {
+		return {ctor: 'AboutPageMsg', _0: a};
+	};
+	var _ccamel$playground_elm$App_Messages$GoToPage = function (a) {
+		return {ctor: 'GoToPage', _0: a};
+	};
+	var _ccamel$playground_elm$App_Messages$GoToHome = {ctor: 'GoToHome'};
+	var _ccamel$playground_elm$App_Messages$OnLocationChange = function (a) {
+		return {ctor: 'OnLocationChange', _0: a};
+	};
+
 	var _elm_lang$http$Native_Http = function() {
 
 
@@ -10682,87 +10694,151 @@
 		return A2(_evancz$url_parser$UrlParser$customParam, name, _evancz$url_parser$UrlParser$intParamHelp);
 	};
 
-	var _ccamel$playground_elm$App_Routing$describe = function (page) {
-		var _p0 = page;
-		if (_p0.ctor === 'Page') {
-			if (_p0._0.ctor === 'Home') {
-				return '';
-			} else {
-				return '';
-			}
-		} else {
-			return '';
-		}
-	};
-	var _ccamel$playground_elm$App_Routing$hash = function (page) {
-		var _p1 = page;
-		if (_p1.ctor === 'Page') {
-			if (_p1._0.ctor === 'About') {
-				return function (_) {
-					return _.hash;
-				}(_ccamel$playground_elm$Page_About$info);
-			} else {
-				return 'home';
-			}
-		} else {
-			return '';
-		}
-	};
-	var _ccamel$playground_elm$App_Routing$About = {ctor: 'About'};
-	var _ccamel$playground_elm$App_Routing$Home = {ctor: 'Home'};
 	var _ccamel$playground_elm$App_Routing$NotFoundRoute = {ctor: 'NotFoundRoute'};
 	var _ccamel$playground_elm$App_Routing$Page = function (a) {
 		return {ctor: 'Page', _0: a};
 	};
+	var _ccamel$playground_elm$App_Routing$Home = {ctor: 'Home'};
 	var _ccamel$playground_elm$App_Routing$matchers = _evancz$url_parser$UrlParser$oneOf(
 		{
 			ctor: '::',
-			_0: A2(
-				_evancz$url_parser$UrlParser$map,
-				_ccamel$playground_elm$App_Routing$Page(_ccamel$playground_elm$App_Routing$Home),
-				_evancz$url_parser$UrlParser$top),
+			_0: A2(_evancz$url_parser$UrlParser$map, _ccamel$playground_elm$App_Routing$Home, _evancz$url_parser$UrlParser$top),
 			_1: {
 				ctor: '::',
 				_0: A2(
 					_evancz$url_parser$UrlParser$map,
-					_ccamel$playground_elm$App_Routing$Page(_ccamel$playground_elm$App_Routing$About),
-					_evancz$url_parser$UrlParser$s(
-						function (_) {
-							return _.hash;
-						}(_ccamel$playground_elm$Page_About$info))),
+					_ccamel$playground_elm$App_Routing$Page(_ccamel$playground_elm$App_Messages$About),
+					_evancz$url_parser$UrlParser$s('about')),
 				_1: {ctor: '[]'}
 			}
 		});
 	var _ccamel$playground_elm$App_Routing$parseLocation = function (location) {
-		var _p2 = A2(_evancz$url_parser$UrlParser$parseHash, _ccamel$playground_elm$App_Routing$matchers, location);
-		if (_p2.ctor === 'Just') {
-			return _p2._0;
+		var _p0 = A2(_evancz$url_parser$UrlParser$parseHash, _ccamel$playground_elm$App_Routing$matchers, location);
+		if (_p0.ctor === 'Just') {
+			return _p0._0;
 		} else {
 			return _ccamel$playground_elm$App_Routing$NotFoundRoute;
 		}
 	};
 
-	var _ccamel$playground_elm$App_Messages$AboutPageMsg = function (a) {
-		return {ctor: 'AboutPageMsg', _0: a};
-	};
-	var _ccamel$playground_elm$App_Messages$GoToPage = function (a) {
-		return {ctor: 'GoToPage', _0: a};
-	};
-	var _ccamel$playground_elm$App_Messages$OnLocationChange = function (a) {
-		return {ctor: 'OnLocationChange', _0: a};
-	};
-
 	var _ccamel$playground_elm$App_Models$initialModel = function (route) {
 		return {
 			route: route,
-			aboutPage: _elm_lang$core$Native_Utils.eq(
-				route,
-				_ccamel$playground_elm$App_Routing$Page(_ccamel$playground_elm$App_Routing$About)) ? _elm_lang$core$Maybe$Just(_ccamel$playground_elm$Page_About$initialModel) : _elm_lang$core$Maybe$Nothing
+			aboutPage: _elm_lang$core$Maybe$Just(_ccamel$playground_elm$Page_About$initialModel)
 		};
 	};
 	var _ccamel$playground_elm$App_Models$Model = F2(
 		function (a, b) {
 			return {route: a, aboutPage: b};
+		});
+
+	var _ccamel$playground_elm$App_Pages$pages = {
+		ctor: '::',
+		_0: _ccamel$playground_elm$App_Messages$About,
+		_1: {ctor: '[]'}
+	};
+	var _ccamel$playground_elm$App_Pages$emptyNode = _elm_lang$html$Html$text('');
+	var _ccamel$playground_elm$App_Pages$pageSpec = function (page) {
+		var toSubscriptions = F4(
+			function (pageSubscriptions, pageMsg, modelExtractor, model) {
+				return A2(
+					_elm_lang$core$Maybe$withDefault,
+					_elm_lang$core$Platform_Sub$none,
+					A2(
+						_elm_lang$core$Maybe$map,
+						_elm_lang$core$Platform_Sub$map(pageMsg),
+						A2(
+							_elm_lang$core$Maybe$map,
+							pageSubscriptions,
+							modelExtractor(model))));
+			});
+		var toView = F4(
+			function (pageView, pageMsg, modelExtractor, model) {
+				return A2(
+					_elm_lang$core$Maybe$withDefault,
+					_ccamel$playground_elm$App_Pages$emptyNode,
+					A2(
+						_elm_lang$core$Maybe$map,
+						_elm_lang$html$Html$map(pageMsg),
+						A2(
+							_elm_lang$core$Maybe$map,
+							pageView,
+							modelExtractor(model))));
+			});
+		var toSpec = F5(
+			function (info, pageView, pageSubscriptions, pageMsg, modelExtractor) {
+				return {
+					info: _elm_lang$core$Native_Utils.update(
+						info,
+						{
+							description: A2(_elm_lang$html$Html$map, pageMsg, info.description)
+						}),
+					view: A3(toView, pageView, pageMsg, modelExtractor),
+					subscriptions: A3(toSubscriptions, pageSubscriptions, pageMsg, modelExtractor)
+				};
+			});
+		var _p0 = page;
+		return A5(
+			toSpec,
+			_ccamel$playground_elm$Page_About$info,
+			_ccamel$playground_elm$Page_About$view,
+			_ccamel$playground_elm$Page_About$subscriptions,
+			_ccamel$playground_elm$App_Messages$AboutPageMsg,
+			function (model) {
+				return model.aboutPage;
+			});
+	};
+	var _ccamel$playground_elm$App_Pages$pageName = function (page) {
+		return function (_) {
+			return _.name;
+		}(
+			function (_) {
+				return _.info;
+			}(
+				_ccamel$playground_elm$App_Pages$pageSpec(page)));
+	};
+	var _ccamel$playground_elm$App_Pages$pageDescription = function (page) {
+		return function (_) {
+			return _.description;
+		}(
+			function (_) {
+				return _.info;
+			}(
+				_ccamel$playground_elm$App_Pages$pageSpec(page)));
+	};
+	var _ccamel$playground_elm$App_Pages$pageSrc = function (page) {
+		return function (_) {
+			return _.srcRel;
+		}(
+			function (_) {
+				return _.info;
+			}(
+				_ccamel$playground_elm$App_Pages$pageSpec(page)));
+	};
+	var _ccamel$playground_elm$App_Pages$pageHash = function (page) {
+		return function (_) {
+			return _.hash;
+		}(
+			function (_) {
+				return _.info;
+			}(
+				_ccamel$playground_elm$App_Pages$pageSpec(page)));
+	};
+	var _ccamel$playground_elm$App_Pages$pageView = function (page) {
+		return function (_) {
+			return _.view;
+		}(
+			_ccamel$playground_elm$App_Pages$pageSpec(page));
+	};
+	var _ccamel$playground_elm$App_Pages$pageSubscriptions = function (page) {
+		return function (_) {
+			return _.subscriptions;
+		}(
+			_ccamel$playground_elm$App_Pages$pageSpec(page));
+	};
+	var _ccamel$playground_elm$App_Pages$PageSpec = F3(
+		function (a, b, c) {
+			return {info: a, view: b, subscriptions: c};
 		});
 
 	var _ccamel$playground_elm$App_Subscriptions$mainSubscriptions = function (model) {
@@ -10777,22 +10853,13 @@
 					ctor: '::',
 					_0: function () {
 						var _p0 = model.route;
-						if (_p0.ctor === 'NotFoundRoute') {
-							return _elm_lang$core$Platform_Sub$none;
-						} else {
-							if (_p0._0.ctor === 'Home') {
+						switch (_p0.ctor) {
+							case 'NotFoundRoute':
 								return _elm_lang$core$Platform_Sub$none;
-							} else {
-								var _p1 = model.aboutPage;
-								if (_p1.ctor === 'Just') {
-									return A2(
-										_elm_lang$core$Platform_Sub$map,
-										_ccamel$playground_elm$App_Messages$AboutPageMsg,
-										_ccamel$playground_elm$Page_About$subscriptions(_p1._0));
-								} else {
-									return _elm_lang$core$Platform_Sub$none;
-								}
-							}
+							case 'Home':
+								return _elm_lang$core$Platform_Sub$none;
+							default:
+								return A2(_ccamel$playground_elm$App_Pages$pageSubscriptions, _p0._0, model);
 						}
 					}(),
 					_1: {ctor: '[]'}
@@ -10810,16 +10877,8 @@
 						{aboutPage: _elm_lang$core$Maybe$Nothing});
 					var newRoute = _ccamel$playground_elm$App_Routing$parseLocation(_p0._0);
 					var _p1 = newRoute;
-					if (_p1.ctor === 'NotFoundRoute') {
-						return {
-							ctor: '_Tuple2',
-							_0: _elm_lang$core$Native_Utils.update(
-								clearedModel,
-								{route: newRoute}),
-							_1: _elm_lang$core$Platform_Cmd$none
-						};
-					} else {
-						if (_p1._0.ctor === 'Home') {
+					switch (_p1.ctor) {
+						case 'NotFoundRoute':
 							return {
 								ctor: '_Tuple2',
 								_0: _elm_lang$core$Native_Utils.update(
@@ -10827,7 +10886,15 @@
 									{route: newRoute}),
 								_1: _elm_lang$core$Platform_Cmd$none
 							};
-						} else {
+						case 'Home':
+							return {
+								ctor: '_Tuple2',
+								_0: _elm_lang$core$Native_Utils.update(
+									clearedModel,
+									{route: newRoute}),
+								_1: _elm_lang$core$Platform_Cmd$none
+							};
+						default:
 							return {
 								ctor: '_Tuple2',
 								_0: _elm_lang$core$Native_Utils.update(
@@ -10838,28 +10905,25 @@
 									}),
 								_1: _elm_lang$core$Platform_Cmd$none
 							};
-						}
 					}
 				case 'GoToPage':
-					if (_p0._0.ctor === 'About') {
-						return {
-							ctor: '_Tuple2',
-							_0: model,
-							_1: _elm_lang$navigation$Navigation$newUrl(
-								A2(
-									_elm_lang$core$String$cons,
-									_elm_lang$core$Native_Utils.chr('#'),
-									function (_) {
-										return _.hash;
-									}(_ccamel$playground_elm$Page_About$info)))
-						};
-					} else {
-						return {
-							ctor: '_Tuple2',
-							_0: model,
-							_1: _elm_lang$navigation$Navigation$newUrl('/')
-						};
-					}
+					return {
+						ctor: '_Tuple2',
+						_0: model,
+						_1: _elm_lang$navigation$Navigation$newUrl(
+							A2(
+								_elm_lang$core$String$cons,
+								_elm_lang$core$Native_Utils.chr('#'),
+								function (_) {
+									return _.hash;
+								}(_ccamel$playground_elm$Page_About$info)))
+					};
+				case 'GoToHome':
+					return {
+						ctor: '_Tuple2',
+						_0: model,
+						_1: _elm_lang$navigation$Navigation$newUrl('/')
+					};
 				default:
 					return {
 						ctor: '_Tuple2',
@@ -10991,23 +11055,42 @@
 			return {stopPropagation: a, preventDefault: b};
 		});
 
+	var _ccamel$playground_elm$App_View$hash = function (route) {
+		var _p0 = route;
+		switch (_p0.ctor) {
+			case 'Home':
+				return '';
+			case 'Page':
+				return _ccamel$playground_elm$App_Pages$pageHash(_p0._0);
+			default:
+				return '';
+		}
+	};
+	var _ccamel$playground_elm$App_View$contentId = function (route) {
+		var _p1 = route;
+		switch (_p1.ctor) {
+			case 'Home':
+				return 'home';
+			case 'Page':
+				return _ccamel$playground_elm$App_Pages$pageHash(_p1._0);
+			default:
+				return '?';
+		}
+	};
 	var _ccamel$playground_elm$App_View$linkToGitHub = function (route) {
 		var url = 'https://github.com/ccamel/playground-elm/blob/master/src/elm/';
 		var link = function () {
-			var _p0 = route;
-			if (_p0.ctor === 'Page') {
-				if (_p0._0.ctor === 'Home') {
+			var _p2 = route;
+			switch (_p2.ctor) {
+				case 'Home':
 					return A2(_elm_lang$core$Basics_ops['++'], url, 'App/View.elm');
-				} else {
+				case 'Page':
 					return A2(
 						_elm_lang$core$Basics_ops['++'],
 						url,
-						function (_) {
-							return _.srcRel;
-						}(_ccamel$playground_elm$Page_About$info));
-				}
-			} else {
-				return A2(_elm_lang$core$Basics_ops['++'], url, 'Main.elm');
+						_ccamel$playground_elm$App_Pages$pageSrc(_p2._0));
+				default:
+					return A2(_elm_lang$core$Basics_ops['++'], url, 'Main.elm');
 			}
 		}();
 		return A2(
@@ -11108,6 +11191,118 @@
 				_1: {ctor: '[]'}
 			}
 		});
+	var _ccamel$playground_elm$App_View$pageCard = F2(
+		function (model, page) {
+			return A2(
+				_elm_lang$html$Html$div,
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html_Attributes$class('col-sm-3'),
+					_1: {ctor: '[]'}
+				},
+				{
+					ctor: '::',
+					_0: A2(
+						_elm_lang$html$Html$div,
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html_Attributes$class('card'),
+							_1: {ctor: '[]'}
+						},
+						{
+							ctor: '::',
+							_0: A2(
+								_elm_lang$html$Html$div,
+								{
+									ctor: '::',
+									_0: _elm_lang$html$Html_Attributes$class('card-block'),
+									_1: {ctor: '[]'}
+								},
+								{
+									ctor: '::',
+									_0: A2(
+										_elm_lang$html$Html$h3,
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html_Attributes$class('card-title'),
+											_1: {ctor: '[]'}
+										},
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html$text(
+												A2(
+													_elm_lang$core$Basics_ops['++'],
+													'~ ',
+													_ccamel$playground_elm$App_Pages$pageName(page))),
+											_1: {ctor: '[]'}
+										}),
+									_1: {
+										ctor: '::',
+										_0: A2(
+											_elm_lang$html$Html$p,
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html_Attributes$class('card-text'),
+												_1: {ctor: '[]'}
+											},
+											{
+												ctor: '::',
+												_0: _ccamel$playground_elm$App_Pages$pageDescription(page),
+												_1: {ctor: '[]'}
+											}),
+										_1: {
+											ctor: '::',
+											_0: A2(
+												_elm_lang$html$Html$a,
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html_Attributes$href(
+														A2(
+															_elm_lang$core$Basics_ops['++'],
+															'#',
+															_ccamel$playground_elm$App_Pages$pageHash(page))),
+													_1: {
+														ctor: '::',
+														_0: _elm_lang$html$Html_Events$onClick(
+															_ccamel$playground_elm$App_Messages$GoToPage(page)),
+														_1: {ctor: '[]'}
+													}
+												},
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html$text('» Go'),
+													_1: {ctor: '[]'}
+												}),
+											_1: {
+												ctor: '::',
+												_0: A2(
+													_elm_lang$html$Html$span,
+													{
+														ctor: '::',
+														_0: _elm_lang$html$Html_Attributes$style(
+															{
+																ctor: '::',
+																_0: {ctor: '_Tuple2', _0: 'padding-left', _1: '15px'},
+																_1: {ctor: '[]'}
+															}),
+														_1: {ctor: '[]'}
+													},
+													{ctor: '[]'}),
+												_1: {
+													ctor: '::',
+													_0: _ccamel$playground_elm$App_View$linkToGitHub(
+														_ccamel$playground_elm$App_Routing$Page(_ccamel$playground_elm$App_Messages$About)),
+													_1: {ctor: '[]'}
+												}
+											}
+										}
+									}
+								}),
+							_1: {ctor: '[]'}
+						}),
+					_1: {ctor: '[]'}
+				});
+		});
 	var _ccamel$playground_elm$App_View$homePage = function (model) {
 		return A2(
 			_elm_lang$html$Html$div,
@@ -11134,210 +11329,24 @@
 								_0: _elm_lang$html$Html_Attributes$class('row'),
 								_1: {ctor: '[]'}
 							},
-							{
-								ctor: '::',
-								_0: A2(
-									_elm_lang$html$Html$div,
-									{
-										ctor: '::',
-										_0: _elm_lang$html$Html_Attributes$class('col-sm-3'),
-										_1: {ctor: '[]'}
-									},
-									{
-										ctor: '::',
-										_0: A2(
-											_elm_lang$html$Html$div,
-											{
-												ctor: '::',
-												_0: _elm_lang$html$Html_Attributes$class('card'),
-												_1: {ctor: '[]'}
-											},
-											{
-												ctor: '::',
-												_0: A2(
-													_elm_lang$html$Html$div,
-													{
-														ctor: '::',
-														_0: _elm_lang$html$Html_Attributes$class('card-block'),
-														_1: {ctor: '[]'}
-													},
-													{
-														ctor: '::',
-														_0: A2(
-															_elm_lang$html$Html$h3,
-															{
-																ctor: '::',
-																_0: _elm_lang$html$Html_Attributes$class('card-title'),
-																_1: {ctor: '[]'}
-															},
-															{
-																ctor: '::',
-																_0: _elm_lang$html$Html$text(
-																	A2(
-																		_elm_lang$core$Basics_ops['++'],
-																		'~ ',
-																		function (_) {
-																			return _.name;
-																		}(_ccamel$playground_elm$Page_About$info))),
-																_1: {ctor: '[]'}
-															}),
-														_1: {
-															ctor: '::',
-															_0: A2(
-																_elm_lang$html$Html$p,
-																{
-																	ctor: '::',
-																	_0: _elm_lang$html$Html_Attributes$class('card-text'),
-																	_1: {ctor: '[]'}
-																},
-																{
-																	ctor: '::',
-																	_0: A2(
-																		_elm_lang$html$Html$map,
-																		_ccamel$playground_elm$App_Messages$AboutPageMsg,
-																		function (_) {
-																			return _.description;
-																		}(_ccamel$playground_elm$Page_About$info)),
-																	_1: {ctor: '[]'}
-																}),
-															_1: {
-																ctor: '::',
-																_0: A2(
-																	_elm_lang$html$Html$a,
-																	{
-																		ctor: '::',
-																		_0: _elm_lang$html$Html_Attributes$href('#about'),
-																		_1: {
-																			ctor: '::',
-																			_0: _elm_lang$html$Html_Events$onClick(
-																				_ccamel$playground_elm$App_Messages$GoToPage(_ccamel$playground_elm$App_Routing$About)),
-																			_1: {ctor: '[]'}
-																		}
-																	},
-																	{
-																		ctor: '::',
-																		_0: _elm_lang$html$Html$text('» Go'),
-																		_1: {ctor: '[]'}
-																	}),
-																_1: {
-																	ctor: '::',
-																	_0: A2(
-																		_elm_lang$html$Html$span,
-																		{
-																			ctor: '::',
-																			_0: _elm_lang$html$Html_Attributes$style(
-																				{
-																					ctor: '::',
-																					_0: {ctor: '_Tuple2', _0: 'padding-left', _1: '15px'},
-																					_1: {ctor: '[]'}
-																				}),
-																			_1: {ctor: '[]'}
-																		},
-																		{ctor: '[]'}),
-																	_1: {
-																		ctor: '::',
-																		_0: _ccamel$playground_elm$App_View$linkToGitHub(
-																			_ccamel$playground_elm$App_Routing$Page(_ccamel$playground_elm$App_Routing$About)),
-																		_1: {ctor: '[]'}
-																	}
-																}
-															}
-														}
-													}),
-												_1: {ctor: '[]'}
-											}),
-										_1: {ctor: '[]'}
-									}),
-								_1: {
-									ctor: '::',
-									_0: A2(
-										_elm_lang$html$Html$div,
-										{
-											ctor: '::',
-											_0: _elm_lang$html$Html_Attributes$class('col-sm-3'),
-											_1: {ctor: '[]'}
-										},
-										{
-											ctor: '::',
-											_0: A2(
-												_elm_lang$html$Html$div,
-												{
-													ctor: '::',
-													_0: _elm_lang$html$Html_Attributes$class('card'),
-													_1: {ctor: '[]'}
-												},
-												{
-													ctor: '::',
-													_0: A2(
-														_elm_lang$html$Html$div,
-														{
-															ctor: '::',
-															_0: _elm_lang$html$Html_Attributes$class('card-block'),
-															_1: {ctor: '[]'}
-														},
-														{
-															ctor: '::',
-															_0: A2(
-																_elm_lang$html$Html$h3,
-																{
-																	ctor: '::',
-																	_0: _elm_lang$html$Html_Attributes$class('card-title'),
-																	_1: {ctor: '[]'}
-																},
-																{
-																	ctor: '::',
-																	_0: _elm_lang$html$Html$text(
-																		A2(_elm_lang$core$Basics_ops['++'], '~ ', 'mystery')),
-																	_1: {ctor: '[]'}
-																}),
-															_1: {
-																ctor: '::',
-																_0: A2(
-																	_elm_lang$html$Html$p,
-																	{
-																		ctor: '::',
-																		_0: _elm_lang$html$Html_Attributes$class('card-text'),
-																		_1: {ctor: '[]'}
-																	},
-																	{
-																		ctor: '::',
-																		_0: _elm_lang$html$Html$text('Coming soon'),
-																		_1: {ctor: '[]'}
-																	}),
-																_1: {ctor: '[]'}
-															}
-														}),
-													_1: {ctor: '[]'}
-												}),
-											_1: {ctor: '[]'}
-										}),
-									_1: {ctor: '[]'}
-								}
-							}),
+							A2(
+								_elm_lang$core$List$map,
+								_ccamel$playground_elm$App_View$pageCard(model),
+								_ccamel$playground_elm$App_Pages$pages)),
 						_1: {ctor: '[]'}
 					}),
 				_1: {ctor: '[]'}
 			});
 	};
-	var _ccamel$playground_elm$App_View$emptyNode = _elm_lang$html$Html$text('');
 	var _ccamel$playground_elm$App_View$content = function (model) {
-		var _p1 = model.route;
-		if (_p1.ctor === 'Page') {
-			if (_p1._0.ctor === 'Home') {
+		var _p3 = model.route;
+		switch (_p3.ctor) {
+			case 'Home':
 				return _ccamel$playground_elm$App_View$homePage(model);
-			} else {
-				var _p2 = model.aboutPage;
-				if (_p2.ctor === 'Just') {
-					return A2(
-						_elm_lang$html$Html$map,
-						_ccamel$playground_elm$App_Messages$AboutPageMsg,
-						_ccamel$playground_elm$Page_About$view(_p2._0));
-				} else {
-					return _ccamel$playground_elm$App_View$emptyNode;
-				}
-			}
-		} else {
-			return _ccamel$playground_elm$App_View$notFoundView;
+			case 'Page':
+				return A2(_ccamel$playground_elm$App_Pages$pageView, _p3._0, model);
+			default:
+				return _ccamel$playground_elm$App_View$notFoundView;
 		}
 	};
 	var _ccamel$playground_elm$App_View$view = function (model) {
@@ -11377,15 +11386,15 @@
 											A2(
 												_elm_lang$core$Basics_ops['++'],
 												'playground-elm/',
-												_ccamel$playground_elm$App_Routing$hash(model.route))),
+												_ccamel$playground_elm$App_View$hash(model.route))),
 										_1: {ctor: '[]'}
 									}),
 								_1: {
 									ctor: '::',
 									_0: function () {
-										var _p3 = model.route;
-										if ((_p3.ctor === 'Page') && (_p3._0.ctor === 'Home')) {
-											return _ccamel$playground_elm$App_View$emptyNode;
+										var _p4 = model.route;
+										if (_p4.ctor === 'Home') {
+											return _ccamel$playground_elm$App_Pages$emptyNode;
 										} else {
 											return A2(
 												_elm_lang$html$Html$ul,
@@ -11408,8 +11417,7 @@
 																	_0: _elm_lang$html$Html_Attributes$href('#'),
 																	_1: {
 																		ctor: '::',
-																		_0: _elm_lang$html$Html_Events$onClick(
-																			_ccamel$playground_elm$App_Messages$GoToPage(_ccamel$playground_elm$App_Routing$Home)),
+																		_0: _elm_lang$html$Html_Events$onClick(_ccamel$playground_elm$App_Messages$GoToHome),
 																		_1: {ctor: '[]'}
 																	}
 																},
@@ -11658,7 +11666,7 @@
 							{
 								ctor: '::',
 								_0: _elm_lang$html$Html_Attributes$id(
-									_ccamel$playground_elm$App_Routing$hash(model.route)),
+									_ccamel$playground_elm$App_View$contentId(model.route)),
 								_1: {ctor: '[]'}
 							},
 							{
