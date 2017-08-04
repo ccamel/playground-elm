@@ -9,13 +9,25 @@ module.exports = {
     entry: {
         app: './src/resources/index.js',
         vendor: [
+            'jquery',
+            'tether',
             'bootstrap',
             'animate.css'
         ]
     },
 
     plugins: [
+        new webpack.DefinePlugin({
+          'process.env.NODE_ENV': JSON.stringify('development')
+        }),
         new CleanWebpackPlugin(['dist']),
+        new webpack.ProvidePlugin({
+            $: 'jquery',
+            jQuery: 'jquery',
+            'window.jQuery': 'jquery',
+            "Tether": 'tether',
+           Popper: ['popper.js', 'default']
+        }),
         new HtmlWebpackPlugin({
             filename: 'index.html',
             template: './src/resources/index.ejs'
