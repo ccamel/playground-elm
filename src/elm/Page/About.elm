@@ -2,6 +2,7 @@ module Page.About exposing (..)
 
 import Html exposing (Html, a, div, h2, h3, hr, i, img, li, p, text, ul)
 import Html.Attributes exposing (alt, attribute, class, href, src, style)
+import Markdown
 import Page.Common
 
 
@@ -11,9 +12,10 @@ info : Page.Common.PageInfo Msg
 info = {
      name = "about"
      , hash = "about"
-     , description =
-        div []
-            [ text "A very simple and minimal showcase that is used to lay the foundations of the navigation/routing (and to test that the whole site works correctly)" ]
+     , description = Markdown.toHtml [class "info"] """
+
+A very simple and minimal showcase that is used to lay the foundations of the navigation/routing (*and to test that the whole site works correctly*)
+       """
      , srcRel = "Page/About.elm"
  }
 
