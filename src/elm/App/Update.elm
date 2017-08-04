@@ -37,6 +37,6 @@ update msg model =
                       |> Navigation.newUrl )
 
         GoToHome ->
-            ( model, Navigation.newUrl "/" )
+            ( model, Navigation.newUrl "#" )
 
         AboutPageMsg m -> ( { model | aboutPage = map (Page.About.update m) model.aboutPage }, Cmd.none)
