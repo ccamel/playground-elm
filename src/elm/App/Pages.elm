@@ -18,6 +18,7 @@ type alias PageSpec = {
     , subscriptions: Model -> Sub Msg
  }
 
+pages : List Page
 pages = [
     About
     -- add new pages here:

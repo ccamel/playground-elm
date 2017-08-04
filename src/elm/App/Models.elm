@@ -1,8 +1,6 @@
 module App.Models exposing (..)
 
-import App.Messages exposing (Msg(AboutPageMsg), Page(About))
 import App.Routing exposing(..)
-import Html exposing (Html)
 import Page.About
 
 type alias Model =

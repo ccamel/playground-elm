@@ -2,7 +2,6 @@ module App.Routing exposing (..)
 
 import App.Messages exposing (Page(About))
 import Navigation exposing (Location)
-import Page.About
 import UrlParser exposing (..)
 
 type Route
