@@ -73,9 +73,6 @@ view model =
             -- footer
             ,footer [ class "footer" ]
                 [ div [ class "container" ]
-      --              [ div [ class "text-muted pull-center" ]
-      --                  [ text "© 2017 Chris Camel - MIT License" ]
-
                           [ ul [ class "text-center" ]
                               [
                                li [class "text-muted"]
