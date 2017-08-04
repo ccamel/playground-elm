@@ -17,6 +17,9 @@ git config user.name "$USER_NAME"
 git config push.default simple
 
 # add changes
+echo "clear old site"
+rm -f *.*
+
 echo "copy dist"
 cp -R ../dist/* .
 

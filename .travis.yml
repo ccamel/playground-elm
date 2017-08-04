@@ -1,7 +1,7 @@
 language: node_js
 
 node_js:
-  - "4"
+  - "node"
 
 os:
   - linux
@@ -11,6 +11,7 @@ sudo: false
 cache:
   directories:
     - tests/elm-stuff/build-artifacts
+    - node_modules
 
 branches:
   except:
