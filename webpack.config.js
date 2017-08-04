@@ -21,6 +21,11 @@ module.exports = {
           'process.env.NODE_ENV': JSON.stringify('development')
         }),
         new CleanWebpackPlugin(['dist']),
+        new webpack.optimize.UglifyJsPlugin({
+            compress: {
+              warnings: false
+            }
+        }),
         new webpack.ProvidePlugin({
             $: 'jquery',
             jQuery: 'jquery',
