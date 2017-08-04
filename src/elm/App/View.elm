@@ -22,8 +22,8 @@ view model =
 
                  , case model.route of
                     Home -> emptyNode
-                    _ -> ul [ class "nav navbar-nav navbar-right" ]
-                            [ li []
+                    _ -> ul [ class "nav navbar-brand navbar-nav navbar-right" ]
+                            [ li [class ""]
                               [ a [ href "#", onClick (GoToHome) ] [ text "Home" ] ]
                             ]
                 ]
@@ -74,7 +74,7 @@ view model =
       --              [ div [ class "text-muted pull-center" ]
       --                  [ text "© 2017 Chris Camel - MIT License" ]
 
-                          [ ul [ class "list-inline pull-right" ]
+                          [ ul [ class "text-center" ]
                               [
                                li [class "text-muted"]
                                   [ text "© 2017 Chris Camel - MIT License" ]
@@ -113,7 +113,8 @@ homePage model =
          div [ class "text-muted" ]
             [ div [ class "container" ]
                 [
-                    div [ class "row" ] (pages |> List.map (pageCard model))
+                    hr [] []
+                    , div [ class "row" ] (pages |> List.map (pageCard model))
                 ]
             ]
 
