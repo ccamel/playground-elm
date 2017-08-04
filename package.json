@@ -9,6 +9,7 @@
     "dev": "webpack-dev-server --port 3000"
   },
   "dependencies": {
+    "animate.css": "^3.5.2",
     "bootstrap": "4.0.0-alpha.6",
     "css-loader": "^0.26.1",
     "elm-webpack-loader": "^4.2.0",

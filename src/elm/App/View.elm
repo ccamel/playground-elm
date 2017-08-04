@@ -45,9 +45,11 @@ view model =
                         [ h1 [ class "jumbotron-heading" ]
                             [
                                   i [ class "fa fa-quote-left text-muted", style [("padding-right", "1em")] ] []
-                                , text "playground"
-                                , span [class "text-muted"] [text "-"]
-                                , a [ href "http://elm-lang.org/" ] [ text "elm" ]
+                                , span [ ] [
+                                      text "playground"
+                                    , span [class "text-muted"] [text "-"]
+                                    , a [ href "http://elm-lang.org/" ] [ text "elm" ]
+                                  ]
                                 , i [ class "fa fa-quote-right text-muted", style [("padding-left", "1em")] ] []
                             ]
                         , p [ class "lead text-muted" ]
@@ -121,7 +123,7 @@ homePage model =
 pageCard :  Model -> Page -> Html Msg
 pageCard model page =
     div [ class "col-sm-3" ]
-        [ div [ class "card" ]
+        [ div [ class "card animated fadeInUp" ]
             [ div [ class "card-block" ] [
                 h3 [ class "card-title" ]
                     [ text ("~ " ++ (pageName page)) ]
