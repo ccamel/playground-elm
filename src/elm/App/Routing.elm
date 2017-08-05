@@ -1,6 +1,6 @@
 module App.Routing exposing (..)
 
-import App.Messages exposing (Page(About))
+import App.Messages exposing (Page(About, Calc))
 import Navigation exposing (Location)
 import UrlParser exposing (..)
 
@@ -14,6 +14,7 @@ matchers =
     oneOf
         [ map (Home) top
         , map (Page About) (s "about" )
+        , map (Page Calc) (s "calc" )
         ]
 
 

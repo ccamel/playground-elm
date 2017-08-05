@@ -2,9 +2,11 @@ module App.Messages exposing (..)
 
 import Navigation exposing (Location)
 import Page.About
+import Page.Calc
 
 type Page
     = About
+    | Calc
 
 
 type Msg
@@ -14,3 +16,4 @@ type Msg
 
     -- messages for pages
     | AboutPageMsg Page.About.Msg
+    | CalcPageMsg Page.Calc.Msg

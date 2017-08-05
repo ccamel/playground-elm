@@ -1,9 +1,10 @@
 module App.Pages exposing (..)
 
-import App.Messages exposing (Msg(AboutPageMsg), Page(About))
+import App.Messages exposing (Msg(AboutPageMsg, CalcPageMsg), Page(About, Calc))
 import App.Models exposing (Model)
 import Html exposing (Html)
 import Page.About
+import Page.Calc
 import Page.Common
 
 emptyNode : Html msg
@@ -20,8 +21,9 @@ type alias PageSpec = {
 
 pages : List Page
 pages = [
-    About
+      About
     -- add new pages here:
+    , Calc
  ]
 
 pageSpec : Page -> PageSpec
@@ -52,6 +54,7 @@ pageSpec page =
         case page of
             -- add new pages here (the code is a little bit tricky but does the job fine)
             About -> toSpec Page.About.info Page.About.view Page.About.subscriptions AboutPageMsg (\model -> model.aboutPage)
+            Calc -> toSpec Page.Calc.info Page.Calc.view Page.Calc.subscriptions CalcPageMsg (\model -> model.calcPage)
 
 
 pageName : Page -> String
