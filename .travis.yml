@@ -12,35 +12,39 @@ cache:
   directories:
     - tests/elm-stuff/build-artifacts
     - node_modules
+    - $HOME/.cpus
 
 branches:
   except:
     - gh-pages
 
-env: ELM_VERSION=0.18.0
+env:
+  matrix:
+    - ELM_VERSION=0.18.0 TARGET_NODE_VERSION=node
 
 before_install:
   - | # epic build time improvement - see https://github.com/elm-lang/elm-compiler/issues/1473#issuecomment-245704142
-    if [ ! -d sysconfcpus/bin ];
-    then
-      git clone https://github.com/obmarg/libsysconfcpus.git;
-      cd libsysconfcpus;
-      ./configure --prefix=$TRAVIS_BUILD_DIR/sysconfcpus;
-      make && make install;
-      cd ..;
+    export PATH=$HOME/.cpus/bin:$PATH;
+    if ! hash sysconfcpus 2>/dev/null; then
+      git clone --depth=1 https://github.com/obmarg/libsysconfcpus.git "$HOME/libsysconfcpus";
+      cd "$HOME/libsysconfcpus";
+      ./configure --prefix="$HOME/.cpus";
+      make -j2 install;
     fi
+  - cd "$TRAVIS_BUILD_DIR"
+  - export PATH=./node_modules/.bin:$PATH
 
 install:
+  - nvm install $TARGET_NODE_VERSION
+  - nvm use $TARGET_NODE_VERSION
   - node --version
   - npm --version
   - npm install -g elm@$ELM_VERSION
-  - mv $(npm config get prefix)/bin/elm-make $(npm config get prefix)/bin/elm-make-old
-  - printf '%s\n\n' '#!/bin/bash' 'echo "Running elm-make with sysconfcpus -n 2"' '$TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 2 elm-make-old "$@"' > $(npm config get prefix)/bin/elm-make
-  - chmod +x $(npm config get prefix)/bin/elm-make
   - npm install
+  - elm package install --yes
 
 script:
-  - npm run build
+  - sysconfcpus -n 2 npm run build
 
 deploy:
   provider: script
