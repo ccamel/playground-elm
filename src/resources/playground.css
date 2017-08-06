@@ -42,6 +42,10 @@ body {
     font-size: 85%;
 }
 
+.card .info {
+    min-height: 9em;
+}
+
 .footer {
     padding-top: 2em;
     position: absolute;
