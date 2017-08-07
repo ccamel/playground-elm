@@ -30,7 +30,7 @@ module.exports = {
             $: 'jquery',
             jQuery: 'jquery',
             'window.jQuery': 'jquery',
-            "Tether": 'tether',
+            'Tether': 'tether',
            Popper: ['popper.js', 'default']
         }),
         new HtmlWebpackPlugin({
@@ -42,7 +42,7 @@ module.exports = {
         }),
         new webpack.optimize.CommonsChunkPlugin({
             name: 'runtime'
-        }),
+        })
     ],
 
     output: {
