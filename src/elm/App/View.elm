@@ -129,7 +129,7 @@ pageCard model page =
                     [ pageDescription page ]
                 , a [ href ("#" ++ (pageHash page)), onClick (GoToPage page) ] [ text "» Go" ]
                 , span [style [("padding-left", "15px")] ] [] -- FIXME: not pretty
-                , linkToGitHub (Page About)
+                , linkToGitHub page
                 ]
             ]
         ]
@@ -154,15 +154,12 @@ notFoundView =
             ]
       ]
 
--- returns the html anchor ('a') that denotes a link to the code source of the given route.
-linkToGitHub: Route -> Html a
-linkToGitHub route =
+-- returns the html anchor ('a') that denotes a link to the code source of the given page.
+linkToGitHub: Page -> Html a
+linkToGitHub page =
   let
     url = "https://github.com/ccamel/playground-elm/blob/master/src/elm/"
-    link = case route of
-               Home -> url ++ "App/View.elm"
-               Page page -> url ++ pageSrc page
-               NotFoundRoute -> url ++ "Main.elm"
+    link = url ++ pageSrc page
   in
     a [ href link ] [ text "» Source" ]
 
