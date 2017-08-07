@@ -1,5 +1,6 @@
 'use strict';
 
+require('./fonts/font.css');
 require('tether/dist/css/tether.css');
 require('bootstrap/dist/css/bootstrap.css');
 require('font-awesome/css/font-awesome.css');

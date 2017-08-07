@@ -12,6 +12,11 @@ body {
     margin-bottom: 0;
 }
 
+.breadcrumb {
+    font-family: 'Oxygen Mono', monospace;
+    background-color: transparent;
+}
+
 .jumbotron {
     padding-top: 4rem;
     padding-bottom: 1rem;
@@ -38,12 +43,25 @@ body {
     background-color: #f5f5f5;
 }
 
+.card-title {
+    font-family: 'Orbitron', sans-serif;
+}
+
+.card-title .fa {
+    font-size: 10px;
+    margin-right: 20px;
+    position: relative;
+    top: -4px;
+}
+
 .card-text {
-    font-size: 85%;
+
 }
 
 .card .info {
     min-height: 9em;
+    font-size: 1.15rem;
+    font-family: 'Bad Script', cursive;
 }
 
 .footer {

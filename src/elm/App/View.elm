@@ -1,7 +1,7 @@
 module App.View exposing (..)
 
 import App.Pages exposing (emptyNode, pageDescription, pageHash, pageName, pageSrc, pageView, pages)
-import Html exposing (Html, a, button, div, h1, h2, h3, hr, i, img, li, p, section, span, text, ul, footer)
+import Html exposing (Html, a, button, div, footer, h1, h2, h3, hr, i, img, li, nav, p, section, span, text, ul)
 import Html.Attributes exposing (alt, attribute, class, href, id, src, style, target, type_)
 import Html.Events exposing (onClick)
 import App.Messages exposing (Msg(..), Page(About))
@@ -17,15 +17,13 @@ view model =
             div [ class "navbar navbar-inverse bg-inverse" ]
             -- nav bar
             [ div [ class "container d-flex justify-content-between" ]
-                [ div [ class "navbar-brand" ]
-                    [ text ("playground-elm/" ++ hash model.route) ]
-
-                 , case model.route of
-                    Home -> emptyNode
-                    _ -> ul [ class "nav navbar-brand navbar-nav navbar-right" ]
-                            [ li [class ""]
-                              [ a [ href "#", onClick (GoToHome) ] [ text "Home" ] ]
-                            ]
+                [
+                 nav [ class "breadcrumb" ]
+                     [ a [ class "breadcrumb-item", href "#", onClick (GoToHome) ]
+                         [ text "playground-elm" ]
+                     , span [ class "breadcrumb-item active" ]
+                         [ text (hash model.route) ]
+                     ]
                 ]
 
                 -- "fork me" ribbon
@@ -123,7 +121,10 @@ pageCard model page =
         [ div [ class "card animated fadeInUp" ]
             [ div [ class "card-block" ] [
                 h3 [ class "card-title" ]
-                    [ text ("~ " ++ (pageName page)) ]
+                    [
+                       i [class "fa fa-square", attribute "aria-hidden" "true"] []
+                      ,text (pageName page)
+                    ]
                 , p [ class "card-text" ]
                     [ pageDescription page ]
                 , a [ href ("#" ++ (pageHash page)), onClick (GoToPage page) ] [ text "» Go" ]

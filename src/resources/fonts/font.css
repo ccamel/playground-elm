@@ -1,0 +1,54 @@
+@font-face {
+	font-family: 'Bad Script';
+	font-style: normal;
+	font-weight: 400;
+	src:
+		local('Bad Script Regular'),
+		local('BadScript-Regular'),
+		/* from https://fonts.gstatic.com/s/badscript/v5/rL_b2ND61EQmMOJ8CRr1flQlYEbsez9cZjKsNMjLOwM.eot */
+		url('Bad_Script_400.eot?#iefix') format('embedded-opentype'),
+		/* from https://fonts.gstatic.com/s/badscript/v5/rL_b2ND61EQmMOJ8CRr1fhsxEYwM7FgeyaSgU71cLG0.woff */
+		url('Bad_Script_400.woff') format('woff'),
+		/* from https://fonts.gstatic.com/s/badscript/v5/rL_b2ND61EQmMOJ8CRr1fvk_vArhqVIZ0nv9q090hN8.woff2 */
+		url('Bad_Script_400.woff2') format('woff2'),
+		/* from https://fonts.gstatic.com/l/font?kit=rL_b2ND61EQmMOJ8CRr1fqWUboTb-jS2tyCOQMtm97g&skey=bab4df51e3e7f1cf&v=v5#BadScript */
+		url('Bad_Script_400.svg#BadScript') format('svg'),
+		/* from https://fonts.gstatic.com/s/badscript/v5/rL_b2ND61EQmMOJ8CRr1fi3USBnSvpkopQaUR-2r7iU.ttf */
+		url('Bad_Script_400.ttf') format('truetype');
+}
+@font-face {
+	font-family: 'Orbitron';
+	font-style: normal;
+	font-weight: 500;
+	src:
+		local('Orbitron Medium'),
+		local('Orbitron-Medium'),
+		/* from https://fonts.gstatic.com/s/orbitron/v8/VK2oK8L4CJesxwY5dF3zxWfQcKutQXcIrRfyR5jdjY8.eot */
+		url('Orbitron_500.eot?#iefix') format('embedded-opentype'),
+		/* from https://fonts.gstatic.com/s/orbitron/v8/VK2oK8L4CJesxwY5dF3zxYbN6UDyHWBl620a-IRfuBk.woff */
+		url('Orbitron_500.woff') format('woff'),
+		/* from https://fonts.gstatic.com/s/orbitron/v8/VK2oK8L4CJesxwY5dF3zxY4P5ICox8Kq3LLUNMylGO4.woff2 */
+		url('Orbitron_500.woff2') format('woff2'),
+		/* from https://fonts.gstatic.com/l/font?kit=VK2oK8L4CJesxwY5dF3zxXNsigHlcrQGNV8nkUSFQfc&skey=d89bb1686e275486&v=v8#Orbitron */
+		url('Orbitron_500.svg#Orbitron') format('svg'),
+		/* from https://fonts.gstatic.com/s/orbitron/v8/VK2oK8L4CJesxwY5dF3zxZ0EAVxt0G0biEntp43Qt6E.ttf */
+		url('Orbitron_500.ttf') format('truetype');
+}
+@font-face {
+	font-family: 'Oxygen Mono';
+	font-style: normal;
+	font-weight: 400;
+	src:
+		local('Oxygen Mono'),
+		local('OxygenMono-Regular'),
+		/* from https://fonts.gstatic.com/s/oxygenmono/v4/BzV4DVOwAgGelLT9EC5xymfQcKutQXcIrRfyR5jdjY8.eot */
+		url('Oxygen_Mono_400.eot?#iefix') format('embedded-opentype'),
+		/* from https://fonts.gstatic.com/s/oxygenmono/v4/BzV4DVOwAgGelLT9EC5xyobN6UDyHWBl620a-IRfuBk.woff */
+		url('Oxygen_Mono_400.woff') format('woff'),
+		/* from https://fonts.gstatic.com/s/oxygenmono/v4/BzV4DVOwAgGelLT9EC5xyo4P5ICox8Kq3LLUNMylGO4.woff2 */
+		url('Oxygen_Mono_400.woff2') format('woff2'),
+		/* from https://fonts.gstatic.com/l/font?kit=BzV4DVOwAgGelLT9EC5xynNsigHlcrQGNV8nkUSFQfc&skey=464e9f9167c9e76a&v=v4#OxygenMono */
+		url('Oxygen_Mono_400.svg#OxygenMono') format('svg'),
+		/* from https://fonts.gstatic.com/s/oxygenmono/v4/BzV4DVOwAgGelLT9EC5xyp0EAVxt0G0biEntp43Qt6E.ttf */
+		url('Oxygen_Mono_400.ttf') format('truetype');
+}
