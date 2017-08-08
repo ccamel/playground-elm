@@ -1,11 +1,12 @@
 module App.Pages exposing (..)
 
-import App.Messages exposing (Msg(AboutPageMsg, CalcPageMsg), Page(About, Calc))
+import App.Messages exposing (Msg(AboutPageMsg, CalcPageMsg, LissajousPageMsg), Page(About, Calc, Lissajous))
 import App.Models exposing (Model)
 import Html exposing (Html)
 import Page.About
 import Page.Calc
 import Page.Common
+import Page.Lissajous
 
 emptyNode : Html msg
 emptyNode = Html.text ""
@@ -24,6 +25,7 @@ pages = [
       About
     -- add new pages here:
     , Calc
+    , Lissajous
  ]
 
 pageSpec : Page -> PageSpec
@@ -55,6 +57,7 @@ pageSpec page =
             -- add new pages here (the code is a little bit tricky but does the job fine)
             About -> toSpec Page.About.info Page.About.view Page.About.subscriptions AboutPageMsg (\model -> model.aboutPage)
             Calc -> toSpec Page.Calc.info Page.Calc.view Page.Calc.subscriptions CalcPageMsg (\model -> model.calcPage)
+            Lissajous -> toSpec Page.Lissajous.info Page.Lissajous.view Page.Lissajous.subscriptions LissajousPageMsg (\model -> model.lissajousPage)
 
 
 pageName : Page -> String
