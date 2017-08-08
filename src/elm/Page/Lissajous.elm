@@ -212,7 +212,8 @@ view model =
                      ,size 3
                      ,value (toString model.vp)
                      ,onInput SetPhaseVelocity] []
-                , text " tr/min. The resolution is "
+                , a [href "https://en.wikipedia.org/wiki/Revolutions_per_minute" ] [text "rev/min"]
+                , text ". The resolution is "
                 , input [ class "input-number"
                                      ,name "curve-resolution"
                                      ,type_ "number"
