@@ -27,6 +27,9 @@
     border-top-style: none;
     border-right-style: none;
     border-left-style: none;
+    border-bottom: #dedddd;
+    border-bottom-style: dotted;
+    border-bottom-width: 1px;
 }
 
 a.action {

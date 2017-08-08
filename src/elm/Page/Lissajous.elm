@@ -15,6 +15,7 @@ import Markdown
 import Maybe exposing (andThen, withDefault)
 import Page.Common
 import Result exposing (toMaybe)
+import Round
 import String exposing (padLeft)
 import String.Interpolate exposing (interpolate)
 import Text exposing (color, fromString, monospace)
@@ -45,7 +46,7 @@ type alias Model = {
      a : Int
     -- parameter b for the lissajous curve
     ,b : Int
-    -- phase for the lissajous curve (in rad)
+    -- phase for the lissajous curve (in degrees, more simpler for humans)
     ,p: Float
     -- velocity of the phase in turns (2*pi) per minutes
     ,vp: Float
@@ -63,7 +64,7 @@ initialModel : Model
 initialModel = {
       a = 3
      ,b = 4
-     ,p = pi / 2
+     ,p = 90 -- π/2
      ,vp = 1
      ,started = False
      ,curveStyle = { defaultLine | width = 2, color = rgb 31 122 31 }
@@ -81,6 +82,7 @@ type Msg =
     | SetAParemeter String
     | SetBParameter String
     | SetResolution String
+    | SetPhase String
 
 update : Msg -> Model -> Model
 update msg model =
@@ -89,8 +91,8 @@ update msg model =
     Tick diff ->
         let
           -- compute the new phase according to velocity (diff is in ms)
-          v = model.p + (diff*model.vp*2*pi/60000)
-               |> modulo pi
+          v = model.p + (diff*model.vp * 2 * 360/60000)
+               |> modulo 180
         in
           { model | p = v
                    ,ticks = addTick model.ticks diff}
@@ -113,7 +115,13 @@ update msg model =
         case (strToIntWithMinMax s 5 1000) of
             Just v -> { model | resolution = v }
             Nothing -> model
-
+    SetPhase p ->
+        if not model.started then
+            case (String.toFloat p) of
+                Ok v -> { model | p = modulo 180.0 v }
+                Err _ -> model
+        else
+            model
 
 -- SUBSCRIPTIONS
 
@@ -154,7 +162,7 @@ view model =
                        backgroundForm
                       ,xAxisForm
                       ,yAxisForm
-                      ,(lissajous model.a model.b model.p) model.resolution
+                      ,(lissajous model.a model.b (toRadian model.p)) model.resolution
                         |> traced model.curveStyle
                       ,interpolate "{0} fps"
                                    [ fps model.ticks
@@ -229,24 +237,29 @@ view model =
                         ,text (toString constants.width)
                         ,text " sin("
                         ,input [ class "input-number"
-                              ,name "a-parameter"
-                              ,type_ "number"
-                              ,size 1
-                              ,value (toString model.a)
-                              ,onInput SetAParemeter] []
+                                  ,name "a-parameter"
+                                  ,type_ "number"
+                                  ,size 1
+                                  ,value (toString model.a)
+                                  ,onInput SetAParemeter] []
                         ,text "t + "
-                        ,text  (model.p |> toDegree |> format locale1digit |> padLeft 5 ' ' )
+                        ,input [ class "input-number"
+                                  ,name "phase"
+                                  ,type_ "number"
+                                  ,size 1
+                                  ,value (Round.round 2 model.p)
+                                  ,onInput SetPhase] []
                         ,text "°)"
                   ]
                  ,p [] [ text " •  y = "
                         ,text (toString constants.width)
                         ,text " sin("
                         ,input [ class "input-number"
-                              ,name "b-parameter"
-                              ,type_ "number"
-                              ,size 1
-                              ,value (toString model.b)
-                              ,onInput SetBParameter] []
+                                  ,name "b-parameter"
+                                  ,type_ "number"
+                                  ,size 1
+                                  ,value (toString model.b)
+                                  ,onInput SetBParameter] []
                         ,text "t)"
                   ]
              ]
@@ -310,13 +323,14 @@ lissajous a b phase =
           |> path
 
 modulo : Float -> Float -> Float
-modulo range v = if (v > range) then (v - range) else v
+modulo range v =
+    case (v >= range, v < 0) of
+        (True, False) -> modulo range (v - range)
+        (False, True) -> modulo range (range + v)
+        _ -> v
 
-toDegree : Float -> Float
-toDegree rad = rad * 180.0 / pi
-
-toDegreePerMinutes : Float -> Float
-toDegreePerMinutes radPerSeconds= (toDegree radPerSeconds) * 60.0
+toRadian : Float -> Float
+toRadian deg = deg * pi / 180.0
 
 -- convert the string to float preserving the bounds [min, max]
 strToFloatWithMinMax : String -> Float -> Float -> Maybe Float
