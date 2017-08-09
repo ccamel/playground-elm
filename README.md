@@ -14,7 +14,13 @@ Visit the :small_blue_diamond: [demo site](https://ccamel.github.io/playground-e
 
 ## Building and Running
 
-As the project is generated from [elm-app](https://github.com/tom76kimo/generator-elm-app#readme) generator, more help can be found in the github of that project.
+As the project is generated from [elm-app](https://github.com/tom76kimo/generator-elm-app#readme) generator, more help can be found in the github of that project; even if a lot of changes have been made.
+
+At first, all the node packages this project depends on must be installed locally. This can be done with the following command:
+
+```bash
+npm install
+```
 
 The build can be launched with:
 
@@ -23,6 +29,16 @@ npm run build
 ```
 
 Then, open `./dist/index.html` file in your browser.
+
+If you prefer, the site can be published by a local HTTP server. In this mode, if any change is detected, the build of the project will be started again, and the site automatically updated in the browser; which is nice during the development phases.
+
+The publication is launched with the following command:
+
+```bash
+npm run dev
+```
+
+The site is accessible through the `http://localhost:3000/` endpoint.
 
 ## Technologies
 
