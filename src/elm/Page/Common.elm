@@ -3,6 +3,8 @@ module Page.Common exposing (..)
 import Html exposing (Html)
 import Maybe exposing (andThen)
 import Result exposing (toMaybe)
+import Svg
+import Svg.Attributes exposing (class)
 
 type alias PageInfo a = {
       name : String
@@ -30,3 +32,14 @@ strToNumberWithMinMax s converter minv maxv  =
             |> toMaybe
             |> andThen (Just << Basics.min maxv)
             |> andThen (Just << Basics.max minv)
+
+{-| This function makes it easier to build a space-separated class attribute with SVG
+    TODO: To replace with equivalent function in core modules when available
+-}
+classList : List (String, Bool) -> Svg.Attribute msg
+classList list =
+  list
+    |> List.filter Tuple.second
+    |> List.map Tuple.first
+    |> String.join " "
+    |> class

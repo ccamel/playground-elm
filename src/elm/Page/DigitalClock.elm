@@ -8,9 +8,9 @@ import Maybe exposing (withDefault)
 import String exposing (padLeft)
 import String.Interpolate exposing (interpolate)
 import Svg.Attributes as SvgAtt exposing (style, transform)
-import List exposing (map, member)
+import List exposing (append, map, member)
 import Markdown
-import Page.Common exposing (strToIntWithMinMax)
+import Page.Common exposing (classList, strToIntWithMinMax)
 import Svg exposing (Svg, circle, g, path, rect, svg)
 import Svg.Attributes exposing (cx, cy, d, fill, height, id, r, stroke, strokeWidth, viewBox, width, x, y)
 import Time exposing (Time, every, millisecond, now)
@@ -220,27 +220,34 @@ timeToString time =
     in
         interpolate pattern params
 
--- returns an SVG representation for the given segment decorated with the given css style.
-segmentSvgView :  String -> Segment -> Svg msg
-segmentSvgView cls segment =
+-- returns an SVG representation for the given segment decorated with the given svg attributes.
+segmentSvgView :  List (Svg.Attribute msg) -> Segment -> Svg msg
+segmentSvgView attr segment =
     case segment of
-        A -> path [ SvgAtt.class cls, d "M10,8L14,4L42,4L46,8L42,12L14,12L10,8z" ] []
-        B -> path [ SvgAtt.class cls, d "M48,10L52,14L52,42L48,46L44,42L44,14L48,10z" ] []
-        C -> path [ SvgAtt.class cls, d "M48,50L52,54L52,82L48,86L44,82L44,54L48,50z" ] []
-        D -> path [ SvgAtt.class cls, d "M10,88L14,84L42,84L46,88L42,92L14,92L10,88z" ] []
-        E -> path [ SvgAtt.class cls, d "M8,50L12,54L12,82L8,86L4,82L4,54L8,50z" ] []
-        F -> path [ SvgAtt.class cls, d "M8,10L12,14L12,42L8,46L4,42L4,14L8,10z" ] []
-        G -> path [ SvgAtt.class cls, d "M10,48L14,44L42,44L46,48L42,52L14,52L10,48z" ] []
-        H -> circle [ SvgAtt.class cls, r "4", cx "28", cy "28"] []
-        I -> circle [ SvgAtt.class cls, r "4", cx "28", cy "68"] []
+        A -> path (attr ++ [ d "M10,8L14,4L42,4L46,8L42,12L14,12L10,8z" ]) []
+        B -> path (attr ++ [ d "M48,10L52,14L52,42L48,46L44,42L44,14L48,10z" ]) []
+        C -> path (attr ++ [ d "M48,50L52,54L52,82L48,86L44,82L44,54L48,50z" ]) []
+        D -> path (attr ++ [ d "M10,88L14,84L42,84L46,88L42,92L14,92L10,88z" ]) []
+        E -> path (attr ++ [ d "M8,50L12,54L12,82L8,86L4,82L4,54L8,50z" ]) []
+        F -> path (attr ++ [ d "M8,10L12,14L12,42L8,46L4,42L4,14L8,10z" ]) []
+        G -> path (attr ++ [ d "M10,48L14,44L42,44L46,48L42,52L14,52L10,48z" ]) []
+        H -> circle (attr ++ [ r "4", cx "28", cy "28"]) []
+        I -> circle (attr ++ [ r "4", cx "28", cy "68"]) []
 
 figureSvgView : Figure -> Svg msg
 figureSvgView fig =
     let
         segments = figureToSegments fig
-        asView seg = segmentSvgView
-                        (if (member seg segments) then "lit" else "unlit")
-                        seg
+        asView seg = let
+                        lit = member seg segments
+                     in
+                        segmentSvgView
+                                [   classList
+                                       [  ("lit", lit)
+                                         ,("unlit", not lit)
+                                       ]
+                                ]
+                                seg
     in
         g [ SvgAtt.class ("figure figure-" ++ (figureToName fig)) ]
             ((figureToSegments All)
