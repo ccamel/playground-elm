@@ -1,0 +1,46 @@
+.wrapper {
+  text-align: center;
+}
+
+#digital-clock-display {
+  background: #111;
+  border-radius: 15px;
+  width: 50%;
+}
+
+#digital-clock-display .lit {
+  fill: #0e0;
+}
+
+#digital-clock-display .unlit {
+  fill: #1e1f1d;
+}
+
+#digital-clock .input-number {
+  width: 4em;
+  text-align: right;
+}
+
+#digital-clock .description {
+  width: 100%
+}
+
+#digital-clock .description input {
+  border-top-style: none;
+  border-right-style: none;
+  border-left-style: none;
+  border-bottom: #dedddd;
+  border-bottom-style: dotted;
+  border-bottom-width: 1px;
+}
+
+#digital-clock a.action {
+  border-color: transparent;
+  border-style: solid;
+  background: #f2f2f2;
+  border-radius: 6px;
+}
+
+a.selected {
+  background: beige;
+}

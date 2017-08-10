@@ -3,6 +3,7 @@ module App.Models exposing (..)
 import App.Routing exposing(..)
 import Page.About
 import Page.Calc
+import Page.DigitalClock
 import Page.Lissajous
 
 type alias Model =
@@ -13,6 +14,7 @@ type alias Model =
       ,aboutPage : Maybe Page.About.Model
       ,calcPage : Maybe Page.Calc.Model
       ,lissajousPage : Maybe Page.Lissajous.Model
+      ,digitalClockPage :Maybe Page.DigitalClock.Model
     }
 
 
@@ -25,5 +27,6 @@ initialModel route =
       ,aboutPage = Just Page.About.initialModel
       ,calcPage = Just Page.Calc.initialModel
       ,lissajousPage = Just Page.Lissajous.initialModel
+      ,digitalClockPage = Just Page.DigitalClock.initialModel
     }
 

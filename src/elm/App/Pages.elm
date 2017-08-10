@@ -1,11 +1,12 @@
 module App.Pages exposing (..)
 
-import App.Messages exposing (Msg(AboutPageMsg, CalcPageMsg, LissajousPageMsg), Page(About, Calc, Lissajous))
+import App.Messages exposing (Msg(AboutPageMsg, CalcPageMsg, DigitalClockPageMsg, LissajousPageMsg), Page(About, Calc, DigitalClock, Lissajous))
 import App.Models exposing (Model)
 import Html exposing (Html)
 import Page.About
 import Page.Calc
 import Page.Common
+import Page.DigitalClock
 import Page.Lissajous
 
 emptyNode : Html msg
@@ -26,6 +27,7 @@ pages = [
     -- add new pages here:
     , Calc
     , Lissajous
+    , DigitalClock
  ]
 
 pageSpec : Page -> PageSpec
@@ -58,6 +60,7 @@ pageSpec page =
             About -> toSpec Page.About.info Page.About.view Page.About.subscriptions AboutPageMsg (\model -> model.aboutPage)
             Calc -> toSpec Page.Calc.info Page.Calc.view Page.Calc.subscriptions CalcPageMsg (\model -> model.calcPage)
             Lissajous -> toSpec Page.Lissajous.info Page.Lissajous.view Page.Lissajous.subscriptions LissajousPageMsg (\model -> model.lissajousPage)
+            DigitalClock -> toSpec Page.DigitalClock.info Page.DigitalClock.view Page.DigitalClock.subscriptions DigitalClockPageMsg (\model -> model.digitalClockPage)
 
 
 pageName : Page -> String

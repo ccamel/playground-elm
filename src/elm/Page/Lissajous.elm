@@ -13,7 +13,7 @@ import Json.Decode exposing (succeed)
 import List exposing (append, concatMap, drop, length, map, range, sum)
 import Markdown
 import Maybe exposing (andThen, withDefault)
-import Page.Common
+import Page.Common exposing (strToFloatWithMinMax, strToIntWithMinMax)
 import Result exposing (toMaybe)
 import Round
 import String exposing (padLeft)
@@ -331,26 +331,6 @@ modulo range v =
 
 toRadian : Float -> Float
 toRadian deg = deg * pi / 180.0
-
--- convert the string to float preserving the bounds [min, max]
-strToFloatWithMinMax : String -> Float -> Float -> Maybe Float
-strToFloatWithMinMax s minv maxv  = strToNumberWithMinMax s String.toFloat minv maxv
-
--- convert the string to float preserving the bounds [min, max]
-strToIntWithMinMax : String -> Int -> Int -> Maybe Int
-strToIntWithMinMax s minv maxv  = strToNumberWithMinMax s String.toInt minv maxv
-
-
--- convert the string to a number preserving the bounds [min, max]
-strToNumberWithMinMax : String -> (String -> Result String comparable) -> comparable -> comparable -> Maybe comparable
-strToNumberWithMinMax s converter minv maxv  =
-    case s of
-        "" -> Just 0
-        x -> x
-            |> converter
-            |> toMaybe
-            |> andThen (Just << Basics.min maxv)
-            |> andThen (Just << Basics.max minv)
 
 locale1digit : Locale
 locale1digit =
