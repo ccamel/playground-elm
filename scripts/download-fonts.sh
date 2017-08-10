@@ -21,7 +21,7 @@ pushd .
 cd $PATH_FONT
 
 echo "Downloading fonts..."
-google-font-download "Bad Script:400" "Orbitron:500" "Oxygen Mono:400" "Roboto Mono:500"
+google-font-download "Bad Script:400" "Orbitron:500" "Oxygen Mono:400" "Roboto Mono:500" "Share Tech Mono:400"
 
 echo "Done."
 

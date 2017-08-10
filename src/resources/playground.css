@@ -32,6 +32,19 @@ body {
     font-weight: 300;
 }
 
+.jumbotron-heading .elm-pipe {
+    color: #60b5cc;
+    font-weight: bold;
+    font-family: 'Share Tech Mono', monospace;
+}
+
+.jumbotron-heading .elm-gt {
+    color: #f0ad00;
+    font-weight: bold;
+    font-family: 'Share Tech Mono', monospace;
+}
+
+
 .jumbotron .container {
     max-width: 80rem;
 }

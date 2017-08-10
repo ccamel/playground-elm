@@ -45,7 +45,10 @@ view model =
                                   i [ class "fa fa-quote-left text-muted", style [("padding-right", "1em")] ] []
                                 , span [ ] [
                                       text "playground"
-                                    , span [class "text-muted"] [text "-"]
+                                    , text " "
+                                    , span [class "elm-pipe"] [text "|"]
+                                    , span [class "elm-gt"] [ text ">"]
+                                    , text " "
                                     , a [ href "http://elm-lang.org/" ] [ text "elm" ]
                                   ]
                                 , i [ class "fa fa-quote-right text-muted", style [("padding-left", "1em")] ] []
