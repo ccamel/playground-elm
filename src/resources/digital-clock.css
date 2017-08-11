@@ -1,19 +1,12 @@
 .wrapper {
   text-align: center;
+  margin-bottom: 1rem;
 }
 
 #digital-clock-display {
   background: #111;
   border-radius: 15px;
   width: 50%;
-}
-
-#digital-clock-display .lit {
-  fill: #0e0;
-}
-
-#digital-clock-display .unlit {
-  fill: #1e1f1d;
 }
 
 #digital-clock .input-number {
@@ -43,4 +36,27 @@
 
 a.selected {
   background: beige;
+}
+
+#digital-clock .btn {
+  border-top-style: none;
+  border-right-style: none;
+  border-left-style: none;
+  border-bottom: #dedddd;
+  border-bottom-style: dotted;
+  border-bottom-width: 1px;
+}
+
+.description div.dropdown-menu {
+  top: auto;
+  left: auto;
+}
+
+.color-tag {
+  width: 1rem;
+  height: 1rem;
+  margin-right: 5px;
+  display: inline-block;
+  top: 4px;
+  position: relative;
 }

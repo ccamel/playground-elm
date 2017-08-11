@@ -1,7 +1,9 @@
 module Page.DigitalClock exposing (..)
 
+import Color exposing (Color, rgb, toRgb)
+import ColorPicker
 import Date exposing (fromTime, hour, minute, second)
-import Html exposing (Html, a, div, h2, h3, hr, i, img, input, li, p, text, ul)
+import Html exposing (Html, a, button, div, h2, h3, hr, i, img, input, li, p, span, text, ul)
 import Html.Attributes exposing (alt, attribute, class, href, name, size, src, style, type_, value)
 import Html.Events exposing (onInput)
 import Maybe exposing (withDefault)
@@ -40,14 +42,18 @@ type alias Model = {
        ,spaceX : Int
        ,tilt: Int
        ,refreshInterval: Int -- in ms
+       ,colorPicker : ColorPicker.State
+       ,color: Color
  }
 
 initialModel : Model
 initialModel = {
         time = Nothing
-       ,spaceX = 0
+       ,spaceX = 5
        ,tilt = -12
        ,refreshInterval = 500
+       ,colorPicker = ColorPicker.empty
+       ,color = rgb 0 200 0
     }
 
 -- UPDATE
@@ -58,6 +64,7 @@ type Msg =
     | SetSpaceX String
     | SetTilt String
     | SetRefreshInterval String
+    | ColorPickerMsg ColorPicker.Msg
 
 update : Msg -> Model -> Model
 update msg model =
@@ -65,7 +72,7 @@ update msg model =
     Reset -> initialModel
     Tick t -> { model | time = Just t }
     SetSpaceX s ->
-        case (strToIntWithMinMax s 0 20) of
+        case (strToIntWithMinMax s 0 25) of
             Just v -> { model | spaceX = v }
             Nothing -> model
     SetTilt s ->
@@ -76,6 +83,15 @@ update msg model =
         case (strToIntWithMinMax s 25 2000) of
             Just v -> { model | refreshInterval = v }
             Nothing -> model
+    ColorPickerMsg msg ->
+            let
+                ( state, color ) =
+                    ColorPicker.update msg model.color model.colorPicker
+            in
+                { model
+                    | colorPicker = state
+                    , color = color |> Maybe.withDefault model.color
+                }
 
 -- SUBSCRIPTIONS
 
@@ -92,31 +108,54 @@ view model =
         [
              p []
                [ text "Here is the current time." ]
-            ,p []
-               [ text "You can adjust some display settings if you wish. The space between digit is "
-                ,input [ class "input-number"
-                     ,name "space-x"
-                     ,type_ "number"
-                     ,size 3
-                     ,value (toString model.spaceX)
-                     ,onInput SetSpaceX] []
-                 ,text ", the tilt is "
-                 ,input [ class "input-number"
-                      ,name "tilt"
-                      ,type_ "number"
-                      ,size 3
-                      ,value (toString model.tilt)
-                      ,onInput SetTilt] []
-                 ,text ", and the refresh interval is "
-                 ,input [ class "input-number"
-                      ,name "refresh-interval"
-                      ,type_ "number"
-                      ,size 3
-                      ,value (toString model.refreshInterval)
-                      ,onInput SetRefreshInterval] []
-               ]
          ]
-        ,svgView model
+        ,digitalClock model
+        ,div [class "description"]
+        [
+         div [class "form-inline"]
+           [ text "You can adjust some display settings if you wish. The space between digit is "
+            ,input [ class "input-number"
+                 ,name "space-x"
+                 ,type_ "number"
+                 ,size 3
+                 ,value (toString model.spaceX)
+                 ,onInput SetSpaceX] []
+             ,text ", the tilt is "
+             ,input [ class "input-number"
+                  ,name "tilt"
+                  ,type_ "number"
+                  ,size 3
+                  ,value (toString model.tilt)
+                  ,onInput SetTilt] []
+             ,text ", the color used for the lcd is "
+             ,div []
+                [
+                  button [ attribute "aria-expanded" "false"
+                          ,attribute "aria-haspopup" "true"
+                          ,class "btn btn-secondary dropdown-toggle"
+                          ,attribute "data-toggle" "dropdown"
+                          ,id "dropdownColorPickerButton"
+                          ,type_ "button" ]
+                          [ span [ class "color-tag"
+                                  ,Html.Attributes.style [("background-color", asCss model.color)]
+                                 ] []
+                          ]
+                 ,div [ attribute "aria-labelledby" "dropdownColorPickerButton"
+                       ,class "dropdown-menu" ]
+                      [ ColorPicker.view model.color model.colorPicker |> Html.map ColorPickerMsg ]
+                ]
+             ,text " (click to change)"
+             ,text ", and the refresh interval is "
+             ,input [ class "input-number"
+                  ,name "refresh-interval"
+                  ,type_ "number"
+                  ,size 3
+                  ,value (toString model.refreshInterval)
+                  ,onInput SetRefreshInterval] []
+              ,text "."
+           ]
+        ]
+
       ]
 
 
@@ -211,10 +250,11 @@ timeToString : Time -> String
 timeToString time =
     let
         date = fromTime time
+        isEven x = x % 2 == 0
         params = [ (hour date), (minute date), (second date) ]
                         |> map toString
                         |> map (padLeft 2 '0')
-        pattern = if (second date) % 2 == 0
+        pattern = if (second date) |> isEven
                   then "{0}:{1}:{2}"
                   else "{0} {1} {2}"
     in
@@ -260,7 +300,7 @@ stringToSvgView model s =
         |> List.map figureSvgView
         |> List.indexedMap ( \index svg ->
             g [
-                    [model.tilt, (55+model.spaceX)*index, 0]
+                    [model.tilt, (48+model.spaceX)*index, 0]
                      |> map toString
                      |> interpolate "skewX({0}) translate({1},{2})"
                      |> transform
@@ -270,15 +310,41 @@ stringToSvgView model s =
               ]
            )
 
-svgView : Model -> Html msg
-svgView model =
+digitalClock : Model -> Html msg
+digitalClock model =
+    let
+        styles = Svg.style [] [
+                   text <| interpolate """
+                    #digital-clock-display .lit {
+                      fill: {0};
+                    }
+
+                    #digital-clock-display .unlit {
+                      fill: #1e1f1d;
+                    }
+                 """ [asCss model.color]
+                 ]
+    in
         div [class "wrapper"]
         [
-           svg [ id "digital-clock-display", width "450", height "96", viewBox "0 0 450 96" ]
-                   ( model.time
-                       |> Maybe.map timeToString
-                       |> withDefault "--:--:--"
-                       |> stringToSvgView model
-                   )
-
+           svg [ id "digital-clock-display"
+                ,width "450"
+                ,height "96"
+                ,viewBox "0 0 450 96" ]
+            (
+               styles
+                 ::
+               ( model.time
+                   |> Maybe.map timeToString
+                   |> withDefault "--:--:--"
+                   |> stringToSvgView model
+               )
+            )
         ]
+
+asCss : Color -> String
+asCss color =
+    let
+        rgb = toRgb color
+    in
+        interpolate "rgb({0},{1},{2})" ([rgb.red, rgb.green, rgb.blue] |> map toString)
