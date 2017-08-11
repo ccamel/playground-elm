@@ -29,5 +29,31 @@ parseLocation location =
         Nothing ->
             NotFoundRoute
 
+-- returns the next page for the given route, if any
+nextPage : Route -> List Page -> Maybe Page
+nextPage route pages =
+    case route of
+        Page page ->
+            case pages of
+                a::b::rest ->
+                    if a == page
+                    then Just b
+                    else nextPage route (b::rest)
+                _ ->
+                    Nothing
+        _ -> Nothing
 
+-- returns the previous page for the given route, if any
+prevPage : Route -> List Page -> Maybe Page
+prevPage route pages =
+    case route of
+        Page page ->
+            case pages of
+                a::b::rest ->
+                    if b == page
+                    then Just a
+                    else prevPage route (b::rest)
+                _ ->
+                    Nothing
+        _ -> Nothing
 

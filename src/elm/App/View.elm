@@ -2,28 +2,53 @@ module App.View exposing (..)
 
 import App.Pages exposing (emptyNode, pageDescription, pageHash, pageName, pageSrc, pageView, pages)
 import Html exposing (Html, a, button, div, footer, h1, h2, h3, hr, i, img, li, nav, p, section, span, text, ul)
-import Html.Attributes exposing (alt, attribute, class, href, id, src, style, target, type_)
+import Html.Attributes exposing (alt, attribute, class, classList, href, id, src, style, target, type_)
 import Html.Events exposing (onClick)
 import App.Messages exposing (Msg(..), Page(About))
 import App.Models exposing (Model)
-import App.Routing exposing (Route(..))
+import App.Routing exposing (Route(..), nextPage, prevPage)
 
 
 -- the main view
 view : Model -> Html Msg
 view model =
+    let
+        prev = prevPage model.route pages
+        next = nextPage model.route pages
+    in
     div []
         [
             div [ class "navbar navbar-inverse bg-inverse" ]
             -- nav bar
-            [ div [ class "container d-flex justify-content-between" ]
+            [
+                div [ class "container d-flex" ]
                 [
-                 nav [ class "breadcrumb" ]
-                     [ a [ class "breadcrumb-item", href "#", onClick (GoToHome) ]
-                         [ text "playground-elm" ]
-                     , span [ class "breadcrumb-item active" ]
-                         [ text (hash model.route) ]
+                  a [ Html.Attributes.classList
+                         [ ("breadcrumb", True)
+                          ,("animated", True)
+                          ,("fadeOut",  prev |> exists |> not)
+                          ,("fadeIn", prev |> exists)
+                         ]
+                     ,href (prev |> Maybe.map pageHash |> Maybe.withDefault "" |> (++) "#")
+                     ,onClick (prev |> Maybe.map GoToPage |> Maybe.withDefault GoToHome )
+                    ]
+                    [ i [class "fa fa-caret-left", attribute "aria-hidden" "true"] [] ]
+                 ,nav [ class "breadcrumb" ]
+                      [ a [ class "breadcrumb-item", href "#", onClick (GoToHome) ]
+                          [ text "playground-elm" ]
+                       ,span [ class "breadcrumb-item active" ]
+                          [ text (hash model.route) ]
+                      ]
+                ,a [ Html.Attributes.classList
+                          [ ("breadcrumb", True)
+                            ,("animated", True)
+                            ,("fadeOut",  next |> exists |> not)
+                            ,("fadeIn", next |> exists)
+                          ]
+                      ,href (next |> Maybe.map pageHash |> Maybe.withDefault "" |> (++) "#")
+                      ,onClick (next |> Maybe.map GoToPage |> Maybe.withDefault GoToHome )
                      ]
+                     [ i [class "fa fa-caret-right", attribute "aria-hidden" "true"] [] ]
                 ]
 
                 -- "fork me" ribbon
@@ -176,8 +201,13 @@ contentId route =
 hash: Route -> String
 hash route =
    case route of
-     Home -> ""
+     Home -> "home"
      Page p -> pageHash p
      NotFoundRoute -> ""
 
+exists : Maybe a -> Bool
+exists m =
+    case m of
+        Just _ -> True
+        Nothing -> False
 
