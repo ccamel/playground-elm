@@ -249,8 +249,9 @@ figureSvgView fig =
                                 ]
                                 seg
     in
-        g [ SvgAtt.class ("figure figure-" ++ (figureToName fig)) ]
-            ((figureToSegments All)
+        g [ SvgAtt.class <| "figure figure-" ++ (figureToName fig) ]
+            (  All
+                |> figureToSegments
                 |> List.map asView)
 
 stringToSvgView : Model -> String -> List (Svg msg)
@@ -258,8 +259,11 @@ stringToSvgView model s =
         stringToFigures s
         |> List.map figureSvgView
         |> List.indexedMap ( \index svg ->
-            g [  transform (interpolate "skewX({0}) translate({1},{2})" ([model.tilt, (55+model.spaceX)*index, 0] |> map toString) )
-
+            g [
+                    [model.tilt, (55+model.spaceX)*index, 0]
+                     |> map toString
+                     |> interpolate "skewX({0}) translate({1},{2})"
+                     |> transform
               ]
               [
                 svg
