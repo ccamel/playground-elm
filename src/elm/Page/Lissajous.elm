@@ -148,7 +148,7 @@ constants = {
 
 view : Model -> Html Msg
 view model =
-  div [ class "container" ]
+  div [ class "container animated flipInX" ]
       [ hr [] []
        -- canvas for the lissajous
        ,div [class "row display"]

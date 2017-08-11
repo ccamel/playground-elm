@@ -102,7 +102,7 @@ subscriptions model =  every (toFloat (model.refreshInterval) * millisecond) Tic
 
 view : Model -> Html Msg
 view model =
-  div [ class "container" ]
+  div [ class "container animated flipInX" ]
       [  hr [] []
         ,div [class "description"]
         [

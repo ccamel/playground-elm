@@ -260,7 +260,7 @@ subscriptions model = Sub.none
 
 view : Model -> Html Msg
 view model =
-  div [ class "container" ]
+  div [ class "container animated flipInX" ]
       [ hr [] []
        ,p [class "text-muted"]
            [ text "A very simple and basic calculator." ]
