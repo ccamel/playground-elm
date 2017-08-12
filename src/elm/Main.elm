@@ -15,7 +15,7 @@ init location =
         currentRoute =
             App.Routing.parseLocation location
     in
-        ( initialModel currentRoute, Cmd.none )
+        initialModel currentRoute
 
 
 

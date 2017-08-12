@@ -28,14 +28,17 @@ type alias Model = {
 initialModel : Model
 initialModel = {}
 
+initialCmd : Cmd Msg
+initialCmd = Cmd.none
+
 -- UPDATE
 
 type Msg = Reset
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    Reset -> model
+    Reset -> (initialModel, initialCmd)
 
 -- SUBSCRIPTIONS
 

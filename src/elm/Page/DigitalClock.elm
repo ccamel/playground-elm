@@ -56,6 +56,9 @@ initialModel = {
        ,color = rgb 0 200 0
     }
 
+initialCmd : Cmd Msg
+initialCmd = Cmd.none
+
 -- UPDATE
 
 type Msg =
@@ -66,32 +69,36 @@ type Msg =
     | SetRefreshInterval String
     | ColorPickerMsg ColorPicker.Msg
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    Reset -> initialModel
-    Tick t -> { model | time = Just t }
+    Reset -> (initialModel, initialCmd)
+    Tick t -> ({ model | time = Just t }, Cmd.none)
     SetSpaceX s ->
-        case (strToIntWithMinMax s 0 25) of
+        ( case (strToIntWithMinMax s 0 25) of
             Just v -> { model | spaceX = v }
             Nothing -> model
+         ,Cmd.none)
     SetTilt s ->
-        case (strToIntWithMinMax s -45 45) of
+        ( case (strToIntWithMinMax s -45 45) of
             Just v -> { model | tilt = v }
             Nothing -> model
+         ,Cmd.none)
     SetRefreshInterval s ->
-        case (strToIntWithMinMax s 25 2000) of
+        ( case (strToIntWithMinMax s 25 2000) of
             Just v -> { model | refreshInterval = v }
             Nothing -> model
+         ,Cmd.none)
     ColorPickerMsg msg ->
             let
                 ( state, color ) =
                     ColorPicker.update msg model.color model.colorPicker
             in
-                { model
+                ({ model
                     | colorPicker = state
                     , color = color |> Maybe.withDefault model.color
-                }
+                 }
+                 , Cmd.none)
 
 -- SUBSCRIPTIONS
 

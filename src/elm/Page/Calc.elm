@@ -47,6 +47,9 @@ initialModel = {
    , memory = Nothing
   }
 
+initialCmd : Cmd Msg
+initialCmd = Cmd.none
+
 -- MESSAGES
 
 type Op =
@@ -71,10 +74,10 @@ type Msg =
 
 -- UPDATE
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
-        Emitted token -> apply token model
+        Emitted token -> (apply token model, Cmd.none)
 
 
 -- apply the given token to the model, computing a new state

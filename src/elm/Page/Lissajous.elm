@@ -72,6 +72,9 @@ initialModel = {
      ,ticks = createTicks 100 -- initial capacity
   }
 
+initialCmd : Cmd Msg
+initialCmd = Cmd.none
+
 -- UPDATE
 type Msg =
       Reset Model
@@ -84,44 +87,50 @@ type Msg =
     | SetResolution String
     | SetPhase String
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    Reset m -> m
+    Reset m -> (m, initialCmd)
     Tick diff ->
         let
           -- compute the new phase according to velocity (diff is in ms)
           v = model.p + (diff*model.vp * 2 * 360/60000)
                |> modulo 180
         in
-          { model | p = v
+          ({ model | p = v
                    ,ticks = addTick model.ticks diff}
-    Start -> { model | started = True
+           ,Cmd.none)
+    Start -> ({ model | started = True
                       ,ticks = resetTick model.ticks }
-    Stop ->  { model | started = False }
+              ,Cmd.none)
+    Stop ->  ({ model | started = False },Cmd.none)
     SetPhaseVelocity s ->
-        case (strToFloatWithMinMax s 0 1000) of
+        (case (strToFloatWithMinMax s 0 1000) of
             Just v -> { model | vp = v }
             Nothing -> model
+         ,Cmd.none)
     SetAParemeter s ->
-        case (strToIntWithMinMax s 1 10) of
+        (case (strToIntWithMinMax s 1 10) of
             Just v -> { model | a = v }
             Nothing -> model
+         ,Cmd.none)
     SetBParameter s ->
-        case (strToIntWithMinMax s 1 10) of
+        (case (strToIntWithMinMax s 1 10) of
             Just v -> { model | b = v }
             Nothing -> model
+         ,Cmd.none)
     SetResolution s ->
-        case (strToIntWithMinMax s 5 1000) of
+        (case (strToIntWithMinMax s 5 1000) of
             Just v -> { model | resolution = v }
             Nothing -> model
+         ,Cmd.none)
     SetPhase p ->
         if not model.started then
             case (String.toFloat p) of
-                Ok v -> { model | p = modulo 180.0 v }
-                Err _ -> model
+                Ok v -> ({ model | p = modulo 180.0 v }, Cmd.none)
+                Err _ -> (model, Cmd.none)
         else
-            model
+            (model, Cmd.none)
 
 -- SUBSCRIPTIONS
 
