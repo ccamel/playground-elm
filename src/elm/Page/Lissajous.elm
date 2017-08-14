@@ -68,7 +68,7 @@ initialModel = {
      ,b = 4
      ,p = 90 -- π/2
      ,vp = 1
-     ,started = False
+     ,started = True
      ,curveStyle = { defaultLine | width = 2, color = rgb 31 122 31 }
      ,resolution = 500
      ,ticks = createTicks 100 -- initial capacity
