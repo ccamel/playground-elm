@@ -3,6 +3,7 @@ module Page.Lissajous exposing (..)
 import AnimationFrame
 import Collage exposing (Form, LineStyle, Path, circle, collage, defaultLine, filled, group, move, moveY, oval, path, rect, rotate, segment, traced)
 import Color exposing (Color, darkPurple, green, lightGrey, red, rgb)
+import ColorPicker
 import Element exposing (container, middle, toHtml)
 import FormatNumber exposing (format)
 import FormatNumber.Locales exposing (Locale, usLocale)
@@ -13,7 +14,7 @@ import Json.Decode exposing (succeed)
 import List exposing (append, concatMap, drop, length, map, range, sum)
 import Markdown
 import Maybe exposing (andThen, withDefault)
-import Page.Common exposing (strToFloatWithMinMax, strToIntWithMinMax)
+import Page.Common exposing (asCss, strToFloatWithMinMax, strToIntWithMinMax)
 import Result exposing (toMaybe)
 import Round
 import String exposing (padLeft)
@@ -58,6 +59,7 @@ type alias Model = {
     ,resolution : Int
     -- a list containing n last ticks, used to compute the fps (frame per seconds)
     ,ticks : Ticks
+    ,foregroundColorPicker : ColorPicker.State
   }
 
 initialModel : Model
@@ -70,6 +72,7 @@ initialModel = {
      ,curveStyle = { defaultLine | width = 2, color = rgb 31 122 31 }
      ,resolution = 500
      ,ticks = createTicks 100 -- initial capacity
+     ,foregroundColorPicker = ColorPicker.empty
   }
 
 initialCmd : Cmd Msg
@@ -86,6 +89,7 @@ type Msg =
     | SetBParameter String
     | SetResolution String
     | SetPhase String
+    | ForegroundColorPickerMsg ColorPicker.Msg
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -131,6 +135,17 @@ update msg model =
                 Err _ -> (model, Cmd.none)
         else
             (model, Cmd.none)
+    ForegroundColorPickerMsg msg ->
+            let
+                curveStyle = model.curveStyle
+                ( state, color ) =
+                    ColorPicker.update msg curveStyle.color model.foregroundColorPicker
+            in
+                ({ model
+                    | foregroundColorPicker = state
+                    , curveStyle = { curveStyle | color = color |> Maybe.withDefault curveStyle.color }
+                 }
+                 , Cmd.none)
 
 -- SUBSCRIPTIONS
 
@@ -162,13 +177,13 @@ view model =
        -- canvas for the lissajous
        ,div [class "row display"]
        [
-           div [id "lissajous-scope"]
+           div [ id "lissajous-scope col-sm-6" ]
            [
              toHtml <|
               container constants.width constants.height middle  <|
                   collage constants.width constants.height
                     [
-                       backgroundForm
+                       backgroundForm (rgb 0 0 0)
                       ,xAxisForm
                       ,yAxisForm
                       ,(lissajous model.a model.b (toRadian model.p)) model.resolution
@@ -186,7 +201,7 @@ view model =
                         |> move ((constants.height // 2) - constants.margin |> toFloat, (constants.width - 12) // 2 |> toFloat)
                     ]
            ]
-           , div [class "description"]
+           , div [class "description col-sm-5 col-sm-offset-1"]
            [
               Markdown.toHtml [class "info"] """
 ##### Animated [Lissajouss figures](https://en.wikipedia.org/wiki/Lissajouss_curve) using HTML5 canvas.
@@ -239,6 +254,26 @@ view model =
                                      ,step "10"
                                      ,onInput SetResolution] []
                 , text ", which represents the total number of points used to draw the curve (more is better)."
+              ]
+            , p[ class "form-inline" ] [
+                  text "The color for the plot is"
+                 ,div []
+                    [
+                      button [ attribute "aria-expanded" "false"
+                              ,attribute "aria-haspopup" "true"
+                              ,class "btn btn-secondary dropdown-toggle"
+                              ,attribute "data-toggle" "dropdown"
+                              ,id "dropdownForegroundColorPickerButton"
+                              ,type_ "button" ]
+                              [ span [ class "color-tag"
+                                      ,Html.Attributes.style [("background-color", asCss model.curveStyle.color)]
+                                     ] []
+                              ]
+                     ,div [ attribute "aria-labelledby" "dropdownForegroundColorPickerButton"
+                           ,class "dropdown-menu" ]
+                          [ ColorPicker.view model.curveStyle.color model.foregroundColorPicker |> Html.map ForegroundColorPickerMsg ]
+                    ]
+                 ,text " (click to change)."
               ]
             , p [] [text "The equations are:"]
             , div [class "equation"] [
@@ -296,8 +331,8 @@ yAxisForm =
     xAxisForm
       |> rotate (degrees 90)
 
-backgroundForm : Form
-backgroundForm =
+backgroundForm : Color -> Form
+backgroundForm color =
     let
         halfW = constants.width // 2
         halfH = constants.height // 2
@@ -305,9 +340,13 @@ backgroundForm =
                         |> filled (rgb 64 64 64)
                         |> move ((toFloat x),(toFloat y))
     in
-        cartesian (rangeStep -halfW halfW 25) (rangeStep -halfH halfH 25)
-          |> map circleAt
-          |> group
+        group [
+            (rect (constants.width |> toFloat) (constants.height |> toFloat)
+              |> filled color)
+            ,(cartesian (rangeStep -halfW halfW 25) (rangeStep -halfH halfH 25)
+              |> map circleAt
+              |> group )
+          ]
 
 
 
@@ -328,7 +367,6 @@ lissajous a b phase =
         range 0 res
           |> map (\step -> (toFloat step) * (constants.period) / (toFloat res))
           |> map (coord)
-       -- |> log "-> "
           |> path
 
 modulo : Float -> Float -> Float

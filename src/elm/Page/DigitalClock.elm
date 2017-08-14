@@ -12,7 +12,7 @@ import String.Interpolate exposing (interpolate)
 import Svg.Attributes as SvgAtt exposing (style, transform)
 import List exposing (append, map, member)
 import Markdown
-import Page.Common exposing (classList, strToIntWithMinMax)
+import Page.Common exposing (asCss, classList, strToIntWithMinMax)
 import Svg exposing (Svg, circle, g, path, rect, svg)
 import Svg.Attributes exposing (cx, cy, d, fill, height, id, r, stroke, strokeWidth, viewBox, width, x, y)
 import Time exposing (Time, every, millisecond, now)
@@ -348,10 +348,3 @@ digitalClock model =
                )
             )
         ]
-
-asCss : Color -> String
-asCss color =
-    let
-        rgb = toRgb color
-    in
-        interpolate "rgb({0},{1},{2})" ([rgb.red, rgb.green, rgb.blue] |> map toString)

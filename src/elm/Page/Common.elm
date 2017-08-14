@@ -1,8 +1,11 @@
 module Page.Common exposing (..)
 
+import Color exposing (Color, toRgb)
 import Html exposing (Html)
+import List exposing (map)
 import Maybe exposing (andThen)
 import Result exposing (toMaybe)
+import String.Interpolate exposing (interpolate)
 import Svg
 import Svg.Attributes exposing (class)
 
@@ -43,3 +46,11 @@ classList list =
     |> List.map Tuple.first
     |> String.join " "
     |> class
+
+
+asCss : Color -> String
+asCss color =
+    let
+        rgb = toRgb color
+    in
+        interpolate "rgb({0},{1},{2})" ([rgb.red, rgb.green, rgb.blue] |> map toString)
