@@ -2,6 +2,8 @@ module Page.Common exposing (..)
 
 import Color exposing (Color, toRgb)
 import Html exposing (Html)
+import Html.Events exposing (defaultOptions, onWithOptions)
+import Json.Decode exposing (succeed)
 import List exposing (map)
 import Maybe exposing (andThen)
 import Result exposing (toMaybe)
@@ -54,3 +56,6 @@ asCss color =
         rgb = toRgb color
     in
         interpolate "rgb({0},{1},{2})" ([rgb.red, rgb.green, rgb.blue] |> map toString)
+
+onClickNotPropagate : a -> Html.Attribute a
+onClickNotPropagate msg = onWithOptions "click" {defaultOptions | preventDefault = True} (succeed msg)

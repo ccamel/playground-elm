@@ -7,6 +7,8 @@ import Html.Events exposing (onClick)
 import App.Messages exposing (Msg(..), Page(About))
 import App.Models exposing (Model)
 import App.Routing exposing (Route(..), nextPage, prevPage)
+import Page.Common exposing (onClickNotPropagate)
+
 
 
 -- the main view
@@ -155,7 +157,7 @@ pageCard model page =
                     ]
                 , p [ class "card-text" ]
                     [ pageDescription page ]
-                , a [ href ("#" ++ (pageHash page)), onClick (GoToPage page) ] [ text "» Go" ]
+                , a [ href ("#" ++ (pageHash page)), onClickNotPropagate (GoToPage page) ] [ text "» Go" ]
                 , span [style [("padding-left", "15px")] ] [] -- FIXME: not pretty
                 , linkToGitHub page
                 ]

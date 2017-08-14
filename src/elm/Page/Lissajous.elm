@@ -14,7 +14,7 @@ import Json.Decode exposing (succeed)
 import List exposing (append, concatMap, drop, length, map, range, sum)
 import Markdown
 import Maybe exposing (andThen, withDefault)
-import Page.Common exposing (asCss, strToFloatWithMinMax, strToIntWithMinMax)
+import Page.Common exposing (asCss, onClickNotPropagate, strToFloatWithMinMax, strToIntWithMinMax)
 import Result exposing (toMaybe)
 import Round
 import String exposing (padLeft)
@@ -381,9 +381,6 @@ toRadian deg = deg * pi / 180.0
 locale1digit : Locale
 locale1digit =
     Locale 1 "," "." "−" ""
-
-onClickNotPropagate : a -> Html.Attribute a
-onClickNotPropagate msg = onWithOptions "click" {defaultOptions | preventDefault = True} (succeed msg)
 
 -- the ticks data type
 
