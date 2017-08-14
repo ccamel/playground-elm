@@ -24,6 +24,10 @@
     text-align: right;
 }
 
+.equation .input-number {
+    font-family: 'Oxygen Mono', monospace;
+}
+
 .description input {
     border-top-style: none;
     border-right-style: none;

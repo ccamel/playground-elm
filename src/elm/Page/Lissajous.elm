@@ -174,9 +174,13 @@ view : Model -> Html Msg
 view model =
   div [ class "container animated flipInX" ]
       [ hr [] []
-       -- canvas for the lissajous
+       , Markdown.toHtml [class "info"] """
+##### Animated [Lissajouss figures](https://en.wikipedia.org/wiki/Lissajouss_curve) using HTML5 canvas.
+                    """
+       ,br [] []
        ,div [class "row display"]
        [
+           -- canvas for the lissajous
            div [ id "lissajous-scope col-sm-6" ]
            [
              toHtml <|
@@ -201,13 +205,9 @@ view model =
                         |> move ((constants.height // 2) - constants.margin |> toFloat, (constants.width - 12) // 2 |> toFloat)
                     ]
            ]
-           , div [class "description col-sm-5 col-sm-offset-1"]
+           , div [class "description col-sm-6"]
            [
-              Markdown.toHtml [class "info"] """
-##### Animated [Lissajouss figures](https://en.wikipedia.org/wiki/Lissajouss_curve) using HTML5 canvas.
-            """
-            , br [] []
-            , p []
+              p []
               [
                   text "You can "
                 , case model.started of
@@ -216,64 +216,6 @@ view model =
                 , text " the animation. You can also "
                 , a [class "action", href "", onClickNotPropagate (Reset initialModel) ] [ text "reset" ]
                 , text " the values to default."
-              ]
-            , let
-                deltas = [(1,2),(3,2),(3,4),(5,4)]
-                link (pa,pb) =
-                    let
-                        selected = if (pa,pb) == (model.a, model.b) then " selected" else ""
-                        clazz = "action" ++ selected
-                    in
-                        [  a [class clazz, href "", onClickNotPropagate (Reset { model | a = pa, b = pb }) ]
-                           [
-                                text (interpolate "({0},{1})" ([pa,pb] |> map toString))
-                           ]
-                          ,text "  " -- add some space, but this is not great
-                        ]
-              in
-                 p [] <|
-                   ((text "You can also try some examples of Lissajouss figures with δ = π/2:")
-                      :: concatMap link deltas)
-
-            , p []
-              [
-                  text "The animation consists in shifting the phase by "
-                , input [ class "input-number"
-                     ,name "phase-velocity"
-                     ,type_ "number"
-                     ,size 3
-                     ,value (toString model.vp)
-                     ,onInput SetPhaseVelocity] []
-                , a [href "https://en.wikipedia.org/wiki/Revolutions_per_minute" ] [text "rev/min"]
-                , text ". The resolution is "
-                , input [ class "input-number"
-                                     ,name "curve-resolution"
-                                     ,type_ "number"
-                                     ,size 4
-                                     ,value (toString model.resolution)
-                                     ,step "10"
-                                     ,onInput SetResolution] []
-                , text ", which represents the total number of points used to draw the curve (more is better)."
-              ]
-            , p[ class "form-inline" ] [
-                  text "The color for the plot is"
-                 ,div []
-                    [
-                      button [ attribute "aria-expanded" "false"
-                              ,attribute "aria-haspopup" "true"
-                              ,class "btn btn-secondary dropdown-toggle"
-                              ,attribute "data-toggle" "dropdown"
-                              ,id "dropdownForegroundColorPickerButton"
-                              ,type_ "button" ]
-                              [ span [ class "color-tag"
-                                      ,Html.Attributes.style [("background-color", asCss model.curveStyle.color)]
-                                     ] []
-                              ]
-                     ,div [ attribute "aria-labelledby" "dropdownForegroundColorPickerButton"
-                           ,class "dropdown-menu" ]
-                          [ ColorPicker.view model.curveStyle.color model.foregroundColorPicker |> Html.map ForegroundColorPickerMsg ]
-                    ]
-                 ,text " (click to change)."
               ]
             , p [] [text "The equations are:"]
             , div [class "equation"] [
@@ -307,6 +249,63 @@ view model =
                         ,text "t)"
                   ]
              ]
+            , let
+                deltas = [(1,2),(3,2),(3,4),(5,4)]
+                link (pa,pb) =
+                    let
+                        selected = if (pa,pb) == (model.a, model.b) then " selected" else ""
+                        clazz = "action" ++ selected
+                    in
+                        [  a [class clazz, href "", onClickNotPropagate (Reset { model | a = pa, b = pb }) ]
+                           [
+                                text (interpolate "({0},{1})" ([pa,pb] |> map toString))
+                           ]
+                          ,text "  " -- add some space, but this is not great
+                        ]
+              in
+                 p [] <|
+                   ((text "You can also try some examples of Lissajouss figures with δ = π/2:")
+                      :: concatMap link deltas)
+            , p[ class "form-inline" ] [
+                  text "The color for the plot is"
+                 ,div []
+                    [
+                      button [ attribute "aria-expanded" "false"
+                              ,attribute "aria-haspopup" "true"
+                              ,class "btn btn-secondary dropdown-toggle"
+                              ,attribute "data-toggle" "dropdown"
+                              ,id "dropdownForegroundColorPickerButton"
+                              ,type_ "button" ]
+                              [ span [ class "color-tag"
+                                      ,Html.Attributes.style [("background-color", asCss model.curveStyle.color)]
+                                     ] []
+                              ]
+                     ,div [ attribute "aria-labelledby" "dropdownForegroundColorPickerButton"
+                           ,class "dropdown-menu" ]
+                          [ ColorPicker.view model.curveStyle.color model.foregroundColorPicker |> Html.map ForegroundColorPickerMsg ]
+                    ]
+                 ,text " (click to change)."
+              ]
+            , p []
+              [
+                  text "The animation consists in shifting the phase by "
+                , input [ class "input-number"
+                     ,name "phase-velocity"
+                     ,type_ "number"
+                     ,size 3
+                     ,value (toString model.vp)
+                     ,onInput SetPhaseVelocity] []
+                , a [href "https://en.wikipedia.org/wiki/Revolutions_per_minute" ] [text "rev/min"]
+                , text ". The resolution is "
+                , input [ class "input-number"
+                                     ,name "curve-resolution"
+                                     ,type_ "number"
+                                     ,size 4
+                                     ,value (toString model.resolution)
+                                     ,step "10"
+                                     ,onInput SetResolution] []
+                , text ", which represents the total number of points used to draw the curve (more is better)."
+              ]
            ]
         ]
       ]
