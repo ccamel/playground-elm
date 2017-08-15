@@ -6,6 +6,9 @@ var CleanWebpackPlugin = require('clean-webpack-plugin');
 var webpack = require('webpack');
 
 module.exports = {
+    watchOptions: {
+        poll: true
+    },
     entry: {
         app: './src/resources/index.js',
         vendor: [

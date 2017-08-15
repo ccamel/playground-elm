@@ -1,0 +1,84 @@
+.maze {
+    margin: 20px;
+}
+
+.maze-row {
+    float: none;
+    display: block;
+    clear: both;
+}
+
+div.cell {
+    float: left;
+    width: 2em;
+    height: 2em;
+    border-style: inset;
+    color: black;
+    text-align: center;
+    line-height: 1.5em;
+    background-color: white;
+    overflow: hidden;
+}
+
+.cell.up {
+    border-top-style: none;
+}
+
+.cell.right {
+    border-right-style: none;
+}
+
+.cell.down {
+    border-bottom-style: none;
+}
+
+.cell.left {
+    border-left-style: none;
+}
+
+.cell.wall {
+    background-color: #151414;
+}
+
+.cell.path {
+    background-color: white;
+    -webkit-transition: background-color 1000ms linear;
+    -ms-transition: background-color 1000ms linear;
+    transition: background-color 1000ms linear;
+}
+
+.cell.exploring {
+    background-color: red;
+}
+
+.cell.backtracked {
+    background-color: lightgray;
+}
+
+.cell.enclosure-wall-up {
+    border-top-style: solid;
+}
+
+.cell.enclosure-wall-right {
+    border-right-style: solid;
+}
+
+.cell.enclosure-wall-down {
+    border-bottom-style: solid;
+}
+
+.cell.enclosure-wall-left {
+    border-left-style: solid;
+}
+
+.cell.entrance {
+    border-left: none;
+}
+
+.cell.exit {
+    border-right: none;
+}
+
+#maze .control .btn {
+    margin-left: 7px;
+}
