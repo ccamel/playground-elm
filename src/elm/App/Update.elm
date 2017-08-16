@@ -2,7 +2,7 @@ module App.Update exposing (..)
 
 import App.Pages exposing (pageHash)
 import App.Routing exposing (Route(..), parseLocation)
-import App.Messages exposing (Msg(..), Page(About, Calc, DigitalClock, Lissajous))
+import App.Messages exposing (Msg(..), Page(About, Calc, DigitalClock, Lissajous, Maze))
 import App.Models exposing (Model)
 import Maybe exposing (map, withDefault)
 import Navigation
@@ -10,6 +10,7 @@ import Page.About
 import Page.Calc
 import Page.DigitalClock
 import Page.Lissajous
+import Page.Maze
 import String exposing (cons)
 import Tuple exposing (first, second)
 
@@ -42,6 +43,9 @@ update msg model =
 
                      Page DigitalClock ->
                         ( { clearedModel | route = newRoute, digitalClockPage = Just Page.DigitalClock.initialModel  }, Cmd.map DigitalClockPageMsg Page.DigitalClock.initialCmd )
+
+                     Page Maze ->
+                        ( { clearedModel | route = newRoute, mazePage = Just Page.Maze.initialModel  }, Cmd.map MazePageMsg Page.Maze.initialCmd )
 
 
 
@@ -90,6 +94,14 @@ update msg model =
                               (Cmd.map DigitalClockPageMsg))
               |> withDefault (model, Cmd.none)
 
+        MazePageMsg m ->
+            model
+              |> .mazePage
+              |> Maybe.map (Page.Maze.update m) -- Maybe(mdl, Cmd msg)
+              |> Maybe.map ( adapt
+                              (\mdl -> {model | mazePage = Just mdl})
+                              (Cmd.map MazePageMsg))
+              |> withDefault (model, Cmd.none)
 
 adapt : (m -> Model) -> (Cmd a -> Cmd Msg) -> (m, Cmd a) -> (Model, Cmd Msg)
 adapt toModel toCmd modelCmd =

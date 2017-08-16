@@ -9,6 +9,7 @@ require('./playground.css');
 require('./calc.css');
 require('./lissajous.css');
 require('./digital-clock.css');
+require('./maze.css');
 
 var Elm = require('../elm/Main.elm');
 var mountNode = document.getElementById('main');

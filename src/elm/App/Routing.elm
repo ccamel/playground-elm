@@ -1,6 +1,6 @@
 module App.Routing exposing (..)
 
-import App.Messages exposing (Page(About, Calc, DigitalClock, Lissajous))
+import App.Messages exposing (Page(About, Calc, DigitalClock, Lissajous, Maze))
 import Navigation exposing (Location)
 import UrlParser exposing (..)
 
@@ -17,6 +17,7 @@ matchers =
         , map (Page Calc) (s "calc" )
         , map (Page Lissajous) (s "lissajous" )
         , map (Page DigitalClock) (s "digital-clock")
+        , map (Page Maze) (s "maze")
         ]
 
 
