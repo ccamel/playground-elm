@@ -3,10 +3,10 @@ module Page.Maze exposing (..)
 import Array exposing (Array, get, initialize, set, toList)
 import FormatNumber exposing (format)
 import FormatNumber.Locales exposing (Locale)
-import Html exposing (Html, a, div, h2, h3, hr, i, img, input, li, p, pre, span, text, ul)
-import Html.Attributes exposing (alt, attribute, class, classList, href, name, size, src, style, type_, value)
+import Html exposing (Html, a, button, div, h2, h3, hr, i, img, input, li, p, pre, span, text, ul)
+import Html.Attributes exposing (alt, attribute, class, classList, href, id, name, size, src, style, title, type_, value)
 import Html.Events exposing (onInput)
-import List exposing (append, range)
+import List exposing (append, map, range, repeat)
 import Markdown
 import Maybe exposing (withDefault)
 import Page.Common exposing (onClickNotPropagate, strToIntWithMinMax)
@@ -208,7 +208,7 @@ type Msg =
     Tick Time
   | StartAutoGeneration
   | StopAutoGeneration
-  | Step
+  | Steps Int -- number of steps
   | Reset
   | SetWidth String
   | SetHeight String
@@ -237,7 +237,15 @@ update msg model =
     StopAutoGeneration ->
         ({model | auto = False}, Cmd.none)
 
-    Step -> ( model, Task.perform Tick Time.now )
+    Steps n ->
+        let
+            -- produce n commands, each one sending a tick on "time.now"
+            cmd = Time.now
+                     |> repeat n
+                     |> map (Task.perform Tick)
+                     |> Cmd.batch
+        in
+            ( model, cmd )
 
     Reset -> ( initialModel, initialCmd )
 
@@ -245,7 +253,7 @@ update msg model =
         let
             maze = model.maze
         in
-            ( case (strToIntWithMinMax s 3 30) of
+            ( case (strToIntWithMinMax s 2 50) of
                 Just width -> initialModelWithMazeSize width model.maze.height
                 Nothing -> model
              ,Cmd.none)
@@ -253,7 +261,7 @@ update msg model =
         let
             maze = model.maze
         in
-            ( case (strToIntWithMinMax s 3 50) of
+            ( case (strToIntWithMinMax s 2 50) of
                 Just height -> initialModelWithMazeSize model.maze.width height
                 Nothing -> model
              ,Cmd.none)
@@ -272,20 +280,28 @@ view : Model -> Html Msg
 view model =
   div [ class "container animated flipInX" ]
       [ hr [] []
+       ,Markdown.toHtml [class "info"] """
+##### Maze generator
+
+The generation use a [recursive backtracking](https://en.wikipedia.org/wiki/Maze_generation_algorithm#Recursive_backtracker)
+algorithm.
+
+You can control the generation process with the control buttons below.
+         """
        ,controlView model
-       ,pre [] [text <| interpolate " Completed: {0} - Steps {1} / {2} - Depth {3}" [
-                            progressString model.maze
-                           ,currentSteps model.maze |> toString |> padLeft 5 ' '
-                           ,totalSteps model.maze |> toString |> padLeft 5 ' '
-                           ,(case model.maze.state of
-                                Created -> 0
-                                Ready -> 0
-                                Initializing ctx -> (List.length ctx.visitedCell)) |> toString |> padLeft 5 ' '
-                        ]]
-       ,div [class "maze"]
-           (rowsView model.maze)
-       ,div [style [("clear", "both"), ("margin-bottom", "15px")]] [] -- TODO: fix csss
+       ,mazeView model.maze
       ]
+
+mazeView : Maze -> Html Msg
+mazeView maze =
+    div [class "row maze-wrapper"]
+        [
+           div [class "mx-auto"]
+               [
+                   div [class "maze"]
+                       (rowsView maze)
+               ]
+        ]
 
 rowsView : Maze -> List (Html Msg)
 rowsView maze =
@@ -300,64 +316,101 @@ controlView model =
         state = model.maze.state
     in
         div [class "control"] [
-            p[] [
-                text <| case state of
-                    Created -> "The maze has been created but not already generated."
-                    Initializing _ -> "The maze is under construction."
-                    Ready -> "The maze has been successfully generated."
-               ]
-           ,p[] [
-                text "The size is "
-               ,input [ class "input-number"
-                    ,name "maze-w"
-                    ,type_ "number"
-                    ,size 3
-                    ,value (toString model.maze.width)
-                    ,onInput SetWidth] []
-               ,text " width and "
-               ,input [ class "input-number"
-                    ,name "maze-h"
-                    ,type_ "number"
-                    ,size 3
-                    ,value (toString model.maze.height)
-                    ,onInput SetHeight] []
-                ,text " height (note: modifying those values will reset the maze)."
-               ]
-           ,p [] [
-                a [ classList [
-                    ("btn", True)
-                   ,("btn-primary", True)
-                   ,("disabled", model.auto || (state == Ready))
-                   ]
-                   ,href ""
-                   ,onClickNotPropagate StartAutoGeneration
-                   ] [ text "start" ]
-               ,a [ classList [
-                    ("btn", True)
-                   ,("btn-primary", True)
-                   ,("disabled", not model.auto || (state == Ready))
-                   ]
-                   ,href ""
-                   ,onClickNotPropagate StopAutoGeneration
-                   ] [ text "stop" ]
-                ,a [ classList [
-                    ("btn", True)
-                   ,("btn-primary", True)
-                   ,("disabled", model.auto || (state == Ready))
-                   ]
-                   ,href ""
-                   ,onClickNotPropagate Step
-                   ] [ text "step" ]
-                ,a [ classList [
-                    ("btn", True)
-                   ,("btn-primary", True)
-                   ]
-                   ,href ""
-                   ,onClickNotPropagate Reset
-                   ] [ text "reset" ]
-            ]
+             div [ attribute "aria-label" "Maze toolbar", class "btn-toolbar", attribute "role" "toolbar" ]
+                [ div [ attribute "aria-label" "Generation controls", class "btn-group mr-4  btn-group-sm", attribute "role" "group" ]
+                    [
+                         button [ classList [("btn btn-secondary btn-danger", True)]
+                                 ,type_ "button"
+                                 ,title "reset the maze"
+                                 ,onClickNotPropagate Reset]
+                            [ i [class "fa fa-repeat"] [] ]
+                       , button [ classList [("btn btn-secondary", True), ("disabled", model.auto || (state == Ready))]
+                                 ,type_ "button"
+                                 ,title "generate the maze"
+                                 ,onClickNotPropagate StartAutoGeneration]
+                            [ i [class "fa fa-play"] [] ]
+                       , button [ classList [("btn btn-secondary", True), ("disabled", not model.auto || (state == Ready))]
+                                 ,type_ "button"
+                                 ,title "stop the generation"
+                                 ,onClickNotPropagate StopAutoGeneration]
+                            [ i [class "fa fa-pause"] [] ]
+                       , button [ classList [("btn btn-secondary", True), ("disabled", model.auto || (state == Ready))]
+                                 ,type_ "button"
+                                 ,title "make one step"
+                                 ,onClickNotPropagate (Steps 1)]
+                            [ i [class "fa fa-step-forward"] [] ]
+                        , button [ classList [("btn btn-secondary", True), ("disabled", model.auto || (state == Ready))]
+                                 ,type_ "button"
+                                 ,title "make 5 steps"
+                                 ,onClickNotPropagate (Steps 5)]
+                            [ i [class "fa fa-fast-forward"] [] ]
+                    ]
+                ,div [ attribute "aria-label" "Maze dimensions", class "btn-group mr-2", attribute "role" "group" ]
+                    [
+                        div [ class "input-group mr-2" ]
+                            [ span [ class "input-group-addon"
+                                    ,id "btnMazeWidth" ]
+                                [ text "width" ]
+                             ,input [ class "form-control input-number t4"
+                                     ,attribute "aria-describedby" "btnMazeWidth"
+                                     ,name "maze-w"
+                                     ,type_ "number"
+                                     ,value (toString model.maze.width)
+                                     ,onInput SetWidth] []
+                            ]
+                       ,div [ class "input-group" ]
+                            [ span [ class "input-group-addon"
+                                    ,id "btnMazeHeight" ]
+                                [ text "height" ]
+                             ,input [ class "form-control input-number t4"
+                                     ,attribute "aria-describedby" "btnMazeHeight"
+                                     ,name "maze-h"
+                                     ,type_ "number"
+                                     ,value (toString model.maze.height)
+                                     ,onInput SetHeight] []
+                            ]
+                    ]
+                ,div [ attribute "aria-label" "States", class "btn-group mr-2", attribute "role" "group" ]
+                    [
+                            div [ class "input-group mr-2" ]
+                                [ span [ class "input-group-addon"
+                                        ,id "btnMazeState" ]
+                                    [ text "state" ]
+                                 ,input [ class "form-control input-text t6 monotyped"
+                                         ,attribute "readonly" ""
+                                         ,attribute "aria-describedby" "btnMazeState"
+                                         ,name "maze-state"
+                                         ,type_ "text"
+                                         ,value (stateString model.maze)] []
+                                ]
+                           ,div [ class "input-group mr-2" ]
+                                [ span [ class "input-group-addon"
+                                        ,id "btnMazeProgress" ]
+                                    [ text "progress" ]
+                                 ,input [ class "form-control input-text t7 monotyped"
+                                         ,attribute "readonly" ""
+                                         ,attribute "aria-describedby" "btnMazeProgress"
+                                         ,name "maze-progress"
+                                         ,type_ "text"
+                                         ,value (progressString model.maze)] []
+                                ]
+                            ,div [ class "input-group mr-2" ]
+                                [ span [ class "input-group-addon"
+                                        ,id "btnMazeSteps" ]
+                                    [ text "steps" ]
+                                 ,input [ class "form-control input-text t8 monotyped"
+                                         ,attribute "readonly" ""
+                                         ,attribute "aria-describedby" "btnMazeSteps"
+                                         ,name "maze-steps"
+                                         ,type_ "text"
+                                         ,value <| interpolate "{0}/{1}"
+                                                               [ currentSteps model.maze |> toString |> padLeft 5 ' '
+                                                                ,totalSteps model.maze |> toString |> padLeft 5 ' ']
+                                        ] []
+                                ]
+                    ]
+                ]
         ]
-
 
 -- tells if the cell at given position is currently being explored (i.e. is a new discovered cell)
 isExploring : Int -> Int -> Maze -> Bool
@@ -372,22 +425,27 @@ isExploring x y maze =
                 _ -> False
         Ready -> False
 
--- return the explored side if any
-exploredSide : Int -> Int -> Maze -> Maybe Side
-exploredSide x y maze =
+exploredCell : Maze -> Maybe VisitedCell
+exploredCell maze =
     case maze.state of
         Created -> Nothing
         Initializing ctx ->
             case ctx.visitedCell of
-                (head::_) ->
-                    if (head.x == x) && (head.y == y) then
-                        case head.dirs of
-                            (side::_) -> Just side
-                            _ -> Nothing
-                    else
-                        Nothing
+                (head::_) -> Just head
                 _ -> Nothing
         Ready -> Nothing
+
+-- return the explored side if any
+exploredSide : Int -> Int -> Maze -> Maybe Side
+exploredSide x y maze =
+    exploredCell maze
+      |> Maybe.andThen (\cell ->
+              if (cell.x == x) && (cell.y == y) then
+                  case cell.dirs of
+                      (side::_) -> Just side
+                      _ -> Nothing
+              else
+                  Nothing)
 
 isBacktracked : Int -> Int -> Maze -> Bool
 isBacktracked x y maze =
@@ -429,6 +487,13 @@ totalSteps : Maze -> Int
 totalSteps maze =
     maze.width * maze.height * ((List.length sides) + 1 ) -- one for backtracking
 
+stateString: Maze -> String
+stateString maze =
+    case maze.state of
+        Created -> "created"
+        Initializing _ -> "running"
+        Ready -> "done"
+
 progress : Maze -> Float
 progress maze =
     let
@@ -459,8 +524,13 @@ cellView maze y  =
     range 0 (maze.width - 1)
         |> List.map (\x ->
             let
-                cell = cellAt x y maze |> Maybe.withDefault []
-                isExploredSide side = exploredSide x y maze |> Maybe.map ( (==) side ) |> Maybe.withDefault False
+                cell = cellAt x y maze |> withDefault []
+                cside = exploredSide x y maze
+                isExploredSide side = cside == Just side
+                isNoSideToExplore =
+                    exploredCell maze
+                        |> Maybe.map (\explCell -> (explCell.x == x) && (explCell.y == y) && (explCell.dirs |> List.isEmpty))
+                        |> withDefault False
             in
                 div [ attribute "x" (toString x)
                      ,classList [
@@ -477,10 +547,11 @@ cellView maze y  =
                         ,("enclosure-wall-right", isEnclosureWall x y Right maze)
                         ,("enclosure-wall-down", isEnclosureWall x y Down maze)
                         ,("enclosure-wall-left", isEnclosureWall x y Left maze)
-                        ,("fa fa-arrow-up", isExploredSide Up )
-                        ,("fa fa-arrow-right", isExploredSide Right )
-                        ,("fa fa-arrow-left", isExploredSide Left )
-                        ,("fa fa-arrow-down", isExploredSide Down)
+                        ,("fa fa-caret-up", isExploredSide Up )
+                        ,("fa fa-caret-right", isExploredSide Right )
+                        ,("fa fa-caret-left", isExploredSide Left )
+                        ,("fa fa-caret-down", isExploredSide Down)
+                        ,("fa fa-crosshairs", isNoSideToExplore)
                         ,("entrance", isEntrance x y maze)
                         ,("exit", isExit x y maze)
                        ]

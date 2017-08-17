@@ -1,5 +1,9 @@
+.maze-wrapper {
+    padding-top: 20px;
+    padding-bottom: 20px
+}
+
 .maze {
-    margin: 20px;
 }
 
 .maze-row {
@@ -10,12 +14,15 @@
 
 div.cell {
     float: left;
-    width: 2em;
-    height: 2em;
-    border-style: inset;
+    width: 1.1em;
+    height: 1.1em;
+    border-style: solid;
+    border-width: 1px;
+    margin: 0px;
+    padding: 1px;
     color: black;
     text-align: center;
-    line-height: 1.5em;
+    line-height: 0.8em;
     background-color: white;
     overflow: hidden;
 }
@@ -56,19 +63,19 @@ div.cell {
 }
 
 .cell.enclosure-wall-up {
-    border-top-style: solid;
+    border-top-width: 2px;
 }
 
 .cell.enclosure-wall-right {
-    border-right-style: solid;
+    border-right-width: 2px;
 }
 
 .cell.enclosure-wall-down {
-    border-bottom-style: solid;
+    border-bottom-width: 2px;
 }
 
 .cell.enclosure-wall-left {
-    border-left-style: solid;
+    border-left-width: 2px;
 }
 
 .cell.entrance {
@@ -79,6 +86,49 @@ div.cell {
     border-right: none;
 }
 
+#maze .control {
+    padding-top: 2em;
+}
+
 #maze .control .btn {
     margin-left: 7px;
+}
+
+#maze .control .input-number {
+
+}
+
+#maze .monotyped {
+    font-family: 'Oxygen Mono', monospace;
+}
+
+#maze .control .input-text {
+    text-align: right;
+}
+
+#maze .t4 {
+    width: 4em;
+}
+
+#maze .t6 {
+    width: 6em;
+}
+
+#maze .t7 {
+    width: 7em;
+}
+
+#maze .t8 {
+    width: 8.5em;
+}
+
+
+#maze .t9 {
+    width: 9em;
+}
+
+
+
+#maze .form-control[readonly] {
+    background-color: #f9f9f9;
 }
