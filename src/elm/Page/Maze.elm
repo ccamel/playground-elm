@@ -7,6 +7,7 @@ import Html exposing (Html, a, button, div, h2, h3, hr, i, img, input, li, p, pr
 import Html.Attributes exposing (alt, attribute, class, classList, href, id, name, size, src, style, title, type_, value)
 import Html.Events exposing (onInput)
 import List exposing (append, map, range, repeat)
+import List.Extra exposing (last, splitAt)
 import Markdown
 import Maybe exposing (withDefault)
 import Page.Common exposing (onClickNotPropagate, strToIntWithMinMax)
@@ -77,6 +78,7 @@ type alias Maze = {
 type alias Model = {
          maze : Maze
         ,auto : Bool
+        ,memento: List Maze
     }
 
 initialModel : Model
@@ -84,7 +86,9 @@ initialModel = initialModelWithMazeSize 15 15
 
 initialModelWithMazeSize : Int -> Int -> Model
 initialModelWithMazeSize w h =
-    { maze = emptyMaze w h, auto = False }
+    { maze = emptyMaze w h
+     ,auto = False
+     ,memento = []}
 
 initialCmd : Cmd Msg
 initialCmd = Cmd.none
@@ -208,7 +212,7 @@ type Msg =
     Tick Time
   | StartAutoGeneration
   | StopAutoGeneration
-  | Steps Int -- number of steps
+  | Steps Int -- number of steps (relative)
   | Reset
   | SetWidth String
   | SetHeight String
@@ -220,17 +224,19 @@ update msg model =
     Tick time ->
         let
             maze = model.maze
+            newModel = case maze.state of
+                  Created ->
+                      -- going to initializing state
+                      { model | maze = { maze | state = Initializing <| initialInitializingContext time } }
+                  Initializing  ctx ->
+                      { model | maze = stepMaze model.maze }
+                  Ready ->
+                      {model | auto = False}
         in
-            case maze.state of
-                Created ->
-                    -- going to initializing state
-                    ({ model | maze = { maze | state = Initializing <| initialInitializingContext time }
-                     }, Cmd.none)
-                Initializing  ctx ->
-                    ({ model | maze = stepMaze model.maze }
-                    , Cmd.none)
-                Ready ->
-                    ( {model | auto = False}, Cmd.none)
+            if newModel.maze /= model.maze
+            then ({ newModel | memento = maze :: newModel.memento }, Cmd.none)
+            else (newModel, Cmd.none)
+
     StartAutoGeneration ->
         ({model | auto = True}, Cmd.none)
 
@@ -238,14 +244,23 @@ update msg model =
         ({model | auto = False}, Cmd.none)
 
     Steps n ->
-        let
-            -- produce n commands, each one sending a tick on "time.now"
-            cmd = Time.now
-                     |> repeat n
-                     |> map (Task.perform Tick)
-                     |> Cmd.batch
-        in
-            ( model, cmd )
+        if n > 0
+        then
+            let
+                -- produce n commands, each one sending a tick on "time.now"
+                cmd = Time.now
+                         |> repeat n
+                         |> map (Task.perform Tick)
+                         |> Cmd.batch
+            in
+                ( model, cmd )
+        else
+            -- restore state from memento
+            let
+                (first, second) =  splitAt (-1 * n) model.memento
+            in
+                ( { model | maze = (last first) |> withDefault initialModel.maze
+                           ,memento = second}, Cmd.none )
 
     Reset -> ( initialModel, initialCmd )
 
@@ -324,6 +339,16 @@ controlView model =
                                  ,title "reset the maze"
                                  ,onClickNotPropagate Reset]
                             [ i [class "fa fa-repeat"] [] ]
+                       , button [ classList [("btn btn-secondary", True), ("disabled", List.isEmpty model.memento)]
+                                 ,type_ "button"
+                                 ,title "make 5 steps backward"
+                                 ,onClickNotPropagate (Steps -5)]
+                            [ i [class "fa fa-fast-backward"] [] ]
+                       , button [ classList [("btn btn-secondary", True), ("disabled", List.isEmpty model.memento)]
+                                 ,type_ "button"
+                                 ,title "make one step backward"
+                                 ,onClickNotPropagate (Steps -1)]
+                            [ i [class "fa fa-step-backward"] [] ]
                        , button [ classList [("btn btn-secondary", True), ("disabled", model.auto || (state == Ready))]
                                  ,type_ "button"
                                  ,title "generate the maze"
@@ -339,7 +364,7 @@ controlView model =
                                  ,title "make one step"
                                  ,onClickNotPropagate (Steps 1)]
                             [ i [class "fa fa-step-forward"] [] ]
-                        , button [ classList [("btn btn-secondary", True), ("disabled", model.auto || (state == Ready))]
+                       , button [ classList [("btn btn-secondary", True), ("disabled", model.auto || (state == Ready))]
                                  ,type_ "button"
                                  ,title "make 5 steps"
                                  ,onClickNotPropagate (Steps 5)]
