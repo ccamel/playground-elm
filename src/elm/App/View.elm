@@ -2,7 +2,7 @@ module App.View exposing (..)
 
 import App.Pages exposing (emptyNode, pageDescription, pageHash, pageName, pageSrc, pageView, pages)
 import Html exposing (Html, a, button, div, footer, h1, h2, h3, hr, i, img, li, nav, p, section, span, text, ul)
-import Html.Attributes exposing (alt, attribute, class, classList, href, id, src, style, target, type_)
+import Html.Attributes exposing (alt, attribute, class, classList, href, id, src, style, target, title, type_)
 import Html.Events exposing (onClick)
 import App.Messages exposing (Msg(..), Page(About))
 import App.Models exposing (Model)
@@ -80,12 +80,20 @@ view model =
                                   ]
                                 , i [ class "fa fa-quote-right text-muted", style [("padding-left", "1em")] ] []
                             ]
-                        , p [ class "lead text-muted" ]
+                          ,div [style [("float", "right")]] [
+                                 a [ attribute "aria-controls" "collapseExample"
+                                    ,attribute "aria-expanded" "true"
+                                    ,attribute "data-toggle" "collapse"
+                                    ,title "toggle the summary"
+                                    ,href "#summary" ]
+                                   [ i [ class "fa fa-bars" ] [] ]
+                               ]
+                          ,p [ class "lead text-muted collapse.show collapse show", id "summary" ]
                             [
-                              p []
+                             p []
                                 [ text "My playground I use for playing with fancy and exciting technologies." ]
-                             ,p [] [text "§"]
-                             ,p []
+                            ,p [] [text "§"]
+                            ,p []
                                 [   text "This one's for "
                                   , a [ href "http://elm-lang.org/" ] [ text "elm" ]
                                   , text " and "
