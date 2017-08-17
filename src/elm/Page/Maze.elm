@@ -82,7 +82,7 @@ type alias Model = {
     }
 
 initialModel : Model
-initialModel = initialModelWithMazeSize 15 15
+initialModel = initialModelWithMazeSize 20 15
 
 initialModelWithMazeSize : Int -> Int -> Model
 initialModelWithMazeSize w h =
@@ -268,7 +268,7 @@ update msg model =
         let
             maze = model.maze
         in
-            ( case (strToIntWithMinMax s 2 50) of
+            ( case (strToIntWithMinMax s 1 50) of
                 Just width -> initialModelWithMazeSize width model.maze.height
                 Nothing -> model
              ,Cmd.none)
@@ -276,7 +276,7 @@ update msg model =
         let
             maze = model.maze
         in
-            ( case (strToIntWithMinMax s 2 50) of
+            ( case (strToIntWithMinMax s 1 50) of
                 Just height -> initialModelWithMazeSize model.maze.width height
                 Nothing -> model
              ,Cmd.none)
