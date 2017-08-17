@@ -454,13 +454,25 @@ controlView model =
                                 [ span [ class "input-group-addon monotyped"
                                         ,id "btnMazeProgress" ]
                                     [ text "progress" ]
-                                 ,input [ class "form-control input-text t8 monotyped"
-                                         ,attribute "readonly" ""
-                                         ,attribute "aria-describedby" "btnMazeProgress"
-                                         ,name "maze-progress"
-                                         ,type_ "text"
-                                         ,value (progressString model.maze)] []
-                                ]
+                                 ,let
+                                    pString = progressString model.maze
+                                    pText = pString  ++ "%"
+                                  in
+                                    div [class "progress form-control", style [("width", "150px")]] [
+                                        div [ attribute "aria-valuemax" "100"
+                                             ,attribute "aria-valuemin" "0"
+                                             ,attribute "aria-valuenow" pString
+                                             ,class "progress-bar progress-bar-striped bg-info"
+                                             ,classList [("progress-bar-animated", model.maze.state /= Ready)]
+                                             ,attribute "role" "progressbar"
+                                             ,attribute "style" (interpolate "width: {0};" [pText]) ]
+                                            [
+                                                div [class "progression"]
+                                                    [text (pText |> padLeft 6 ' ')]
+                                            ]
+                                    ]
+
+                               ]
                             ,div [ class "input-group mr-2" ]
                                 [ span [ class "input-group-addon monotyped"
                                         ,id "btnMazeSteps" ]
@@ -475,7 +487,7 @@ controlView model =
                                                                 ,totalSteps model.maze |> toString |> padLeft 5 ' ']
                                         ] []
                                 ]
-                    ]
+                          ]
                 ]
             ]
         ]
@@ -574,11 +586,9 @@ progress maze =
 
 progressString : Maze -> String
 progressString maze =
-       (maze
+       maze
         |> progress
         |> format locale2digits
-        |> padLeft 6 ' ')
-       ++ " %"
 
 currentSteps : Maze -> Int
 currentSteps maze =

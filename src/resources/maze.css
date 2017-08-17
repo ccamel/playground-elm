@@ -135,3 +135,18 @@ div.cell {
 #maze .form-control[readonly] {
     background-color: #f9f9f9;
 }
+
+#maze .form-control.progress {
+    padding: 1px;
+}
+
+#maze .progress-bar {
+    color: black;
+    border-bottom-right-radius: .25rem;
+    border-top-right-radius: .25rem;
+}
+
+#maze .progress-bar .progression {
+    margin-left: 5px;
+    margin-right: 5px;
+}
