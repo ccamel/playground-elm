@@ -262,7 +262,7 @@ update msg model =
                 ( { model | maze = (last first) |> withDefault initialModel.maze
                            ,memento = second}, Cmd.none )
 
-    Reset -> ( initialModel, initialCmd )
+    Reset -> ( initialModelWithMazeSize model.maze.width model.maze.height, initialCmd )
 
     SetWidth s ->
         let
