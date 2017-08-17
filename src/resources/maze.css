@@ -87,7 +87,7 @@ div.cell {
 }
 
 #maze .control {
-    padding-top: 2em;
+    padding-top: 1em;
 }
 
 #maze .control .btn {
@@ -100,10 +100,16 @@ div.cell {
 
 #maze .monotyped {
     font-family: 'Oxygen Mono', monospace;
+    font-size: 12px;
 }
 
 #maze .control .input-text {
     text-align: right;
+}
+
+#maze .btn-group.states {
+    height: 1.3em;
+    margin-top: 1em;
 }
 
 #maze .t4 {
@@ -122,12 +128,9 @@ div.cell {
     width: 8.5em;
 }
 
-
 #maze .t9 {
     width: 9em;
 }
-
-
 
 #maze .form-control[readonly] {
     background-color: #f9f9f9;
