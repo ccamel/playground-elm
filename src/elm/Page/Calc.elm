@@ -3,6 +3,7 @@ module Page.Calc exposing (..)
 import Html exposing (Html, a, div, h2, h3, hr, i, img, input, li, p, text, ul)
 import Html.Attributes exposing (alt, attribute, class, href, src, style, type_, value)
 import Html.Events exposing (onClick)
+import Keyboard
 import List exposing (drop, foldl, foldr, take)
 import Markdown
 import Maybe exposing (andThen, withDefault)
@@ -71,14 +72,45 @@ type Token =
 
 type Msg =
     Emitted Token
+  | KeyMsg Keyboard.KeyCode
 
 -- UPDATE
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
-        Emitted token -> (apply token model, Cmd.none)
+        Emitted token ->
+            (apply token model, Cmd.none)
+        KeyMsg code ->
+            let
+                dummy = Debug.log "--> " code
+                token = case code of
+                    48 -> Just (Digit 0)
+                    49 -> Just (Digit 1)
+                    50 -> Just (Digit 2)
+                    51 -> Just (Digit 3)
+                    52 -> Just (Digit 4)
+                    53 -> Just (Digit 5)
+                    54 -> Just (Digit 6)
+                    55 -> Just (Digit 7)
+                    56 -> Just (Digit 8)
+                    57 -> Just (Digit 9)
+                    43 -> Just (Operator Plus)
+                    45 -> Just (Operator Minus)
+                    47 -> Just (Operator Divide)
+                    42 -> Just (Operator Multiply)
+                    120 -> Just (Operator Multiply)
+                    13 -> Just (Operator Result)
+                    61 -> Just (Operator Result)
+                    46 -> Just Dot
+                    99 -> Just Clear
+                    _ -> Nothing
 
+                newModel = token
+                             |> Maybe.map (flip apply model)
+                             |> Maybe.withDefault model
+            in
+                (newModel, Cmd.none)
 
 -- apply the given token to the model, computing a new state
 apply : Token -> Model -> Model
@@ -257,7 +289,7 @@ result model =
 -- SUBSCRIPTIONS
 
 subscriptions : Model -> Sub Msg
-subscriptions model = Sub.none
+subscriptions model = Keyboard.presses KeyMsg
 
 -- VIEW
 
