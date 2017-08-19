@@ -10,7 +10,6 @@ import FormatNumber.Locales exposing (Locale, usLocale)
 import Html exposing (Html, a, br, button, code, div, form, h2, h3, hr, i, img, input, label, li, p, span, text, u, ul)
 import Html.Attributes exposing (alt, attribute, class, href, id, max, min, name, size, src, step, style, type_, value)
 import Html.Events exposing (defaultOptions, onClick, onInput, onWithOptions)
-import Json.Decode exposing (succeed)
 import List exposing (append, concatMap, drop, length, map, range, sum)
 import Markdown
 import Maybe exposing (andThen, withDefault)
