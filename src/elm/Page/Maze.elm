@@ -4,8 +4,10 @@ import Array exposing (Array, get, initialize, set, toList)
 import FormatNumber exposing (format)
 import FormatNumber.Locales exposing (Locale)
 import Html exposing (Html, a, button, div, h2, h3, hr, i, img, input, li, p, pre, span, text, ul)
-import Html.Attributes exposing (alt, attribute, class, classList, href, id, name, size, src, style, title, type_, value)
+import Html.Attributes exposing (alt, attribute, class, classList, download, downloadAs, href, id, name, size, src, style, title, type_, value)
 import Html.Events exposing (onInput)
+import Http exposing (encodeUri)
+import Json.Encode exposing (Value, array, encode, int, list, object, string)
 import List exposing (append, map, range, repeat)
 import List.Extra exposing (last, splitAt)
 import Markdown
@@ -387,6 +389,21 @@ controlView model =
                                          ,onClickNotPropagate (Steps 5)]
                                     [ i [class "fa fa-fast-forward"] [] ]
                             ]
+                        ,div [ attribute "aria-label" "Import/Export controls", class "btn-group mr-4", attribute "role" "group" ]
+                            [
+                                   a [ classList [("btn btn-secondary", True)]
+                                         ,attribute "role" "button"
+                                         ,title "Export the maze state to JSON"
+                                         ,href (model
+                                                  |> .maze
+                                                  |> asJsonValue
+                                                  |> encode 4
+                                                  |> encodeUri
+                                                  |> (++) "data:text/csv;charset=utf-8,")
+                                         ,download True
+                                         ,downloadAs "maze.json"]
+                                    [ i [class "fa fa-download"] [] ]
+                            ]
                         ,div [ attribute "aria-label" "Maze dimensions", class "btn-group mr-2", attribute "role" "group" ]
                             [
                                 div [ class "input-group mr-2" ]
@@ -635,6 +652,36 @@ cellView maze y  =
                        ]
                     ]
                     [])
+
+
+asJsonValue : Maze -> Value
+asJsonValue maze =
+    let
+        cellsToValue x y acc =
+            if x >= maze.width
+            then cellsToValue 0 (y + 1) acc
+            else if y >= maze.height
+            then acc
+            else
+                 -- dense representation of the cells
+                 (object [
+                     ("x", int x)
+                    ,("y", int y)
+                    ,("sides", maze
+                                |> cellAt x y
+                                |> withDefault []
+                                |> map (nameSide >> string)
+                                |> list)
+                 ])
+                 ::
+                 (cellsToValue (x + 1) y acc)
+    in
+        object [
+            ("width", int maze.width)
+           ,("height", int maze.height)
+           ,("cells", list <| cellsToValue 0 0 [])
+           ,("state", string <| stateString maze)
+    ]
 
 locale2digits : Locale
 locale2digits =
