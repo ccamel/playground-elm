@@ -1,8 +1,16 @@
 {
   "name": "playground-elm",
   "version": "0.0.1",
-  "description": "",
+  "description": "My playground I use for playing with fancy and exciting technologies. This one's for elm.",
+  "author": "Chris Camel",
   "main": "index.js",
+  "homepage": "https://github.com/ccamel",
+  "private": true,
+  "repository": "https://github.com/ccamel/playground-elm",
+  "engines": {
+    "node": ">=7.10.0",
+    "npm": ">=4.2.0"
+  },
   "scripts": {
     "build": "webpack",
     "watch": "webpack --watch",
