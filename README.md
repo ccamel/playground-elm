@@ -1,6 +1,6 @@
 playground-elm
 ==============
-[![MIT](https://img.shields.io/badge/licence-MIT-lightgrey.svg?style=flat)](https://tldrlegal.com/license/mit-license) [![build-status](https://travis-ci.org/ccamel/playground-elm.svg?branch=master)](https://travis-ci.org/ccamel/playground-elm) [![ELM](https://img.shields.io/badge/elm-0.18.0-blue.svg?style=flat)](http://elm-lang.org/) [![Boostrap](https://img.shields.io/badge/bootstrap-4.0.0--alpha.6-orange.svg?style=flat)](https://v4-alpha.getbootstrap.com/)
+[![MIT](https://img.shields.io/badge/licence-MIT-lightgrey.svg?style=flat)](https://tldrlegal.com/license/mit-license) [![build-status](https://travis-ci.org/ccamel/playground-elm.svg?branch=master)](https://travis-ci.org/ccamel/playground-elm) [![ELM](https://img.shields.io/badge/elm-0.18.0-blue.svg?style=flat)](http://elm-lang.org/) [![Boostrap](https://img.shields.io/badge/bootstrap-4.0.0--beta-orange.svg?style=flat)](https://getbootstrap.com/)
 
 > My playground I use for playing with fancy and exciting technologies. This one's for [elm].
 

@@ -139,7 +139,7 @@ view model =
                 [
                   button [ attribute "aria-expanded" "false"
                           ,attribute "aria-haspopup" "true"
-                          ,class "btn btn-secondary dropdown-toggle"
+                          ,class "btn btn-light dropdown-toggle"
                           ,attribute "data-toggle" "dropdown"
                           ,id "dropdownColorPickerButton"
                           ,type_ "button" ]

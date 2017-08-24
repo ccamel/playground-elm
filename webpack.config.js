@@ -34,7 +34,8 @@ module.exports = {
             jQuery: 'jquery',
             'window.jQuery': 'jquery',
             'Tether': 'tether',
-           Popper: ['popper.js', 'default']
+            'window.Tether': 'tether',
+            Popper: ['popper.js', 'default']
         }),
         new HtmlWebpackPlugin({
             filename: 'index.html',

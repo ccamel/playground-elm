@@ -353,7 +353,7 @@ controlView model =
                      div [ attribute "aria-label" "Maze toolbar", class "btn-toolbar", attribute "role" "toolbar" ]
                         [ div [ attribute "aria-label" "Generation controls", class "btn-group mr-4  btn-group-sm", attribute "role" "group" ]
                             [
-                                 button [ classList [("btn btn-secondary btn-danger", True)]
+                                 button [ classList [("btn btn-danger", True)]
                                          ,type_ "button"
                                          ,title "reset the maze"
                                          ,onClickNotPropagate Reset]
@@ -391,7 +391,7 @@ controlView model =
                             ]
                         ,div [ attribute "aria-label" "Import/Export controls", class "btn-group mr-4", attribute "role" "group" ]
                             [
-                                   a [ classList [("btn btn-secondary", True)]
+                                   a [ classList [("btn btn-info", True)]
                                          ,attribute "role" "button"
                                          ,title "Export the maze state to JSON"
                                          ,href (model
@@ -431,7 +431,7 @@ controlView model =
                                ,div [ class "dropdown" ]
                                     [ button [ attribute "aria-expanded" "false"
                                               ,attribute "aria-haspopup" "true"
-                                              ,class "btn btn-secondary dropdown-toggle"
+                                              ,class "btn btn-info dropdown-toggle"
                                               ,attribute "data-toggle" "dropdown"
                                               ,id "dropdownMazeDimensions", type_ "button" ]
                                         [ text "Samples" ]
