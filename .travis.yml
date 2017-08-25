@@ -41,7 +41,6 @@ install:
   - npm --version
   - npm install -g elm@$ELM_VERSION
   - npm install
-  - elm package install --yes
 
 script:
   - sysconfcpus -n 2 npm run build
