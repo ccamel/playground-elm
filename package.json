@@ -1,12 +1,29 @@
 {
   "name": "playground-elm",
   "version": "0.0.1",
+  "author": "Chris Camel <camel.christophe@gmail.com> (https://ccamel.github.io)",
   "description": "My playground I use for playing with fancy and exciting technologies. This one's for elm.",
-  "author": "Chris Camel",
-  "main": "index.js",
   "homepage": "https://github.com/ccamel",
+  "license": "MIT",
+  "keywords": [
+    "playground",
+    "elm",
+    "web-application",
+    "spa",
+    "bootstrap",
+    "webpack3",
+    "demo-site"
+  ],
   "private": true,
-  "repository": "https://github.com/ccamel/playground-elm",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ccamel/playground-elm"
+  },
+  "bugs": {
+    "url": "https://github.com/ccamel/playground-elm/issues",
+    "email": "camel.christophe@gmail.com"
+  },
+  "main": "index.js",
   "engines": {
     "node": ">=7.10.0",
     "npm": ">=4.2.0"
