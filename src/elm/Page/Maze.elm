@@ -658,28 +658,27 @@ asJsonValue : Maze -> Value
 asJsonValue maze =
     let
         cellsToValue x y acc =
-            if x >= maze.width
-            then cellsToValue 0 (y + 1) acc
-            else if y >= maze.height
+            if x < 0
+            then cellsToValue (maze.width - 1) (y - 1) acc
+            else if y < 0
             then acc
             else
-                 -- dense representation of the cells
-                 (object [
-                     ("x", int x)
-                    ,("y", int y)
-                    ,("sides", maze
-                                |> cellAt x y
-                                |> withDefault []
-                                |> map (nameSide >> string)
-                                |> list)
-                 ])
-                 ::
-                 (cellsToValue (x + 1) y acc)
+                -- dense representation of the cells
+                cellsToValue (x - 1) y
+                     ((object [
+                         ("x", int x)
+                        ,("y", int y)
+                        ,("sides", maze
+                                    |> cellAt x y
+                                    |> withDefault []
+                                    |> map (nameSide >> string)
+                                    |> list)
+                     ]) :: acc)
     in
         object [
             ("width", int maze.width)
            ,("height", int maze.height)
-           ,("cells", list <| cellsToValue 0 0 [])
+           ,("cells", list <| cellsToValue (maze.width - 1) (maze.height - 1) [])
            ,("state", string <| stateString maze)
     ]
 
