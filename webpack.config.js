@@ -4,6 +4,7 @@ var path = require('path');
 var HtmlWebpackPlugin = require('html-webpack-plugin');
 var CleanWebpackPlugin = require('clean-webpack-plugin');
 var webpack = require('webpack');
+var ZipPlugin = require('zip-webpack-plugin');
 
 module.exports = {
     watchOptions: {
@@ -29,6 +30,12 @@ module.exports = {
               warnings: false
             }
         }),
+        new ZipPlugin({
+            path: '..',
+            filename: 'playground-elm-site.zip',
+            extension: 'zip',
+            pathPrefix: './'
+        }),
         new webpack.ProvidePlugin({
             $: 'jquery',
             jQuery: 'jquery',
@@ -50,7 +57,7 @@ module.exports = {
     ],
 
     output: {
-        path: path.resolve(__dirname + '/dist'),
+        path: path.resolve(__dirname + '/dist/site'),
         filename: '[name]-[chunkhash].js'
     },
 

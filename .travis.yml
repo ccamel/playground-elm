@@ -1,53 +1,54 @@
 language: node_js
-
 node_js:
-  - "node"
-
+- node
 os:
-  - linux
-
+- linux
 sudo: false
-
 cache:
   directories:
-    - tests/elm-stuff/build-artifacts
-    - node_modules
-    - $HOME/.cpus
-
+  - tests/elm-stuff/build-artifacts
+  - node_modules
+  - "$HOME/.cpus"
 branches:
   except:
-    - gh-pages
-
+  - gh-pages
 env:
   matrix:
-    - ELM_VERSION=0.18.0 TARGET_NODE_VERSION=node
-
+  - ELM_VERSION=0.18.0 TARGET_NODE_VERSION=node
 before_install:
-  - | # epic build time improvement - see https://github.com/elm-lang/elm-compiler/issues/1473#issuecomment-245704142
-    export PATH=$HOME/.cpus/bin:$PATH;
-    if ! hash sysconfcpus 2>/dev/null; then
-      git clone --depth=1 https://github.com/obmarg/libsysconfcpus.git "$HOME/libsysconfcpus";
-      cd "$HOME/libsysconfcpus";
-      ./configure --prefix="$HOME/.cpus";
-      make -j2 install;
-    fi
-  - cd "$TRAVIS_BUILD_DIR"
-  - export PATH=./node_modules/.bin:$PATH
-
+- |
+  export PATH=$HOME/.cpus/bin:$PATH;
+  if ! hash sysconfcpus 2>/dev/null; then
+    git clone --depth=1 https://github.com/obmarg/libsysconfcpus.git "$HOME/libsysconfcpus";
+    cd "$HOME/libsysconfcpus";
+    ./configure --prefix="$HOME/.cpus";
+    make -j2 install;
+  fi
+- cd "$TRAVIS_BUILD_DIR"
+- export PATH=./node_modules/.bin:$PATH
 install:
-  - nvm install $TARGET_NODE_VERSION
-  - nvm use $TARGET_NODE_VERSION
-  - node --version
-  - npm --version
-  - npm install -g elm@$ELM_VERSION
-  - npm install
-
+- nvm install $TARGET_NODE_VERSION
+- nvm use $TARGET_NODE_VERSION
+- node --version
+- npm --version
+- npm install -g elm@$ELM_VERSION
+- npm install
 script:
-  - sysconfcpus -n 2 npm run build
-
+- sysconfcpus -n 2 npm run build
 deploy:
-  provider: script
+- provider: script
+  # deploy the generated site to gh-pages
   skip_cleanup: true
   script: ./scripts/deploy-to-gh-pages.sh
   on:
+    tags: true
     branch: master
+- provider: releases
+  # make a release (and upload it to github)
+  skip_cleanup: true
+  api_key:
+    secure: S91cRimb8VIXDSr9pZTnR9j8LgucY8vFW0RDfN1ZpTjvyWXadjIYJCA1QZ+vxDCXBEBqgE3XEtdMge8ZD56GcVQuC0vwBWYGRbyFyjzVUflZfTIiCKiuggMvRXokFRTOge30T4pLDsGgq0Sp4TbXx+A9rgMmXcplP8Z39iQVMp6RFxL1KINeurDXKQ3uUC+ktAubBeSmL6xoHZ5ncbudFwSaLeLPsfsMAYI0/KwyNk38JgKgGuDPeFr8VYezMmBhE4ZF2Ym0Bt4mluVuP0bamiw2IXkrhsGdyh6fR56Z3DO2qVdiqeBF66vGrYaoWzKs0JCqZBR1cwTL7aZLTv2U6ls6C0jLGSLBX4C+E3cudBSyk2ICIL99NjWuTtMI8PT6+r0OysVw34lzTFWt9a2PLQc8TfJVrqBa7lCRwVXy3LT3HyJerbdsSUMH+7/zimObfloaIa0KuTIJ/0872cqTVKAyYkNk+GjFUF8nP8qBxCOCy3pK7M88zROB0mE3Ts7OuEhCmxGwqFqYn9oP8a1LT+/6wsZYG3pvy/gxJbOLKTl3zKGYyE0ViJ6ITWWIAYQyhXrxynSHnzLfc6n4fO5CinasRpmDdq106SCsLvsRljFqZUuIhzuFsqOWb/CKOnZinqRo8MKUWPmImoD/Y7i0f6m6SFVryWhqTN+6DjPoSi0=
+  file: ./dist/playground-elm-site.zip
+  on:
+    tags: true
+    repo: ccamel/playground-elm

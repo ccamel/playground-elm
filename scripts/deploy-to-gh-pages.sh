@@ -20,8 +20,8 @@ git config push.default simple
 echo "clear old site"
 rm -f *.*
 
-echo "copy dist"
-cp -R ../dist/* .
+echo "copy dist/site"
+cp -R ../dist/site/* .
 
 # deploy
 echo "deploy"
