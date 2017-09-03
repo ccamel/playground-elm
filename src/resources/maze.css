@@ -105,6 +105,7 @@ div.cell {
 
 #maze .control .input-text {
     text-align: right;
+    padding: 0rem 0.75rem;
 }
 
 #maze .btn-group.states {
