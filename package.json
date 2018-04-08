@@ -30,8 +30,7 @@
   },
   "scripts": {
     "build": "webpack",
-    "watch": "webpack --watch",
-    "dev": "webpack-dev-server --port 3000"
+    "serve": "webpack-dev-server --port 3000"
   },
   "dependencies": {
     "animate.css": "^3.5.2",

@@ -19,13 +19,13 @@ As the project is generated from [elm-app](https://github.com/tom76kimo/generato
 At first, all the node packages this project depends on must be installed locally. This can be done with the following command:
 
 ```bash
-npm install
+yarn
 ```
 
 The build can be launched with:
 
 ```bash
-npm run build
+yarn build
 ```
 
 Then, open `./dist/index.html` file in your browser.
@@ -35,7 +35,7 @@ If you prefer, the site can be published by a local HTTP server. In this mode, i
 The publication is launched with the following command:
 
 ```bash
-npm run dev
+yarn serve
 ```
 
 The site is accessible through the `http://localhost:3000/` endpoint.
