@@ -1,6 +1,6 @@
 playground-elm
 ==============
-[![MIT](https://img.shields.io/badge/licence-MIT-lightgrey.svg?style=flat)](https://tldrlegal.com/license/mit-license) [![build-status](https://travis-ci.org/ccamel/playground-elm.svg?branch=master)](https://travis-ci.org/ccamel/playground-elm) [![ELM](https://img.shields.io/badge/elm-0.18.0-blue.svg?style=flat)](http://elm-lang.org/) [![Boostrap](https://img.shields.io/badge/bootstrap-4.0.0--beta-orange.svg?style=flat)](https://getbootstrap.com/) [![Demo](https://img.shields.io/badge/play-demo!-b30059.svg?style=flat)](https://ccamel.github.io/playground-elm/index.html)
+[![release](https://img.shields.io/github/release/ccamel/playground-elm.svg?style=flat)](https://github.com/ccamel/playground-elm/releases) [![MIT](https://img.shields.io/badge/licence-MIT-lightgrey.svg?style=flat)](https://tldrlegal.com/license/mit-license) [![build-status](https://travis-ci.org/ccamel/playground-elm.svg?branch=master)](https://travis-ci.org/ccamel/playground-elm) [![ELM](https://img.shields.io/badge/elm-0.18.0-blue.svg?style=flat)](http://elm-lang.org/) [![Boostrap](https://img.shields.io/badge/bootstrap-4.0.0--beta-orange.svg?style=flat)](https://getbootstrap.com/) [![Demo](https://img.shields.io/badge/play-demo!-b30059.svg?style=flat)](https://ccamel.github.io/playground-elm/index.html)
 
 > My playground I use for playing with fancy and exciting technologies. This one's for [elm].
 
