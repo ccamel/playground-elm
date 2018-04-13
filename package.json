@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "animate.css": "^3.5.2",
-    "bootstrap": "^4.0.0-beta",
+    "bootstrap": "^4.0.1",
     "clean-webpack-plugin": "^0.1.16",
     "css-loader": "^0.28.5",
     "elm-webpack-loader": "^4.2.0",
