@@ -42,7 +42,8 @@ The site is accessible through the `http://localhost:3000/` endpoint.
 
 ## Technologies
 
-[![elm-logo][elm-logo]][elm] ELM language
+[![elm-logo][elm-logo]][elm] [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fccamel%2Fplayground-elm.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fccamel%2Fplayground-elm?ref=badge_shield)
+ELM language
 
 ## License
 
@@ -58,3 +59,6 @@ The site is accessible through the `http://localhost:3000/` endpoint.
 
 [Chris Camel]: https://github.com/ccamel
 [MIT]: https://tldrlegal.com/license/mit-license
+
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fccamel%2Fplayground-elm.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fccamel%2Fplayground-elm?ref=badge_large)
