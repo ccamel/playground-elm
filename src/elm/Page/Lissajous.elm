@@ -378,8 +378,13 @@ toRadian : Float -> Float
 toRadian deg = deg * pi / 180.0
 
 locale1digit : Locale
-locale1digit =
-    Locale 1 "," "." "−" ""
+locale1digit = {
+    usLocale | 
+        decimals = 1,
+        thousandSeparator = ",",
+        decimalSeparator = ".",
+        negativePrefix = "−"    
+  }
 
 -- the ticks data type
 
