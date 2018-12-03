@@ -2,7 +2,7 @@ module Page.Maze exposing (..)
 
 import Array exposing (Array, get, initialize, set, toList)
 import FormatNumber exposing (format)
-import FormatNumber.Locales exposing (Locale)
+import FormatNumber.Locales exposing (Locale, usLocale)
 import Html exposing (Html, a, button, div, h2, h3, hr, i, img, input, li, p, pre, span, text, ul)
 import Html.Attributes exposing (alt, attribute, class, classList, download, downloadAs, href, id, name, size, src, style, title, type_, value)
 import Html.Events exposing (onInput)
@@ -683,5 +683,10 @@ asJsonValue maze =
     ]
 
 locale2digits : Locale
-locale2digits =
-    Locale 2 "," "." "−" ""
+locale2digits = {
+    usLocale | 
+        decimals = 2,
+        thousandSeparator = ",",
+        decimalSeparator = ".",
+        negativePrefix = "−"    
+  }

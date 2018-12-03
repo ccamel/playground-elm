@@ -21,7 +21,7 @@
         "evancz/elm-markdown": "3.0.2 <= v < 4.0.0",
         "evancz/elm-graphics" : "1.0.1 <= v < 2.0.0",
         "lukewestby/elm-string-interpolate": "1.0.1 <= v < 2.0.0",
-        "cuducos/elm-format-number": "5.0.2 <= v < 6.0.0",
+        "cuducos/elm-format-number": "5.0.2 <= v < 7.0.0",
         "eskimoblood/elm-color-extra" : "5.0.0 <= v < 6.0.0",
         "myrho/elm-round": "1.0.2 <= v < 2.0.0",
         "simonh1000/elm-colorpicker" : "1.1.0 <= v < 2.0.0"
