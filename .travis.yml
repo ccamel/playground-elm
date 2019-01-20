@@ -39,15 +39,14 @@ deploy:
 - provider: script
   # deploy the generated site to gh-pages
   skip_cleanup: true
-  script: ./scripts/deploy-to-gh-pages.sh
+s  script: ./scripts/deploy-to-gh-pages.sh
   on:
     tags: true
     branch: master
 - provider: releases
   # make a release (and upload it to github)
   skip_cleanup: true
-  api_key:
-    secure: S91cRimb8VIXDSr9pZTnR9j8LgucY8vFW0RDfN1ZpTjvyWXadjIYJCA1QZ+vxDCXBEBqgE3XEtdMge8ZD56GcVQuC0vwBWYGRbyFyjzVUflZfTIiCKiuggMvRXokFRTOge30T4pLDsGgq0Sp4TbXx+A9rgMmXcplP8Z39iQVMp6RFxL1KINeurDXKQ3uUC+ktAubBeSmL6xoHZ5ncbudFwSaLeLPsfsMAYI0/KwyNk38JgKgGuDPeFr8VYezMmBhE4ZF2Ym0Bt4mluVuP0bamiw2IXkrhsGdyh6fR56Z3DO2qVdiqeBF66vGrYaoWzKs0JCqZBR1cwTL7aZLTv2U6ls6C0jLGSLBX4C+E3cudBSyk2ICIL99NjWuTtMI8PT6+r0OysVw34lzTFWt9a2PLQc8TfJVrqBa7lCRwVXy3LT3HyJerbdsSUMH+7/zimObfloaIa0KuTIJ/0872cqTVKAyYkNk+GjFUF8nP8qBxCOCy3pK7M88zROB0mE3Ts7OuEhCmxGwqFqYn9oP8a1LT+/6wsZYG3pvy/gxJbOLKTl3zKGYyE0ViJ6ITWWIAYQyhXrxynSHnzLfc6n4fO5CinasRpmDdq106SCsLvsRljFqZUuIhzuFsqOWb/CKOnZinqRo8MKUWPmImoD/Y7i0f6m6SFVryWhqTN+6DjPoSi0=
+  api_key: $GH_TOKEN
   file: ./dist/playground-elm-site.zip
   on:
     tags: true
