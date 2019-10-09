@@ -69,11 +69,11 @@ view model =
        ,p [class "text-muted"]
             [ text "The showcases are intended to be:" ]
 
-       ,div [ class "row", style [("padding-top", "2em")] ]
+       ,div [ class "row", style "padding-top" "2em" ]
           [ div [ class "col-lg-4" ]
               [ i [ attribute "aria-hidden" "true", class "fa fa-child fa-3x iconic" ]
                   []
-              , h2 [style [("padding-top", "1em")]]
+              , h2 [style "padding-top" "1em"]
                   [ text "» simple" ]
               , p []
                   [ text "Fairly simple and understandable. Every showcase is implemented in a single elm file."
@@ -83,7 +83,7 @@ view model =
              ,div [ class "col-lg-4" ]
                 [ i [ attribute "aria-hidden" "true", class "fa fa-search fa-3x iconic" ]
                     []
-                , h2 [style [("padding-top", "1em")]]
+                , h2 [style "padding-top" "1em"]
                     [ text "» exploratory" ]
                 , p []
                     [  text "Highlight some aspects of the "
@@ -101,7 +101,7 @@ view model =
              ,div [ class "col-lg-4" ]
                 [ i [ attribute "aria-hidden" "true", class "fa fa-futbol-o fa-3x iconic" ]
                     []
-                , h2 [style [("padding-top", "1em")]]
+                , h2 [style "padding-top" "1em"]
                     [ text "» playable" ]
                 , p []
                     [ text "As much as possible, provides a useful and functional content."

@@ -3,12 +3,15 @@ module Page.Calc exposing (..)
 import Html exposing (Html, a, div, h2, h3, hr, i, img, input, li, p, text, ul)
 import Html.Attributes exposing (alt, attribute, class, href, src, style, type_, value)
 import Html.Events exposing (onClick)
-import Keyboard
+import Basics.Extra exposing (flip)
 import List exposing (drop, foldl, foldr, take)
 import Markdown
 import Maybe exposing (andThen, withDefault)
 import Page.Common
 import Result exposing (toMaybe)
+import String exposing (fromFloat, fromInt)
+import Json.Decode as Json
+import Browser.Events
 
 -- PAGE INFO
 
@@ -72,7 +75,7 @@ type Token =
 
 type Msg =
     Emitted Token
-  | KeyMsg Keyboard.KeyCode
+  | KeyMsg String
 
 -- UPDATE
 
@@ -81,29 +84,27 @@ update msg model =
     case msg of
         Emitted token ->
             (apply token model, Cmd.none)
-        KeyMsg code ->
+        KeyMsg key ->
             let
-                dummy = Debug.log "--> " code
-                token = case code of
-                    48 -> Just (Digit 0)
-                    49 -> Just (Digit 1)
-                    50 -> Just (Digit 2)
-                    51 -> Just (Digit 3)
-                    52 -> Just (Digit 4)
-                    53 -> Just (Digit 5)
-                    54 -> Just (Digit 6)
-                    55 -> Just (Digit 7)
-                    56 -> Just (Digit 8)
-                    57 -> Just (Digit 9)
-                    43 -> Just (Operator Plus)
-                    45 -> Just (Operator Minus)
-                    47 -> Just (Operator Divide)
-                    42 -> Just (Operator Multiply)
-                    120 -> Just (Operator Multiply)
-                    13 -> Just (Operator Result)
-                    61 -> Just (Operator Result)
-                    46 -> Just Dot
-                    99 -> Just Clear
+                dummy = Debug.log "--> " key
+                token = case key of
+                    "0" -> Just (Digit 0)
+                    "1" -> Just (Digit 1)
+                    "2" -> Just (Digit 2)
+                    "3" -> Just (Digit 3)
+                    "4" -> Just (Digit 4)
+                    "5" -> Just (Digit 5)
+                    "6" -> Just (Digit 6)
+                    "7" -> Just (Digit 7)
+                    "8" -> Just (Digit 8)
+                    "9" -> Just (Digit 9)
+                    "+" -> Just (Operator Plus)
+                    "-" -> Just (Operator Minus)
+                    "/" -> Just (Operator Divide)
+                    "*" -> Just (Operator Multiply)
+                    "=" -> Just (Operator Result)
+                    "." -> Just Dot
+                    "Delete" -> Just Clear
                     _ -> Nothing
 
                 newModel = token
@@ -210,7 +211,7 @@ doAccumulate d model =
   let
     value = case (d, model.accumulator) of
                 (Digit 0, "") -> ""
-                (Digit n, a ) -> a ++ (toString n)
+                (Digit n, a ) -> a ++ (Debug.toString n)
                 (Dot, a) -> a ++ "."
                 (_, a) -> a
   in
@@ -225,14 +226,14 @@ doOperator op model =
                 if (opPriority o) <= (opPriority head) then
                     let
                         (args, rest) = (take 2 m.outputs, drop 2 m.outputs)
-                        result = case head of
+                        r = case head of
                             Plus -> foldr (\a b -> a + b) 0 args
                             Minus -> foldl (\a b -> a - b) 0 args
                             Multiply -> foldr (\a b -> b * a) 1 args
                             Divide -> foldl (\a b -> a / b) 1 args
                             Result -> 0.0 -- should not occur
                     in
-                        reduce {m | operators = tail, outputs = result :: rest, accumulator = (toString result) } o
+                        reduce {m | operators = tail, outputs = r :: rest, accumulator = (fromFloat r) } o
 
                 else
                     m
@@ -262,7 +263,7 @@ doMC model =  { model | memory = Nothing }
 doMR : Model -> Model
 doMR model =
     case model.memory of
-        Just v -> { model | accumulator = (toString v) }
+        Just v -> { model | accumulator = (fromFloat v) }
         Nothing -> model
 
 go : State -> Model -> Model
@@ -284,12 +285,18 @@ result model =
     _ ->
         case model.accumulator of
             "" -> Ok 0.0
-            d -> String.toFloat d
+            d -> String.toFloat d |> Result.fromMaybe "error"
 
 -- SUBSCRIPTIONS
 
 subscriptions : Model -> Sub Msg
-subscriptions model = Keyboard.presses KeyMsg
+-- subscriptions model = Keyboard.presses KeyMsg
+subscriptions model =
+    let
+      eventKeyDecoder = Json.field "key" (Json.string |> Json.map KeyMsg)
+    in
+      Browser.Events.onKeyPress eventKeyDecoder
+
 
 -- VIEW
 
@@ -362,12 +369,13 @@ renderOperatorTag model =
      model.operators
         |> List.head
         |> Maybe.map (\token ->
-            case token of
+             case token of
                 Plus -> "+"
                 Minus -> "-"
                 Multiply -> "x"
                 Divide -> "/"
-                Result -> "=")
+                Result -> "="
+           )
         |> withDefault " "
         |> text
    ]
@@ -398,7 +406,7 @@ button token model =
   in
       case token of
         Clear             -> render "C" "clear col-2 push-1"
-        Digit d           -> render (toString d) "digit col-2"
+        Digit d           -> render (fromInt d) "digit col-2"
         Operator Plus     -> render "+" "operator col-2 push-1"
         Operator Minus    -> render "-" "operator col-2 push-1"
         Operator Multiply -> render "x" "operator col-2 push-1"

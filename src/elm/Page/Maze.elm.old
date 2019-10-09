@@ -18,7 +18,7 @@ import Random.List exposing (shuffle)
 import String exposing (padLeft)
 import String.Interpolate exposing (interpolate)
 import Task
-import Time exposing (Time, every)
+-- import Time exposing (Time, every)
 
 -- PAGE INFO
 

@@ -1,8 +1,8 @@
 module Page.Common exposing (..)
 
-import Color exposing (Color, toRgb)
+-- importColor exposing (Color, rgb, toCssString)
 import Html exposing (Html)
-import Html.Events exposing (defaultOptions, onWithOptions)
+import Html.Events exposing (..)
 import Json.Decode exposing (succeed)
 import List exposing (map)
 import Maybe exposing (andThen)
@@ -28,13 +28,12 @@ strToFloatWithMinMax : String -> Float -> Float -> Maybe Float
 strToFloatWithMinMax s minv maxv  = strToNumberWithMinMax s String.toFloat minv maxv
 
 -- convert the string to a number preserving the bounds [min, max]
-strToNumberWithMinMax : String -> (String -> Result String comparable) -> comparable -> comparable -> Maybe comparable
+strToNumberWithMinMax : String -> (String -> Maybe comparable) -> comparable -> comparable -> Maybe comparable
 strToNumberWithMinMax s converter minv maxv  =
     case s of
-        "" -> Just 0
+        "" -> Just minv
         x -> x
             |> converter
-            |> toMaybe
             |> andThen (Just << Basics.min maxv)
             |> andThen (Just << Basics.max minv)
 
@@ -50,12 +49,12 @@ classList list =
     |> class
 
 
-asCss : Color -> String
-asCss color =
-    let
-        rgb = toRgb color
-    in
-        interpolate "rgb({0},{1},{2})" ([rgb.red, rgb.green, rgb.blue] |> map toString)
-
-onClickNotPropagate : a -> Html.Attribute a
-onClickNotPropagate msg = onWithOptions "click" {defaultOptions | preventDefault = True} (succeed msg)
+-- asCss : Color -> String
+-- asCss color =
+--    let
+--        rgb = toRgb color
+--    in
+--        interpolate "rgb({0},{1},{2})" ([rgb.red, rgb.green, rgb.blue] |> map toString)
+       
+-- onClickNotPropagate : a -> Html.Attribute a
+-- onClickNotPropagate msg = onWithOptions "click" {defaultOptions | preventDefault = True} (succeed msg)

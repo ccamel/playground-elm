@@ -1,27 +1,23 @@
 module Page.Lissajous exposing (..)
 
-import AnimationFrame
-import Collage exposing (Form, LineStyle, Path, circle, collage, defaultLine, filled, group, move, moveY, oval, path, rect, rotate, segment, traced)
-import Color exposing (Color, darkPurple, green, lightGrey, red, rgb)
+import Collage exposing (..)
+import Color exposing (..)
 import ColorPicker
-import Element exposing (container, middle, toHtml)
 import FormatNumber exposing (format)
 import FormatNumber.Locales exposing (Locale, usLocale)
 import Html exposing (Html, a, br, button, code, div, form, h2, h3, hr, i, img, input, label, li, p, span, text, u, ul)
 import Html.Attributes exposing (alt, attribute, class, href, id, max, min, name, size, src, step, style, type_, value)
-import Html.Events exposing (defaultOptions, onClick, onInput, onWithOptions)
+import Html.Events exposing (..)
 import List exposing (append, concatMap, drop, length, map, range, sum)
 import Markdown
 import Maybe exposing (andThen, withDefault)
-import Page.Common exposing (asCss, onClickNotPropagate, strToFloatWithMinMax, strToIntWithMinMax)
+import Page.Common exposing (strToFloatWithMinMax, strToIntWithMinMax)
 import Result exposing (toMaybe)
 import Round
 import String exposing (padLeft)
 import String.Interpolate exposing (interpolate)
-import Text exposing (color, fromString, monospace)
-import Time exposing (Time)
-
-
+import Collage.Text as Text exposing (..)
+import Browser.Events exposing (onAnimationFrameDelta)
 
 -- PAGE INFO
 
@@ -68,7 +64,7 @@ initialModel = {
      ,p = 90 -- π/2
      ,vp = 1
      ,started = True
-     ,curveStyle = { defaultLine | width = 2, color = rgb 31 122 31 }
+     ,curveStyle = { defaultLineStyle | width = 2, color = rgb 31 122 31 }
      ,resolution = 500
      ,ticks = createTicks 100 -- initial capacity
      ,foregroundColorPicker = ColorPicker.empty
@@ -80,7 +76,7 @@ initialCmd = Cmd.none
 -- UPDATE
 type Msg =
       Reset Model
-    | Tick Time
+    | Tick Float
     | Start
     | Stop
     | SetPhaseVelocity String
@@ -151,7 +147,7 @@ update msg model =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     if model.started then
-        AnimationFrame.diffs Tick
+       onAnimationFrameDelta Tick
     else
         Sub.none
 
@@ -182,8 +178,8 @@ view model =
            -- canvas for the lissajous
            div [ id "lissajous-scope col-sm-6" ]
            [
-             toHtml <|
-              container constants.width constants.height middle  <|
+             svg <|
+              -- container constants.width constants.height middle  <|
                   collage constants.width constants.height
                     [
                        backgroundForm (rgb 0 0 0)
@@ -391,14 +387,14 @@ locale1digit = {
 -- ticks holds a sequence of times.
 -- the list is bounded to accept a max number of elements -> inserting a new only discards the oldest one
 type alias Ticks = {
-    times : List Time,
+    times : List Float,
     capacity: Int
   }
 
 createTicks : Int -> Ticks
 createTicks capacity = { times = [], capacity = capacity }
 
-addTick : Ticks -> Time -> Ticks
+addTick : Ticks -> Float -> Ticks
 addTick ticks time =
     let
         delta = (length ticks.times) - ticks.capacity

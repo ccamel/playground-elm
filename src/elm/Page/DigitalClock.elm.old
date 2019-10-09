@@ -1,8 +1,8 @@
 module Page.DigitalClock exposing (..)
 
-import Color exposing (Color, rgb, toRgb)
+-- import Color exposing (Color, rgb, toRgb)
 import ColorPicker
-import Date exposing (fromTime, hour, minute, second)
+-- import Date exposing (fromTime, hour, minute, second)
 import Html exposing (Html, a, button, div, h2, h3, hr, i, img, input, li, p, span, text, ul)
 import Html.Attributes exposing (alt, attribute, class, href, name, size, src, style, type_, value)
 import Html.Events exposing (onInput)
@@ -15,7 +15,7 @@ import Markdown
 import Page.Common exposing (asCss, classList, strToIntWithMinMax)
 import Svg exposing (Svg, circle, g, path, rect, svg)
 import Svg.Attributes exposing (cx, cy, d, fill, height, id, r, stroke, strokeWidth, viewBox, width, x, y)
-import Time exposing (Time, every, millisecond, now)
+-- import Time exposing (Time, every, millisecond, now)
 
 
 

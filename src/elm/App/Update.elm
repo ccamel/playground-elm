@@ -1,16 +1,16 @@
 module App.Update exposing (..)
 
 import App.Pages exposing (pageHash)
-import App.Routing exposing (Route(..), parseLocation)
-import App.Messages exposing (Msg(..), Page(About, Calc, DigitalClock, Lissajous, Maze))
+import App.Routing exposing (Route(..), toRoute)
+import App.Messages exposing (Msg(..), Page(..))
 import App.Models exposing (Model)
+import Browser.Navigation as Route exposing (pushUrl)
 import Maybe exposing (map, withDefault)
-import Navigation
 import Page.About
 import Page.Calc
-import Page.DigitalClock
-import Page.Lissajous
-import Page.Maze
+-- import Page.DigitalClock
+-- import Page.Lissajous
+-- import Page.Maze
 import String exposing (cons)
 import Tuple exposing (first, second)
 
@@ -18,10 +18,11 @@ import Tuple exposing (first, second)
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        OnLocationChange location ->
+        ClickedLink x -> ( model, Cmd.none )
+        ChangedUrl location ->
             let
                 newRoute =
-                    parseLocation location
+                    toRoute location
 
                 clearedModel = { model | aboutPage = Nothing }
             in
@@ -38,24 +39,24 @@ update msg model =
                      Page Calc ->
                         ( { clearedModel | route = newRoute, calcPage = Just Page.Calc.initialModel  }, Cmd.map CalcPageMsg Page.Calc.initialCmd )
 
-                     Page Lissajous ->
-                        ( { clearedModel | route = newRoute, lissajousPage = Just Page.Lissajous.initialModel  }, Cmd.map LissajousPageMsg Page.Lissajous.initialCmd )
-
-                     Page DigitalClock ->
-                        ( { clearedModel | route = newRoute, digitalClockPage = Just Page.DigitalClock.initialModel  }, Cmd.map DigitalClockPageMsg Page.DigitalClock.initialCmd )
-
-                     Page Maze ->
-                        ( { clearedModel | route = newRoute, mazePage = Just Page.Maze.initialModel  }, Cmd.map MazePageMsg Page.Maze.initialCmd )
+--                     Page Lissajous ->
+--                        ( { clearedModel | route = newRoute, lissajousPage = Just Page.Lissajous.initialModel  }, Cmd.map LissajousPageMsg Page.Lissajous.initialCmd )
+--
+--                     Page DigitalClock ->
+--                        ( { clearedModel | route = newRoute, digitalClockPage = Just Page.DigitalClock.initialModel  }, Cmd.map DigitalClockPageMsg Page.DigitalClock.initialCmd )
+--
+--                     Page Maze ->
+--                        ( { clearedModel | route = newRoute, mazePage = Just Page.Maze.initialModel  }, Cmd.map MazePageMsg Page.Maze.initialCmd )
 
 
 
         GoToPage p ->
             ( model, pageHash p
                       |> cons '#'
-                      |> Navigation.newUrl )
+                      |> Route.pushUrl model.navKey )
 
         GoToHome ->
-            ( model, Navigation.newUrl "#" )
+            ( model, Route.replaceUrl model.navKey "#" )
 
         -- messages from pages
         AboutPageMsg m ->
@@ -76,32 +77,32 @@ update msg model =
                               (Cmd.map CalcPageMsg))
               |> withDefault (model, Cmd.none)
 
-        LissajousPageMsg m ->
-            model
-              |> .lissajousPage
-              |> Maybe.map (Page.Lissajous.update m) -- Maybe(mdl, Cmd msg)
-              |> Maybe.map ( adapt
-                              (\mdl -> {model | lissajousPage = Just mdl})
-                              (Cmd.map LissajousPageMsg))
-              |> withDefault (model, Cmd.none)
+--        LissajousPageMsg m ->
+--            model
+--              |> .lissajousPage
+--              |> Maybe.map (Page.Lissajous.update m) -- Maybe(mdl, Cmd msg)
+--              |> Maybe.map ( adapt
+--                              (\mdl -> {model | lissajousPage = Just mdl})
+--                              (Cmd.map LissajousPageMsg))
+--              |> withDefault (model, Cmd.none)
 
-        DigitalClockPageMsg m ->
-            model
-              |> .digitalClockPage
-              |> Maybe.map (Page.DigitalClock.update m) -- Maybe(mdl, Cmd msg)
-              |> Maybe.map ( adapt
-                              (\mdl -> {model | digitalClockPage = Just mdl})
-                              (Cmd.map DigitalClockPageMsg))
-              |> withDefault (model, Cmd.none)
+--        DigitalClockPageMsg m ->
+--            model
+--              |> .digitalClockPage
+--              |> Maybe.map (Page.DigitalClock.update m) -- Maybe(mdl, Cmd msg)
+--              |> Maybe.map ( adapt
+--                              (\mdl -> {model | digitalClockPage = Just mdl})
+--                              (Cmd.map DigitalClockPageMsg))
+--              |> withDefault (model, Cmd.none)
 
-        MazePageMsg m ->
-            model
-              |> .mazePage
-              |> Maybe.map (Page.Maze.update m) -- Maybe(mdl, Cmd msg)
-              |> Maybe.map ( adapt
-                              (\mdl -> {model | mazePage = Just mdl})
-                              (Cmd.map MazePageMsg))
-              |> withDefault (model, Cmd.none)
+--        MazePageMsg m ->
+--            model
+--              |> .mazePage
+--              |> Maybe.map (Page.Maze.update m) -- Maybe(mdl, Cmd msg)
+--              |> Maybe.map ( adapt
+--                              (\mdl -> {model | mazePage = Just mdl})
+--                              (Cmd.map MazePageMsg))
+--              |> withDefault (model, Cmd.none)
 
 adapt : (m -> Model) -> (Cmd a -> Cmd Msg) -> (m, Cmd a) -> (Model, Cmd Msg)
 adapt toModel toCmd modelCmd =
