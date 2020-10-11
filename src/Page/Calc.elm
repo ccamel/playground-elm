@@ -86,7 +86,7 @@ update msg model =
             (apply token model, Cmd.none)
         KeyMsg key ->
             let
-                dummy = Debug.log "--> " key
+                -- dummy = Debug.log "--> " key
                 token = case key of
                     "0" -> Just (Digit 0)
                     "1" -> Just (Digit 1)
@@ -211,7 +211,7 @@ doAccumulate d model =
   let
     value = case (d, model.accumulator) of
                 (Digit 0, "") -> ""
-                (Digit n, a ) -> a ++ (Debug.toString n)
+                (Digit n, a ) -> a ++ (String.fromInt n)
                 (Dot, a) -> a ++ "."
                 (_, a) -> a
   in
