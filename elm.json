@@ -1,9 +1,9 @@
 {
     "type": "application",
     "source-directories": [
-        "src/elm"
+        "src"
     ],
-    "elm-version": "0.19.0",
+    "elm-version": "0.19.1",
     "dependencies": {
         "direct": {
             "avh4/elm-color": "1.0.0",
@@ -20,7 +20,7 @@
             "elm-community/list-extra": "8.1.0",
             "elm-community/random-extra": "3.0.0",
             "elm-explorations/markdown": "1.0.0",
-            "lukewestby/elm-string-interpolate": "1.0.3",
+            "lukewestby/elm-string-interpolate": "1.0.4",
             "myrho/elm-round": "1.0.4",
             "simonh1000/elm-colorpicker": "1.1.6",
             "timjs/elm-collage": "2.0.1"
