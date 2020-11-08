@@ -11,7 +11,8 @@ require('./lissajous.css');
 require('./digital-clock.css');
 require('./maze.css');
 
-var Elm = require('../elm/Main.elm');
-var mountNode = document.getElementById('main');
+const { Elm } = require('./Main.elm');
 
-var app = Elm.Main.embed(mountNode);
+Elm.Main.init({
+    node: document.querySelector('main')
+});
