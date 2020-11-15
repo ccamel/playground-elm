@@ -1,6 +1,7 @@
 module Page.Common exposing (..)
 
 -- importColor exposing (Color, rgb, toCssString)
+import GraphicSVG exposing (Color)
 import Html exposing (Html)
 import Html.Events exposing (..)
 import Json.Decode exposing (succeed)
@@ -10,6 +11,8 @@ import Result exposing (toMaybe)
 import String.Interpolate exposing (interpolate)
 import Svg
 import Svg.Attributes exposing (class)
+import String exposing (fromInt)
+import Json.Decode as Decode
 
 type alias PageInfo a = {
       name : String
@@ -49,12 +52,19 @@ classList list =
     |> class
 
 
--- asCss : Color -> String
+-- asCss : GraphicSVG.Color -> String
 -- asCss color =
 --    let
---        rgb = toRgb color
+--        (GraphicSVG.RGBA r g b _) = color
 --    in
---        interpolate "rgb({0},{1},{2})" ([rgb.red, rgb.green, rgb.blue] |> map toString)
+--        interpolate "rgb({0},{1},{2})" ([r, g, b] |> map fromInt)
        
--- onClickNotPropagate : a -> Html.Attribute a
--- onClickNotPropagate msg = onWithOptions "click" {defaultOptions | preventDefault = True} (succeed msg)
+onClickNotPropagate : a -> Html.Attribute a
+onClickNotPropagate msg = 
+    custom "click"
+        (Decode.succeed
+            { message = msg
+            , stopPropagation = True
+            , preventDefault = True
+            }
+        )

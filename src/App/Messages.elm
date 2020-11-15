@@ -5,13 +5,13 @@ import Page.Calc
 import Url exposing (Url)
 import Browser exposing (Document)
 -- import Page.DigitalClock
--- import Page.Lissajous
+import Page.Lissajous
 -- import Page.Maze
 
 type Page
     = About
     | Calc
---    | Lissajous
+    | Lissajous
 --    | DigitalClock
 --    | Maze
 
@@ -24,6 +24,6 @@ type Msg
     -- messages for pages
     | AboutPageMsg Page.About.Msg
     | CalcPageMsg Page.Calc.Msg
---    | LissajousPageMsg Page.Lissajous.Msg
+    | LissajousPageMsg Page.Lissajous.Msg
 --    | DigitalClockPageMsg Page.DigitalClock.Msg
 --    | MazePageMsg Page.Maze.Msg

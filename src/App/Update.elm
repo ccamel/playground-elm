@@ -11,7 +11,7 @@ import Maybe exposing (map, withDefault)
 import Page.About
 import Page.Calc
 -- import Page.DigitalClock
--- import Page.Lissajous
+import Page.Lissajous
 -- import Page.Maze
 import String exposing (cons)
 import Tuple exposing (first, second)
@@ -35,7 +35,8 @@ update msg model =
                 clearedModel = { model | aboutPage = Nothing }
 
                 ( aboutModel, aboutCmd ) = Page.About.init
-                ( calcModel, calcCmd ) = Page.Calc.init        
+                ( calcModel, calcCmd ) = Page.Calc.init
+                ( lissajousModel, lissajousCmd ) = Page.Lissajous.init
             in
                 case newRoute of
                      NotFoundRoute ->
@@ -50,8 +51,8 @@ update msg model =
                      Page Calc ->
                         ( { clearedModel | route = newRoute, calcPage = Just calcModel  }, Cmd.map CalcPageMsg calcCmd )
 
---                     Page Lissajous ->
---                        ( { clearedModel | route = newRoute, lissajousPage = Just Page.Lissajous.initialModel  }, Cmd.map LissajousPageMsg Page.Lissajous.initialCmd )
+                     Page Lissajous ->
+                        ( { clearedModel | route = newRoute, lissajousPage = Just lissajousModel  }, Cmd.map LissajousPageMsg lissajousCmd )
 --
 --                     Page DigitalClock ->
 --                        ( { clearedModel | route = newRoute, digitalClockPage = Just Page.DigitalClock.initialModel  }, Cmd.map DigitalClockPageMsg Page.DigitalClock.initialCmd )
@@ -88,14 +89,14 @@ update msg model =
                               (Cmd.map CalcPageMsg))
               |> withDefault (model, Cmd.none)
 
---        LissajousPageMsg m ->
---            model
---              |> .lissajousPage
---              |> Maybe.map (Page.Lissajous.update m) -- Maybe(mdl, Cmd msg)
---              |> Maybe.map ( adapt
---                              (\mdl -> {model | lissajousPage = Just mdl})
---                              (Cmd.map LissajousPageMsg))
---              |> withDefault (model, Cmd.none)
+        LissajousPageMsg m ->
+            model
+              |> .lissajousPage
+              |> Maybe.map (Page.Lissajous.update m) -- Maybe(mdl, Cmd msg)
+              |> Maybe.map ( adapt
+                              (\mdl -> {model | lissajousPage = Just mdl})
+                              (Cmd.map LissajousPageMsg))
+              |> withDefault (model, Cmd.none)
 
 --        DigitalClockPageMsg m ->
 --            model
