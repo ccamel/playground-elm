@@ -4,7 +4,9 @@ import App.Pages exposing (pageHash)
 import App.Routing exposing (Route(..), toRoute)
 import App.Messages exposing (Msg(..), Page(..))
 import App.Models exposing (Model)
+import Browser
 import Browser.Navigation as Route exposing (pushUrl)
+import Browser.Navigation as Nav
 import Maybe exposing (map, withDefault)
 import Page.About
 import Page.Calc
@@ -13,13 +15,19 @@ import Page.Calc
 -- import Page.Maze
 import String exposing (cons)
 import Tuple exposing (first, second)
-
+import Url
+import App.View exposing (homePage)
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        ClickedLink x -> ( model, Cmd.none )
-        ChangedUrl location ->
+        LinkClicked urlRequest ->
+            case urlRequest of
+                Browser.External href ->
+                    (model, Nav.load href )
+                _ ->
+                    (model, Cmd.none)
+        UrlChanged location ->
             let
                 newRoute =
                     toRoute location

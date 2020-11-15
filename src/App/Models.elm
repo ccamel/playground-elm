@@ -10,14 +10,15 @@ import Page.Calc
 import Browser.Navigation as Nav
 import Browser.Navigation as Nav
 import Platform.Cmd exposing (batch)
+import Json.Decode exposing (bool)
 
 type alias Model =
     {
        route : Route
        ,navKey : Nav.Key
        -- models for pages
-      ,aboutPage : Maybe Page.About.Model
-      ,calcPage : Maybe Page.Calc.Model
+       ,aboutPage : Maybe Page.About.Model
+       ,calcPage : Maybe Page.Calc.Model
 --      ,lissajousPage : Maybe Page.Lissajous.Model
 --      ,digitalClockPage : Maybe Page.DigitalClock.Model
 --      ,mazePage : Maybe Page.Maze.Model

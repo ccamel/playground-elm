@@ -17,8 +17,8 @@ type Page
 
 
 type Msg
-    = ChangedUrl Url
-    | ClickedLink Browser.UrlRequest
+    = UrlChanged Url
+    | LinkClicked Browser.UrlRequest
     | GoToHome
     | GoToPage Page
     -- messages for pages

@@ -8,6 +8,10 @@ import Html.Events exposing (onClick)
 import App.Messages exposing (Msg(..), Page(..))
 import App.Models exposing (Model)
 import App.Routing exposing (Route(..), nextPage, prevPage)
+import Html.Events exposing (preventDefaultOn)
+import Html.Events exposing (on)
+import Set exposing (Set)
+import Svg.Attributes exposing (mode)
 -- import Page.Common exposing (onClickNotPropagate)
 
 
@@ -84,11 +88,14 @@ view model =
                                     , i [ class "fa fa-quote-right text-muted", style "padding-left" "1em" ] []
                                 ]
                               ,div [style "float" "right"] [
-                                     a [ attribute "aria-controls" "collapseExample"
+                                     a 
+                                        [ attribute "aria-controls" "collapseExample"
                                         ,attribute "aria-expanded" "true"
                                         ,attribute "data-toggle" "collapse"
                                         ,title "toggle the summary"
-                                        ,href "#summary" ]
+                                        ,type_ "button"
+                                        ,attribute "data-target" "#summary"
+                                        ]
                                        [ i [ class "fa fa-bars" ] [] ]
                                    ]
                               ,p [ class "lead text-muted collapse.show collapse show", id "summary" ]
