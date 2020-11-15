@@ -33,6 +33,9 @@ update msg model =
                     toRoute location
 
                 clearedModel = { model | aboutPage = Nothing }
+
+                ( aboutModel, aboutCmd ) = Page.About.init
+                ( calcModel, calcCmd ) = Page.Calc.init        
             in
                 case newRoute of
                      NotFoundRoute ->
@@ -42,10 +45,10 @@ update msg model =
                         ( { clearedModel | route = newRoute }, Cmd.none )
 
                      Page About ->
-                        ( { clearedModel | route = newRoute, aboutPage = Just Page.About.initialModel  }, Cmd.map AboutPageMsg Page.About.initialCmd )
+                        ( { clearedModel | route = newRoute, aboutPage = Just aboutModel  }, Cmd.map AboutPageMsg aboutCmd )
 
                      Page Calc ->
-                        ( { clearedModel | route = newRoute, calcPage = Just Page.Calc.initialModel  }, Cmd.map CalcPageMsg Page.Calc.initialCmd )
+                        ( { clearedModel | route = newRoute, calcPage = Just calcModel  }, Cmd.map CalcPageMsg calcCmd )
 
 --                     Page Lissajous ->
 --                        ( { clearedModel | route = newRoute, lissajousPage = Just Page.Lissajous.initialModel  }, Cmd.map LissajousPageMsg Page.Lissajous.initialCmd )

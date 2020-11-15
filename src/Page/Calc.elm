@@ -42,17 +42,16 @@ type alias Model = {
    , memory: Maybe Float
  }
 
-initialModel : Model
-initialModel = {
-     outputs = []
-   , operators = []
-   , state = ACCUM
-   , accumulator = ""
-   , memory = Nothing
-  }
-
-initialCmd : Cmd Msg
-initialCmd = Cmd.none
+init: (Model, Cmd Msg)
+init = (
+    {
+      outputs = []
+    , operators = []
+    , state = ACCUM
+    , accumulator = ""
+    , memory = Nothing
+    },
+    Cmd.none)
 
 -- MESSAGES
 
@@ -83,7 +82,7 @@ update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
         Emitted token ->
-            (apply token model, Cmd.none)
+            apply token model
         KeyMsg key ->
             let
                 -- dummy = Debug.log "--> " key
@@ -106,15 +105,13 @@ update msg model =
                     "." -> Just Dot
                     "Delete" -> Just Clear
                     _ -> Nothing
-
-                newModel = token
-                             |> Maybe.map (flip apply model)
-                             |> Maybe.withDefault model
             in
-                (newModel, Cmd.none)
+                token
+                  |> Maybe.map (flip apply model)
+                  |> Maybe.withDefault (model, Cmd.none)
 
 -- apply the given token to the model, computing a new state
-apply : Token -> Model -> Model
+apply : Token -> Model -> (Model,  Cmd Msg)
 apply token model =
   case model.state of
     ACCUM ->
@@ -123,28 +120,34 @@ apply token model =
                 model
                   |> doClear
             Digit _ ->
-                model
-                  |> doAccumulate token
+                (model
+                  |> doAccumulate token,
+                  Cmd.none)
             Dot ->
-                model
+                (model
                   |> doAccumulate token
-                  |> go DOT
+                  |> go DOT,
+                  Cmd.none)
             Operator op ->
-                model
+                (model
                   |> doOperator op
-                  |> go OPERATOR
+                  |> go OPERATOR,
+                  Cmd.none)
             MR ->
-                model
+                (model
                   |> doMR
-                  |> go OPERATOR
+                  |> go OPERATOR,
+                  Cmd.none)                  
             MC ->
-                model
+                (model
                   |> doMC
-                  |> go OPERATOR
+                  |> go OPERATOR,
+                  Cmd.none)
             MS ->
-                model
+                (model
                   |> doMS
-                  |> go OPERATOR
+                  |> go OPERATOR,
+                  Cmd.none)
 
     OPERATOR ->
         case token of
@@ -152,27 +155,33 @@ apply token model =
                 model
                   |> doClear
             Digit _ ->
-                model
+                (model
                   |> doResetAccu
                   |> doAccumulate token
-                  |> go ACCUM
+                  |> go ACCUM,
+                  Cmd.none)
             Dot ->
-                model
+                (model
                   |> doResetAccu
                   |> doAccumulate token
-                  |> go DOT
+                  |> go DOT,
+                  Cmd.none)
             Operator op ->
-                model
-                  |> doOperator op
+                (model
+                  |> doOperator op,
+                  Cmd.none)
             MR ->
-                model
-                  |> doMR
+                (model
+                  |> doMR,
+                  Cmd.none)
             MC ->
-                model
-                  |> doMC
+                (model
+                  |> doMC,
+                  Cmd.none)
             MS ->
-                model
-                  |> doMS
+                (model
+                  |> doMS,
+                  Cmd.none)
 
     DOT ->
         case token of
@@ -180,30 +189,35 @@ apply token model =
                 model
                   |> doClear
             Digit _ ->
-                model
-                  |> doAccumulate token
+                (model
+                  |> doAccumulate token,
+                  Cmd.none)
             Dot ->
-                model
+                (model, Cmd.none)
             Operator op ->
-                model
+                (model
                   |> doOperator op
-                  |> go OPERATOR
+                  |> go OPERATOR,
+                  Cmd.none)
             MR ->
-                model
+                (model
                   |> doMR
-                  |> go OPERATOR
+                  |> go OPERATOR,
+                  Cmd.none)
             MC ->
-                model
+                (model
                   |> doMC
-                  |> go OPERATOR
+                  |> go OPERATOR,
+                  Cmd.none)
             MS ->
-                model
+                (model
                   |> doMS
-                  |> go OPERATOR
+                  |> go OPERATOR,
+                  Cmd.none)
     ERROR ->
         case token of
             Clear -> doClear model
-            _ -> model
+            _ -> (model, Cmd.none)
 
 
 doAccumulate : Token -> Model -> Model
@@ -250,8 +264,8 @@ doOperator op model =
 doResetAccu : Model -> Model
 doResetAccu model = { model | accumulator = "" }
 
-doClear : Model -> Model
-doClear model = initialModel
+doClear : Model -> ( Model, Cmd Msg )
+doClear model = init
 
 doMS : Model -> Model
 doMS model =  { model | memory = toMaybe (result model) }

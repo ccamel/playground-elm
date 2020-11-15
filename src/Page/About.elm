@@ -25,11 +25,11 @@ type alias Model = {
 
  }
 
-initialModel : Model
-initialModel = {}
+init: (Model, Cmd Msg)
+init = (
+    {},
+    Cmd.none)
 
-initialCmd : Cmd Msg
-initialCmd = Cmd.none
 
 -- UPDATE
 
@@ -38,7 +38,7 @@ type Msg = Reset
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    Reset -> (initialModel, initialCmd)
+    Reset -> init
 
 -- SUBSCRIPTIONS
 

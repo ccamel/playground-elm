@@ -27,21 +27,25 @@ type alias Model =
 
 initialModel : Nav.Key -> Route -> (Model, Cmd App.Messages.Msg)
 initialModel navKey route =
-    ({
-       route = route
-       ,navKey = navKey
-       -- models for pages
-      ,aboutPage = Just Page.About.initialModel
-      ,calcPage = Just Page.Calc.initialModel
---      ,lissajousPage = Just Page.Lissajous.initialModel
---      ,digitalClockPage = Just Page.DigitalClock.initialModel
---      ,mazePage = Just Page.Maze.initialModel
-    }, batch [
-        -- commands for pages
-        Cmd.map AboutPageMsg Page.About.initialCmd
-       ,Cmd.map CalcPageMsg Page.Calc.initialCmd
---       ,Cmd.map LissajousPageMsg Page.Lissajous.initialCmd
---       ,Cmd.map DigitalClockPageMsg Page.DigitalClock.initialCmd
---       ,Cmd.map MazePageMsg Page.Maze.initialCmd
-    ])
+    let
+        ( aboutModel, aboutCmd ) = Page.About.init
+        ( calcModel, calcCmd ) = Page.Calc.init        
+    in
+        ({
+        route = route
+        ,navKey = navKey
+        -- models for pages
+        ,aboutPage = Just aboutModel
+        ,calcPage = Just calcModel
+    --      ,lissajousPage = Just Page.Lissajous.initialModel
+    --      ,digitalClockPage = Just Page.DigitalClock.initialModel
+    --      ,mazePage = Just Page.Maze.initialModel
+        }, batch [
+            -- commands for pages
+            Cmd.map AboutPageMsg aboutCmd
+        ,Cmd.map CalcPageMsg calcCmd
+    --       ,Cmd.map LissajousPageMsg Page.Lissajous.initialCmd
+    --       ,Cmd.map DigitalClockPageMsg Page.DigitalClock.initialCmd
+    --       ,Cmd.map MazePageMsg Page.Maze.initialCmd
+        ])
 
