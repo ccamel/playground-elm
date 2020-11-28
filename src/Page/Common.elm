@@ -50,14 +50,6 @@ classList list =
     |> List.map Tuple.first
     |> String.join " "
     |> class
-
-
--- asCss : GraphicSVG.Color -> String
--- asCss color =
---    let
---        (GraphicSVG.RGBA r g b _) = color
---    in
---        interpolate "rgb({0},{1},{2})" ([r, g, b] |> map fromInt)
        
 onClickNotPropagate : a -> Html.Attribute a
 onClickNotPropagate msg = 
@@ -66,5 +58,15 @@ onClickNotPropagate msg =
             { message = msg
             , stopPropagation = True
             , preventDefault = True
+            }
+        )
+
+onClickBubble : a -> Html.Attribute a
+onClickBubble msg =
+    custom "click"
+        (Decode.succeed
+            { message = msg
+            , stopPropagation = False
+            , preventDefault = False
             }
         )

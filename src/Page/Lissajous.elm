@@ -1,27 +1,25 @@
 module Page.Lissajous exposing (..)
 
-import GraphicSVG exposing (Color, LineType, Shape, Stencil, circle, collage, filled, fixedwidth, group, line, move, openPolygon, outlined, rect, rgb, rotate, solid)
+import GraphicSVG exposing (LineType, Shape, Stencil, circle, filled, fixedwidth, group, line, move, openPolygon, outlined, rect, rgb, rgba, rotate, solid)
 import GraphicSVG.Widget as Widget
 import Basics.Extra exposing (flip)
-import Color exposing (darkPurple, green, lightGrey, red, toCssString)
+import Color exposing (rgb255, green, red, toCssString)
 import ColorPicker
 import FormatNumber exposing (format)
 import FormatNumber.Locales exposing (Locale, usLocale)
-import Html exposing (Html, a, br, button, code, div, form, h2, h3, hr, i, img, input, label, li, p, span, text, u, ul)
-import Html.Attributes exposing (alt, attribute, class, href, id, max, min, name, size, src, step, style, type_, value)
-import Html.Events exposing (onClick, onInput)
-import List exposing (append, concatMap, drop, length, map, range, sum)
+import Html exposing (Html, a, br, button, div, hr, input, p, span, text)
+import Html.Attributes exposing (attribute, class, href, id, name, size, step, style, type_, value)
+import Html.Events exposing (onInput)
+import List exposing (concatMap, drop, length, map, range, sum)
 import Markdown
-import Maybe exposing (andThen, withDefault)
-import Page.Common exposing (strToFloatWithMinMax, strToIntWithMinMax)
+import Maybe exposing (withDefault)
+import Page.Common exposing (onClickBubble, strToFloatWithMinMax, strToIntWithMinMax)
 import Platform.Cmd exposing (batch)
-import Result exposing (toMaybe)
 import Round
 import String exposing (padLeft)
 import String.Interpolate exposing (interpolate)
 import Task
-import Time exposing (Posix)
-import Browser.Events exposing (onAnimationFrame)
+import Browser.Events
 import Page.Common exposing (onClickNotPropagate)
 import String exposing (fromInt)
 import Browser.Events exposing (onAnimationFrameDelta)
@@ -84,7 +82,7 @@ init =
              ,p = 90 -- π/2
              ,vp = 1
              ,started = True
-             ,curveStyle = { color = Color.rgb 31 122 31, lineType = solid 2 }
+             ,curveStyle = { color = Color.rgb255 31 122 31, lineType = solid 2 }
              ,resolution = 500
              ,ticks = createTicks 100 -- initial capacity
              ,foregroundColorPicker = ColorPicker.empty
@@ -108,6 +106,7 @@ type Msg =
     | ForegroundColorPickerMsg ColorPicker.Msg
     | WidgetMessage Widget.Msg
     | Batch (List Msg)
+    | NoOp
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -161,7 +160,7 @@ update msg model =
             in
                 ({ model
                     | foregroundColorPicker = state
-                    , curveStyle = { curveStyle | color = color |> Maybe.withDefault curveStyle.color }
+                    , curveStyle = { curveStyle | color = Maybe.withDefault curveStyle.color color }
                  }
                  , Cmd.none)
     WidgetMessage msgw ->
@@ -179,6 +178,7 @@ update msg model =
             ( newModel
             , Cmd.batch [ cmd, sendMsg (Batch xs) ]
             )
+    NoOp -> (model, Cmd.none)
 
 -- SUBSCRIPTIONS
 
@@ -208,7 +208,7 @@ view model =
   div [ class "container animated flipInX" ]
       [ hr [] []
        , Markdown.toHtml [class "info"] """
-##### Animated [Lissajouss figures](https://en.wikipedia.org/wiki/Lissajouss_curve) using HTML5 canvas.
+##### Animated [Lissajouss figures](https://en.wikipedia.org/wiki/Lissajouss_curve) using [Scalable Vector Graphics](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) (SVG).
                     """
        ,br [] []
        ,div [class "row display"]
@@ -217,7 +217,7 @@ view model =
            div [ id "lissajous-scope col-sm-6", style "width" (toPixels constants.width), style "height" (toPixels constants.height)]
            [
              Widget.view model.widgetState [
-                 backgroundForm (rgb 0 0 0)
+                 backgroundForm (rgb255 0 0 0)
                 ,xAxisForm
                 ,yAxisForm
                 ,(lissajous model.a model.b (toRadian model.p)) model.resolution
@@ -230,31 +230,9 @@ view model =
                              ]
                   |> GraphicSVG.text
                   |> fixedwidth
-                  |> filled (rgb 217 217 217)
+                  |> filled (Color.rgb255 217 217 217 |> toSvgColor)
                   |> move ((constants.height // 2) - (constants.margin + 20) |> toFloat, (constants.width - 20) // 2 |> toFloat)
              ]
-
-           --  toHtml <|
-           --   container constants.width constants.height middle  <|
-           --       collage constants.width constants.height
-           --         [
-           --            backgroundForm (rgb 0 0 0)
-           --           ,xAxisForm
-           --           ,yAxisForm
-           --           ,(lissajous model.a model.b (toRadian model.p)) model.resolution
-           --             |> traced model.curveStyle
-           --           ,interpolate "{0} fps"
-           --                        [ fps model.ticks
-           --                                |> Maybe.map (format locale1digit)
-           --                                |> withDefault "-"
-           --                                |> padLeft 5 ' '
-           --                        ]
-           --             |> fromString
-           --             |> monospace
-           --             |> color (rgb 217 217 217)
-           --             |> Collage.text
-           --             |> move ((constants.height // 2) - constants.margin |> toFloat, (constants.width - 12) // 2 |> toFloat)
-           --         ]
            ]
            , div [class "description col-sm-6"]
            [
@@ -321,14 +299,15 @@ view model =
                   text "The color for the plot is"
                  ,div []
                     [
-                      button [ attribute "aria-expanded" "false"
+                      button [
+                               attribute "aria-expanded" "false"
                               ,attribute "aria-haspopup" "true"
                               ,class "btn btn-light dropdown-toggle"
                               ,attribute "data-toggle" "dropdown"
                               ,id "dropdownForegroundColorPickerButton"
                               ,type_ "button" ]
                               [ span [ class "color-tag"
-                                  --    ,Html.Attributes.style [("background-color", toCssString model.curveStyle.color)]
+                                      ,style "background-color" (toCssString model.curveStyle.color)
                                      ] []
                               ]
                      ,div [ attribute "aria-labelledby" "dropdownForegroundColorPickerButton"
@@ -373,7 +352,7 @@ xAxisForm =
 
     in
         axis :: ticks
-         |> map (outlined  (solid 1) (Color.rgb 89 89 89 |> toSvgColor) )
+         |> map (outlined  (solid 1) (Color.rgb255 89 89 89 |> toSvgColor) )
          |> group
 
 yAxisForm : Shape Msg
@@ -381,18 +360,18 @@ yAxisForm =
     xAxisForm
       |> rotate (degrees 90)
 
-backgroundForm : Color -> Shape Msg
+backgroundForm : Color.Color -> Shape Msg
 backgroundForm color =
     let
         halfW = constants.width // 2
         halfH = constants.height // 2
         circleAt (x,y) = circle 1.0
-                        |> filled (rgb 64 64 64)
+                        |> filled (Color.rgb255 64 64 64 |> toSvgColor)
                         |> move ((toFloat x),(toFloat y))
     in
         group [
             (rect (constants.width |> toFloat) (constants.height |> toFloat)
-              |> filled color)
+              |> filled (toSvgColor color))
             ,(cartesian (rangeStep -halfW halfW 25) (rangeStep -halfH halfH 25)
               |> map circleAt
               |> group )
@@ -496,12 +475,12 @@ rangeStep lo hi step =
   in
     rangeRec lo hi step []
 
-toSvgColor : Color.Color -> Color
-toSvgColor c = 
+toSvgColor : Color.Color -> GraphicSVG.Color
+toSvgColor c =
   let
     { red, green, blue, alpha } = Color.toRgba c
   in
-    rgb red green blue
+    GraphicSVG.rgb (255.0 * red) (255.0 * green) (255.0 * blue)
 
 sendMsg : msg -> Cmd msg
 sendMsg msg =
