@@ -95,6 +95,7 @@ view model =
                                         ,title "toggle the summary"
                                         ,type_ "button"
                                         ,attribute "data-target" "#summary"
+                                        ,href "."
                                         ]
                                        [ i [ class "fa fa-bars" ] [] ]
                                    ]
