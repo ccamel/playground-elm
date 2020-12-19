@@ -39,14 +39,14 @@ initialModel navKey route =
         ,aboutPage = Just aboutModel
         ,calcPage = Just calcModel
         ,lissajousPage = Just lissajousModel
-        ,digitalClockPage = Just Page.DigitalClock.initialModel
+        ,digitalClockPage = Just digitalClockModel
         ,mazePage = Just mazeModel
         }, batch [
             -- commands for pages
             Cmd.map AboutPageMsg aboutCmd
            ,Cmd.map CalcPageMsg calcCmd
            ,Cmd.map LissajousPageMsg lissajousCmd
-           ,Cmd.map DigitalClockPageMsg Page.DigitalClock.initialCmd
+           ,Cmd.map DigitalClockPageMsg digitalClockCmd
            ,Cmd.map MazePageMsg mazeCmd
         ])
 
