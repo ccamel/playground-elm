@@ -13,7 +13,7 @@ import Html.Events exposing (onInput)
 import List exposing (concatMap, drop, length, map, range, sum)
 import Markdown
 import Maybe exposing (withDefault)
-import Page.Common exposing (onClickBubble, strToFloatWithMinMax, strToIntWithMinMax)
+import Page.Common exposing (strToFloatWithMinMax, strToIntWithMinMax)
 import Platform.Cmd exposing (batch)
 import Round
 import String exposing (padLeft)
