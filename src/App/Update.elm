@@ -10,9 +10,8 @@ import Browser.Navigation as Nav
 import Maybe exposing (map, withDefault)
 import Page.About
 import Page.Calc
--- import Page.DigitalClock
+import Page.DigitalClock
 import Page.Lissajous
--- import Page.Maze
 import Page.Maze
 import String exposing (cons)
 import Tuple exposing (first, second)
@@ -38,6 +37,7 @@ update msg model =
                 ( aboutModel, aboutCmd ) = Page.About.init
                 ( calcModel, calcCmd ) = Page.Calc.init
                 ( lissajousModel, lissajousCmd ) = Page.Lissajous.init
+                ( digitalClockModel, digitalClockCmd ) = Page.DigitalClock.init
                 ( mazeModel, mazeCmd ) = Page.Maze.init
             in
                 case newRoute of
@@ -55,10 +55,10 @@ update msg model =
 
                      Page Lissajous ->
                         ( { clearedModel | route = newRoute, lissajousPage = Just lissajousModel  }, Cmd.map LissajousPageMsg lissajousCmd )
---
---                     Page DigitalClock ->
---                        ( { clearedModel | route = newRoute, digitalClockPage = Just Page.DigitalClock.initialModel  }, Cmd.map DigitalClockPageMsg Page.DigitalClock.initialCmd )
---
+
+                     Page DigitalClock ->
+                        ( { clearedModel | route = newRoute, digitalClockPage = Just digitalClockModel  }, Cmd.map DigitalClockPageMsg digitalClockCmd )
+
                      Page Maze ->
                         ( { clearedModel | route = newRoute, mazePage = Just mazeModel  }, Cmd.map MazePageMsg mazeCmd )
 
@@ -100,14 +100,14 @@ update msg model =
                               (Cmd.map LissajousPageMsg))
               |> withDefault (model, Cmd.none)
 
---        DigitalClockPageMsg m ->
---            model
---              |> .digitalClockPage
---              |> Maybe.map (Page.DigitalClock.update m) -- Maybe(mdl, Cmd msg)
---              |> Maybe.map ( adapt
---                              (\mdl -> {model | digitalClockPage = Just mdl})
---                              (Cmd.map DigitalClockPageMsg))
---              |> withDefault (model, Cmd.none)
+        DigitalClockPageMsg m ->
+            model
+              |> .digitalClockPage
+              |> Maybe.map (Page.DigitalClock.update m) -- Maybe(mdl, Cmd msg)
+              |> Maybe.map ( adapt
+                            (\mdl -> {model | digitalClockPage = Just mdl})
+                            (Cmd.map DigitalClockPageMsg))
+              |> withDefault (model, Cmd.none)
 
         MazePageMsg m ->
             model

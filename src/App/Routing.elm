@@ -21,7 +21,7 @@ parseFragment fragment =
         Just "about" -> Page About
         Just "calc" -> Page Calc
         Just "lissajous" -> Page Lissajous
---        , map (Page DigitalClock) (s "digital-clock")
+        Just "digital-clock" -> Page DigitalClock
         Just "maze" -> Page Maze
 
         _ -> NotFoundRoute

@@ -4,14 +4,11 @@ import App.Messages exposing (Msg(..))
 import App.Routing exposing(..)
 import Page.About exposing (..)
 import Page.Calc
--- import Page.DigitalClock
+import Page.DigitalClock
 import Page.Lissajous
--- import Page.Maze
-import Browser.Navigation as Nav
 import Browser.Navigation as Nav
 import Page.Maze
 import Platform.Cmd exposing (batch)
-import Json.Decode exposing (bool)
 
 type alias Model =
     {
@@ -21,8 +18,8 @@ type alias Model =
        ,aboutPage : Maybe Page.About.Model
        ,calcPage : Maybe Page.Calc.Model
        ,lissajousPage : Maybe Page.Lissajous.Model
---      ,digitalClockPage : Maybe Page.DigitalClock.Model
-      ,mazePage : Maybe Page.Maze.Model
+       ,digitalClockPage : Maybe Page.DigitalClock.Model
+       ,mazePage : Maybe Page.Maze.Model
     }
 
 
@@ -33,6 +30,7 @@ initialModel navKey route =
         ( calcModel, calcCmd ) = Page.Calc.init
         ( lissajousModel, lissajousCmd ) = Page.Lissajous.init
         ( mazeModel, mazeCmd ) = Page.Maze.init
+        ( digitalClockModel, digitalClockCmd ) = Page.DigitalClock.init
     in
         ({
         route = route
@@ -40,15 +38,15 @@ initialModel navKey route =
         -- models for pages
         ,aboutPage = Just aboutModel
         ,calcPage = Just calcModel
-          ,lissajousPage = Just lissajousModel
-    --      ,digitalClockPage = Just Page.DigitalClock.initialModel
+        ,lissajousPage = Just lissajousModel
+        ,digitalClockPage = Just Page.DigitalClock.initialModel
         ,mazePage = Just mazeModel
         }, batch [
             -- commands for pages
             Cmd.map AboutPageMsg aboutCmd
            ,Cmd.map CalcPageMsg calcCmd
            ,Cmd.map LissajousPageMsg lissajousCmd
-    --       ,Cmd.map DigitalClockPageMsg Page.DigitalClock.initialCmd
+           ,Cmd.map DigitalClockPageMsg Page.DigitalClock.initialCmd
            ,Cmd.map MazePageMsg mazeCmd
         ])
 

@@ -6,10 +6,9 @@ import Html exposing (Html)
 import Page.About
 import Page.Calc
 import Page.Common
--- import Page.DigitalClock
+import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
--- import Page.Maze
 
 emptyNode : Html msg
 emptyNode = Html.text ""
@@ -29,7 +28,7 @@ pages = [
     -- add new pages here:
     , Calc
     , Lissajous
---    , DigitalClock
+    , DigitalClock
     , Maze
  ]
 
@@ -71,7 +70,7 @@ pageSpec page =
             About -> toSpec Page.About.info Page.About.view Page.About.subscriptions  (\x -> AboutPageMsg x) (\model -> model.aboutPage)
             Calc -> toSpec Page.Calc.info Page.Calc.view Page.Calc.subscriptions (\x -> CalcPageMsg x) (\model -> model.calcPage)
             Lissajous -> toSpec Page.Lissajous.info Page.Lissajous.view Page.Lissajous.subscriptions LissajousPageMsg (\model -> model.lissajousPage)
-            -- DigitalClock -> toSpec Page.DigitalClock.info Page.DigitalClock.view Page.DigitalClock.subscriptions DigitalClockPageMsg (\model -> model.digitalClockPage)
+            DigitalClock -> toSpec Page.DigitalClock.info Page.DigitalClock.view Page.DigitalClock.subscriptions DigitalClockPageMsg (\model -> model.digitalClockPage)
             Maze -> toSpec Page.Maze.info Page.Maze.view Page.Maze.subscriptions MazePageMsg (\model -> model.mazePage)
 
 
