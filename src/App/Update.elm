@@ -13,6 +13,7 @@ import Page.Calc
 -- import Page.DigitalClock
 import Page.Lissajous
 -- import Page.Maze
+import Page.Maze
 import String exposing (cons)
 import Tuple exposing (first, second)
 import Url
@@ -37,6 +38,7 @@ update msg model =
                 ( aboutModel, aboutCmd ) = Page.About.init
                 ( calcModel, calcCmd ) = Page.Calc.init
                 ( lissajousModel, lissajousCmd ) = Page.Lissajous.init
+                ( mazeModel, mazeCmd ) = Page.Maze.init
             in
                 case newRoute of
                      NotFoundRoute ->
@@ -57,8 +59,8 @@ update msg model =
 --                     Page DigitalClock ->
 --                        ( { clearedModel | route = newRoute, digitalClockPage = Just Page.DigitalClock.initialModel  }, Cmd.map DigitalClockPageMsg Page.DigitalClock.initialCmd )
 --
---                     Page Maze ->
---                        ( { clearedModel | route = newRoute, mazePage = Just Page.Maze.initialModel  }, Cmd.map MazePageMsg Page.Maze.initialCmd )
+                     Page Maze ->
+                        ( { clearedModel | route = newRoute, mazePage = Just mazeModel  }, Cmd.map MazePageMsg mazeCmd )
 
 
 
@@ -107,14 +109,14 @@ update msg model =
 --                              (Cmd.map DigitalClockPageMsg))
 --              |> withDefault (model, Cmd.none)
 
---        MazePageMsg m ->
---            model
---              |> .mazePage
---              |> Maybe.map (Page.Maze.update m) -- Maybe(mdl, Cmd msg)
---              |> Maybe.map ( adapt
---                              (\mdl -> {model | mazePage = Just mdl})
---                              (Cmd.map MazePageMsg))
---              |> withDefault (model, Cmd.none)
+        MazePageMsg m ->
+            model
+              |> .mazePage
+              |> Maybe.map (Page.Maze.update m) -- Maybe(mdl, Cmd msg)
+              |> Maybe.map ( adapt
+                              (\mdl -> {model | mazePage = Just mdl})
+                              (Cmd.map MazePageMsg))
+              |> withDefault (model, Cmd.none)
 
 adapt : (m -> Model) -> (Cmd a -> Cmd Msg) -> (m, Cmd a) -> (Model, Cmd Msg)
 adapt toModel toCmd modelCmd =

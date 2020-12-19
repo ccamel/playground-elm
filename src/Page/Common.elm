@@ -60,13 +60,3 @@ onClickNotPropagate msg =
             , preventDefault = True
             }
         )
-
-onClickBubble : a -> Html.Attribute a
-onClickBubble msg =
-    custom "click"
-        (Decode.succeed
-            { message = msg
-            , stopPropagation = False
-            , preventDefault = False
-            }
-        )

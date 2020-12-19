@@ -22,7 +22,7 @@ parseFragment fragment =
         Just "calc" -> Page Calc
         Just "lissajous" -> Page Lissajous
 --        , map (Page DigitalClock) (s "digital-clock")
---        , map (Page Maze) (s "maze")
+        Just "maze" -> Page Maze
 
         _ -> NotFoundRoute
 
