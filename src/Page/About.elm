@@ -1,7 +1,7 @@
 module Page.About exposing (..)
 
-import Html exposing (Html, a, div, h2, h3, hr, i, img, li, p, text, ul)
-import Html.Attributes exposing (alt, attribute, class, href, src, style)
+import Html exposing (Html, a, div, h2, hr, i, p, text)
+import Html.Attributes exposing (attribute, class, href, style)
 import Markdown
 import Page.Common
 

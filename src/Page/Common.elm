@@ -1,17 +1,13 @@
 module Page.Common exposing (..)
 
--- importColor exposing (Color, rgb, toCssString)
-import GraphicSVG exposing (Color)
 import Html exposing (Html)
 import Html.Events exposing (..)
-import Json.Decode exposing (succeed)
-import List exposing (map)
+import Json.Decode
+import List
 import Maybe exposing (andThen)
-import Result exposing (toMaybe)
-import String.Interpolate exposing (interpolate)
 import Svg
 import Svg.Attributes exposing (class)
-import String exposing (fromInt)
+import String
 import Json.Decode as Decode
 
 type alias PageInfo a = {

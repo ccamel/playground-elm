@@ -1,12 +1,12 @@
 module Page.Calc exposing (..)
 
-import Html exposing (Html, a, div, h2, h3, hr, i, img, input, li, p, text, ul)
-import Html.Attributes exposing (alt, attribute, class, href, src, style, type_, value)
+import Html exposing (Html, a, div, hr, input, p, text)
+import Html.Attributes exposing (attribute, class, style, type_, value)
 import Html.Events exposing (onClick)
 import Basics.Extra exposing (flip)
 import List exposing (drop, foldl, foldr, take)
 import Markdown
-import Maybe exposing (andThen, withDefault)
+import Maybe exposing (withDefault)
 import Page.Common
 import Result exposing (toMaybe)
 import String exposing (fromFloat, fromInt)

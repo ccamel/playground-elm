@@ -1,14 +1,14 @@
 module Page.Maze exposing (..)
 
-import Array exposing (Array, get, initialize, set, toList)
+import Array exposing (Array, get, initialize, set)
 import FormatNumber exposing (format)
 import FormatNumber.Locales exposing (Locale, usLocale)
-import Html exposing (Html, a, button, div, h2, h3, hr, i, img, input, li, p, pre, span, text, ul)
-import Html.Attributes exposing (alt, attribute, class, classList, download, href, id, name, size, src, style, title, type_, value)
+import Html exposing (Html, a, button, div, hr, i, input, span, text)
+import Html.Attributes exposing (attribute, class, classList, href, id, name, style, title, type_, value)
 import Html.Events exposing (onInput)
 import File.Download as Download
-import Json.Encode exposing (Value, array, encode, int, list, object, string)
-import List exposing (append, map, range, repeat)
+import Json.Encode exposing (Value, encode, int, list, object, string)
+import List exposing (map, range, repeat)
 import List.Extra exposing (last, splitAt)
 import Markdown
 import Maybe exposing (withDefault)

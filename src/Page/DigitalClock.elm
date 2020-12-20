@@ -1,26 +1,20 @@
 module Page.DigitalClock exposing (..)
 
--- import Color exposing (Color, rgb, toRgb)
 import Color exposing (Color, rgb255, toCssString)
 import ColorPicker
--- import Date exposing (fromTime, hour, minute, second)
-import Html exposing (Html, a, button, div, h2, h3, hr, i, img, input, li, p, span, text, ul)
-import Html.Attributes exposing (alt, attribute, class, href, name, size, src, style, type_, value)
+import Html exposing (Html, button, div, hr, input, p, span, text)
+import Html.Attributes exposing (attribute, class, name, size, style, type_, value)
 import Html.Events exposing (onInput)
 import Maybe exposing (withDefault)
 import String exposing (fromInt, padLeft)
 import String.Interpolate exposing (interpolate)
-import Svg.Attributes as SvgAtt exposing (style, transform)
-import List exposing (append, map, member)
+import Svg.Attributes as SvgAtt exposing (transform)
+import List exposing (map, member)
 import Markdown
 import Page.Common exposing (classList, strToIntWithMinMax)
-import Svg exposing (Svg, circle, g, path, rect, svg)
-import Svg.Attributes exposing (cx, cy, d, fill, height, id, r, stroke, strokeWidth, viewBox, width, x, y)
+import Svg exposing (Svg, circle, g, path, svg)
+import Svg.Attributes exposing (cx, cy, d, height, id, r, viewBox, width, x)
 import Time exposing (Posix, Zone, every, toHour, toMinute, toSecond, utc)
--- import Time exposing (Time, every, millisecond, now)
-
-
-
 
 
 -- PAGE INFO

@@ -1,18 +1,15 @@
 module App.View exposing (..)
 
-import App.Pages exposing (emptyNode, pageDescription, pageHash, pageName, pageSrc, pageView, pages)
+import App.Pages exposing (pageDescription, pageHash, pageName, pageSrc, pageView, pages)
 import Browser
-import Html exposing (Html, a, button, div, footer, h1, h2, h3, hr, i, img, li, nav, p, section, span, text, ul)
-import Html.Attributes exposing (alt, attribute, class, classList, href, id, src, style, target, title, type_)
+import Html exposing (Html, a, div, footer, h1, h2, h3, hr, i, img, li, nav, p, section, span, text, ul)
+import Html.Attributes exposing (alt, attribute, class, href, id, src, style, title, type_)
 import Html.Events exposing (onClick)
 import App.Messages exposing (Msg(..), Page(..))
 import App.Models exposing (Model)
 import App.Routing exposing (Route(..), nextPage, prevPage)
-import Html.Events exposing (preventDefaultOn)
-import Html.Events exposing (on)
-import Set exposing (Set)
-import Svg.Attributes exposing (mode)
--- import Page.Common exposing (onClickNotPropagate)
+import Html.Events
+import Html.Events
 
 
 -- the main view

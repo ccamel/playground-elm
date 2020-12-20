@@ -1,6 +1,6 @@
 module Page.Lissajous exposing (..)
 
-import GraphicSVG exposing (LineType, Shape, Stencil, circle, filled, fixedwidth, group, line, move, openPolygon, outlined, rect, rgb, rgba, rotate, solid)
+import GraphicSVG exposing (LineType, Shape, Stencil, circle, filled, fixedwidth, group, line, move, openPolygon, outlined, rect, rotate, solid)
 import GraphicSVG.Widget as Widget
 import Basics.Extra exposing (flip)
 import Color exposing (rgb255, green, red, toCssString)
