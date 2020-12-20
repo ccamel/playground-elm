@@ -14,7 +14,7 @@ branches:
   - gh-pages
 env:
   matrix:
-  - ELM_VERSION=0.18.0 TARGET_NODE_VERSION=node
+  - ELM_VERSION=0.19.1 TARGET_NODE_VERSION=node
 before_install:
 - |
   export PATH=$HOME/.cpus/bin:$PATH;
@@ -39,7 +39,7 @@ deploy:
 - provider: script
   # deploy the generated site to gh-pages
   skip_cleanup: true
-s  script: ./scripts/deploy-to-gh-pages.sh
+  script: ./scripts/deploy-to-gh-pages.sh
   on:
     tags: true
     branch: master
