@@ -11,7 +11,8 @@
     "web-application",
     "spa",
     "bootstrap",
-    "webpack3",
+    "parcel",
+    "svg",
     "demo-site"
   ],
   "private": true,
