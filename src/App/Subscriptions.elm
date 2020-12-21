@@ -18,5 +18,5 @@ subscriptions model =
     ]
 
 mainSubscriptions : Model -> Sub Msg
-mainSubscriptions model = Sub.none
+mainSubscriptions _ = Sub.none
 

@@ -265,7 +265,7 @@ doResetAccu : Model -> Model
 doResetAccu model = { model | accumulator = "" }
 
 doClear : Model -> ( Model, Cmd Msg )
-doClear model = init
+doClear _ = init
 
 doMS : Model -> Model
 doMS model =  { model | memory = toMaybe (result model) }
@@ -304,8 +304,7 @@ result model =
 -- SUBSCRIPTIONS
 
 subscriptions : Model -> Sub Msg
--- subscriptions model = Keyboard.presses KeyMsg
-subscriptions model =
+subscriptions _ =
     let
       eventKeyDecoder = Json.field "key" (Json.string |> Json.map KeyMsg)
     in
@@ -372,7 +371,7 @@ renderMemoryTag model =
     div [class "tag"]
     [
       text (model.memory
-            |> Maybe.map (\it -> "M")
+            |> Maybe.map (\_ -> "M")
             |> withDefault " ")
     ]
 

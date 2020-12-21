@@ -36,19 +36,19 @@ init = (
 type Msg = Reset
 
 update : Msg -> Model -> (Model, Cmd Msg)
-update msg model =
+update msg _ =
   case msg of
     Reset -> init
 
 -- SUBSCRIPTIONS
 
 subscriptions : Model -> Sub Msg
-subscriptions model = Sub.none
+subscriptions _ = Sub.none
 
 -- VIEW
 
 view : Model -> Html Msg
-view model =
+view _ =
   div [ class "container" ]
       [ hr [] []
        ,p [class "text-muted"]

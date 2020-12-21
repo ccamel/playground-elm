@@ -7,12 +7,12 @@ import App.Routing exposing (Route)
 import App.Update exposing (update)
 import App.View exposing (view)
 import Browser.Navigation as Nav
-import Json.Decode as Decode exposing (Value)
+import Json.Decode exposing (Value)
 import Browser
 import Url exposing (Url)
 
 init : flags -> Url -> Nav.Key -> (Model, Cmd Msg)
-init flags url navKey =
+init _ url navKey =
     let
         currentRoute =
             App.Routing.toRoute url

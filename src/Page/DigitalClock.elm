@@ -241,19 +241,6 @@ stringToFigures s =
     |> String.toList
     |> List.map charToFigure
 
-segmentToName : Segment -> String
-segmentToName seg =
-    case seg of
-        A -> "A"
-        B -> "B"
-        C -> "C"
-        D -> "D"
-        E -> "E"
-        F -> "F"
-        G -> "G"
-        H -> "H"
-        I -> "I"
-
 timeToString : Zone -> Posix -> String
 timeToString zone date  =
     let

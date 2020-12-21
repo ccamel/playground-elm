@@ -134,7 +134,7 @@ emptyMaze width height =
     {
         width = width
        ,height = height
-       ,cells = initialize width (\x -> initialize  height (\y -> []))
+       ,cells = initialize width (\_ -> initialize  height (\_ -> []))
        ,state = Created
     }
 
@@ -240,7 +240,7 @@ update msg model =
                   Created ->
                       -- going to initializing state
                       { model | maze = { maze | state = Initializing <| initialInitializingContext time } }
-                  Initializing  ctx ->
+                  Initializing _ ->
                       { model | maze = stepMaze model.maze }
                   Ready ->
                       {model | auto = False}
@@ -277,22 +277,16 @@ update msg model =
     Reset -> ( initialModelWithMazeSize model.maze.width model.maze.height, Cmd.none )
 
     SetWidth s ->
-        let
-            maze = model.maze
-        in
-            ( case (strToIntWithMinMax s maxDimensionsMaze.minW maxDimensionsMaze.maxW) of
-                Just width -> initialModelWithMazeSize width model.maze.height
-                Nothing -> model
-             ,Cmd.none)
+        ( case (strToIntWithMinMax s maxDimensionsMaze.minW maxDimensionsMaze.maxW) of
+            Just width -> initialModelWithMazeSize width model.maze.height
+            Nothing -> model
+         ,Cmd.none)
 
     SetHeight s ->
-        let
-            maze = model.maze
-        in
-            ( case (strToIntWithMinMax s maxDimensionsMaze.minH maxDimensionsMaze.maxH) of
-                Just height -> initialModelWithMazeSize model.maze.width height
-                Nothing -> model
-             ,Cmd.none)
+        ( case (strToIntWithMinMax s maxDimensionsMaze.minH maxDimensionsMaze.maxH) of
+            Just height -> initialModelWithMazeSize model.maze.width height
+            Nothing -> model
+         ,Cmd.none)
 
     SetDimension (w,h) ->
         let
@@ -567,7 +561,7 @@ isWall x y maze =
       |> (==) 0
 
 isEntrance : Int -> Int -> Maze -> Bool
-isEntrance x y maze = (x == 0) && (y == 0)
+isEntrance x y _ = (x == 0) && (y == 0)
 
 isExit : Int -> Int -> Maze -> Bool
 isExit x y maze = (x == maze.width - 1) && (y == maze.height - 1)

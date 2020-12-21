@@ -164,7 +164,7 @@ homePage model =
             ]
 
 pageCard :  Model -> Page -> Html Msg
-pageCard model page =
+pageCard _ page =
     div [ class "col-sm-3" ]
         [ div [ class "card animated fadeInUp" ]
             [ div [ class "card-block" ] [
