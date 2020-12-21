@@ -26,30 +26,32 @@
   },
   "main": "src/index.js",
   "engines": {
-    "node": ">=7.10.0",
-    "npm": ">=4.2.0"
+    "node": ">=14.15.3",
+    "npm": ">=6.14.9"
   },
   "scripts": {
     "build": "parcel build src/index.html",
-    "serve": "parcel src/index.html"
+    "serve": "parcel src/index.html",
+    "release": "release-it"
   },
   "dependencies": {
     "animate.css": "^3.5.2",
     "bootstrap": "^4.0.1",
-    "parcel-bundler": "^1.10.0",
     "file-loader": "^0.11.2",
     "font-awesome": "^4.7.0",
     "jquery": "^3.2.1",
+    "parcel-bundler": "^1.10.0",
     "popper.js": "^1.11.1",
+    "release-it": "^14.2.2",
     "style-loader": "^0.18.2",
     "tether": "^1.3.8",
     "url-loader": "^0.5.7"
   },
   "devDependencies": {
-    "resolve-url-loader": "^2.1.0",
-    "rimraf": "^2.6.1",
     "elm": "^0.19.1-no-dep",
     "elm-hot": "^1.1.0",
-    "node-elm-compiler": "^5.0.1"
+    "node-elm-compiler": "^5.0.1",
+    "resolve-url-loader": "^2.1.0",
+    "rimraf": "^2.6.1"
   }
 }

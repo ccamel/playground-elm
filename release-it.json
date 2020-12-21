@@ -1,0 +1,11 @@
+{
+  "git": {
+    "commitMessage": ":bookmark: release v${version}"
+  },
+  "github": {
+    "release": true
+  },
+  "npm": {
+    "publish": false
+  }
+}
