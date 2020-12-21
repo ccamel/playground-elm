@@ -1,14 +1,17 @@
 module Page.Calc exposing (..)
 
-import Html exposing (Html, a, div, h2, h3, hr, i, img, input, li, p, text, ul)
-import Html.Attributes exposing (alt, attribute, class, href, src, style, type_, value)
+import Html exposing (Html, a, div, hr, input, p, text)
+import Html.Attributes exposing (attribute, class, style, type_, value)
 import Html.Events exposing (onClick)
-import Keyboard
+import Basics.Extra exposing (flip)
 import List exposing (drop, foldl, foldr, take)
 import Markdown
-import Maybe exposing (andThen, withDefault)
+import Maybe exposing (withDefault)
 import Page.Common
 import Result exposing (toMaybe)
+import String exposing (fromFloat, fromInt)
+import Json.Decode as Json
+import Browser.Events
 
 -- PAGE INFO
 
@@ -39,17 +42,16 @@ type alias Model = {
    , memory: Maybe Float
  }
 
-initialModel : Model
-initialModel = {
-     outputs = []
-   , operators = []
-   , state = ACCUM
-   , accumulator = ""
-   , memory = Nothing
-  }
-
-initialCmd : Cmd Msg
-initialCmd = Cmd.none
+init: (Model, Cmd Msg)
+init = (
+    {
+      outputs = []
+    , operators = []
+    , state = ACCUM
+    , accumulator = ""
+    , memory = Nothing
+    },
+    Cmd.none)
 
 -- MESSAGES
 
@@ -72,7 +74,7 @@ type Token =
 
 type Msg =
     Emitted Token
-  | KeyMsg Keyboard.KeyCode
+  | KeyMsg String
 
 -- UPDATE
 
@@ -80,40 +82,36 @@ update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
         Emitted token ->
-            (apply token model, Cmd.none)
-        KeyMsg code ->
+            apply token model
+        KeyMsg key ->
             let
-                dummy = Debug.log "--> " code
-                token = case code of
-                    48 -> Just (Digit 0)
-                    49 -> Just (Digit 1)
-                    50 -> Just (Digit 2)
-                    51 -> Just (Digit 3)
-                    52 -> Just (Digit 4)
-                    53 -> Just (Digit 5)
-                    54 -> Just (Digit 6)
-                    55 -> Just (Digit 7)
-                    56 -> Just (Digit 8)
-                    57 -> Just (Digit 9)
-                    43 -> Just (Operator Plus)
-                    45 -> Just (Operator Minus)
-                    47 -> Just (Operator Divide)
-                    42 -> Just (Operator Multiply)
-                    120 -> Just (Operator Multiply)
-                    13 -> Just (Operator Result)
-                    61 -> Just (Operator Result)
-                    46 -> Just Dot
-                    99 -> Just Clear
+                -- dummy = Debug.log "--> " key
+                token = case key of
+                    "0" -> Just (Digit 0)
+                    "1" -> Just (Digit 1)
+                    "2" -> Just (Digit 2)
+                    "3" -> Just (Digit 3)
+                    "4" -> Just (Digit 4)
+                    "5" -> Just (Digit 5)
+                    "6" -> Just (Digit 6)
+                    "7" -> Just (Digit 7)
+                    "8" -> Just (Digit 8)
+                    "9" -> Just (Digit 9)
+                    "+" -> Just (Operator Plus)
+                    "-" -> Just (Operator Minus)
+                    "/" -> Just (Operator Divide)
+                    "*" -> Just (Operator Multiply)
+                    "=" -> Just (Operator Result)
+                    "." -> Just Dot
+                    "Delete" -> Just Clear
                     _ -> Nothing
-
-                newModel = token
-                             |> Maybe.map (flip apply model)
-                             |> Maybe.withDefault model
             in
-                (newModel, Cmd.none)
+                token
+                  |> Maybe.map (flip apply model)
+                  |> Maybe.withDefault (model, Cmd.none)
 
 -- apply the given token to the model, computing a new state
-apply : Token -> Model -> Model
+apply : Token -> Model -> (Model,  Cmd Msg)
 apply token model =
   case model.state of
     ACCUM ->
@@ -122,28 +120,34 @@ apply token model =
                 model
                   |> doClear
             Digit _ ->
-                model
-                  |> doAccumulate token
+                (model
+                  |> doAccumulate token,
+                  Cmd.none)
             Dot ->
-                model
+                (model
                   |> doAccumulate token
-                  |> go DOT
+                  |> go DOT,
+                  Cmd.none)
             Operator op ->
-                model
+                (model
                   |> doOperator op
-                  |> go OPERATOR
+                  |> go OPERATOR,
+                  Cmd.none)
             MR ->
-                model
+                (model
                   |> doMR
-                  |> go OPERATOR
+                  |> go OPERATOR,
+                  Cmd.none)                  
             MC ->
-                model
+                (model
                   |> doMC
-                  |> go OPERATOR
+                  |> go OPERATOR,
+                  Cmd.none)
             MS ->
-                model
+                (model
                   |> doMS
-                  |> go OPERATOR
+                  |> go OPERATOR,
+                  Cmd.none)
 
     OPERATOR ->
         case token of
@@ -151,27 +155,33 @@ apply token model =
                 model
                   |> doClear
             Digit _ ->
-                model
+                (model
                   |> doResetAccu
                   |> doAccumulate token
-                  |> go ACCUM
+                  |> go ACCUM,
+                  Cmd.none)
             Dot ->
-                model
+                (model
                   |> doResetAccu
                   |> doAccumulate token
-                  |> go DOT
+                  |> go DOT,
+                  Cmd.none)
             Operator op ->
-                model
-                  |> doOperator op
+                (model
+                  |> doOperator op,
+                  Cmd.none)
             MR ->
-                model
-                  |> doMR
+                (model
+                  |> doMR,
+                  Cmd.none)
             MC ->
-                model
-                  |> doMC
+                (model
+                  |> doMC,
+                  Cmd.none)
             MS ->
-                model
-                  |> doMS
+                (model
+                  |> doMS,
+                  Cmd.none)
 
     DOT ->
         case token of
@@ -179,30 +189,35 @@ apply token model =
                 model
                   |> doClear
             Digit _ ->
-                model
-                  |> doAccumulate token
+                (model
+                  |> doAccumulate token,
+                  Cmd.none)
             Dot ->
-                model
+                (model, Cmd.none)
             Operator op ->
-                model
+                (model
                   |> doOperator op
-                  |> go OPERATOR
+                  |> go OPERATOR,
+                  Cmd.none)
             MR ->
-                model
+                (model
                   |> doMR
-                  |> go OPERATOR
+                  |> go OPERATOR,
+                  Cmd.none)
             MC ->
-                model
+                (model
                   |> doMC
-                  |> go OPERATOR
+                  |> go OPERATOR,
+                  Cmd.none)
             MS ->
-                model
+                (model
                   |> doMS
-                  |> go OPERATOR
+                  |> go OPERATOR,
+                  Cmd.none)
     ERROR ->
         case token of
             Clear -> doClear model
-            _ -> model
+            _ -> (model, Cmd.none)
 
 
 doAccumulate : Token -> Model -> Model
@@ -210,7 +225,7 @@ doAccumulate d model =
   let
     value = case (d, model.accumulator) of
                 (Digit 0, "") -> ""
-                (Digit n, a ) -> a ++ (toString n)
+                (Digit n, a ) -> a ++ (String.fromInt n)
                 (Dot, a) -> a ++ "."
                 (_, a) -> a
   in
@@ -225,14 +240,14 @@ doOperator op model =
                 if (opPriority o) <= (opPriority head) then
                     let
                         (args, rest) = (take 2 m.outputs, drop 2 m.outputs)
-                        result = case head of
+                        r = case head of
                             Plus -> foldr (\a b -> a + b) 0 args
                             Minus -> foldl (\a b -> a - b) 0 args
                             Multiply -> foldr (\a b -> b * a) 1 args
                             Divide -> foldl (\a b -> a / b) 1 args
                             Result -> 0.0 -- should not occur
                     in
-                        reduce {m | operators = tail, outputs = result :: rest, accumulator = (toString result) } o
+                        reduce {m | operators = tail, outputs = r :: rest, accumulator = (fromFloat r) } o
 
                 else
                     m
@@ -249,8 +264,8 @@ doOperator op model =
 doResetAccu : Model -> Model
 doResetAccu model = { model | accumulator = "" }
 
-doClear : Model -> Model
-doClear model = initialModel
+doClear : Model -> ( Model, Cmd Msg )
+doClear model = init
 
 doMS : Model -> Model
 doMS model =  { model | memory = toMaybe (result model) }
@@ -262,7 +277,7 @@ doMC model =  { model | memory = Nothing }
 doMR : Model -> Model
 doMR model =
     case model.memory of
-        Just v -> { model | accumulator = (toString v) }
+        Just v -> { model | accumulator = (fromFloat v) }
         Nothing -> model
 
 go : State -> Model -> Model
@@ -284,12 +299,18 @@ result model =
     _ ->
         case model.accumulator of
             "" -> Ok 0.0
-            d -> String.toFloat d
+            d -> String.toFloat d |> Result.fromMaybe "error"
 
 -- SUBSCRIPTIONS
 
 subscriptions : Model -> Sub Msg
-subscriptions model = Keyboard.presses KeyMsg
+-- subscriptions model = Keyboard.presses KeyMsg
+subscriptions model =
+    let
+      eventKeyDecoder = Json.field "key" (Json.string |> Json.map KeyMsg)
+    in
+      Browser.Events.onKeyPress eventKeyDecoder
+
 
 -- VIEW
 
@@ -362,12 +383,13 @@ renderOperatorTag model =
      model.operators
         |> List.head
         |> Maybe.map (\token ->
-            case token of
+             case token of
                 Plus -> "+"
                 Minus -> "-"
                 Multiply -> "x"
                 Divide -> "/"
-                Result -> "=")
+                Result -> "="
+           )
         |> withDefault " "
         |> text
    ]
@@ -398,7 +420,7 @@ button token model =
   in
       case token of
         Clear             -> render "C" "clear col-2 push-1"
-        Digit d           -> render (toString d) "digit col-2"
+        Digit d           -> render (fromInt d) "digit col-2"
         Operator Plus     -> render "+" "operator col-2 push-1"
         Operator Minus    -> render "-" "operator col-2 push-1"
         Operator Multiply -> render "x" "operator col-2 push-1"

@@ -1,11 +1,12 @@
 module App.Messages exposing (..)
 
-import Navigation exposing (Location)
 import Page.About
 import Page.Calc
+import Page.Maze
+import Url exposing (Url)
+import Browser exposing (Document)
 import Page.DigitalClock
 import Page.Lissajous
-import Page.Maze
 
 type Page
     = About
@@ -16,10 +17,10 @@ type Page
 
 
 type Msg
-    = OnLocationChange Location
+    = UrlChanged Url
+    | LinkClicked Browser.UrlRequest
     | GoToHome
     | GoToPage Page
-
     -- messages for pages
     | AboutPageMsg Page.About.Msg
     | CalcPageMsg Page.Calc.Msg

@@ -1,7 +1,7 @@
 module Page.About exposing (..)
 
-import Html exposing (Html, a, div, h2, h3, hr, i, img, li, p, text, ul)
-import Html.Attributes exposing (alt, attribute, class, href, src, style)
+import Html exposing (Html, a, div, h2, hr, i, p, text)
+import Html.Attributes exposing (attribute, class, href, style)
 import Markdown
 import Page.Common
 
@@ -25,11 +25,11 @@ type alias Model = {
 
  }
 
-initialModel : Model
-initialModel = {}
+init: (Model, Cmd Msg)
+init = (
+    {},
+    Cmd.none)
 
-initialCmd : Cmd Msg
-initialCmd = Cmd.none
 
 -- UPDATE
 
@@ -38,7 +38,7 @@ type Msg = Reset
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    Reset -> (initialModel, initialCmd)
+    Reset -> init
 
 -- SUBSCRIPTIONS
 
@@ -69,11 +69,11 @@ view model =
        ,p [class "text-muted"]
             [ text "The showcases are intended to be:" ]
 
-       ,div [ class "row", style [("padding-top", "2em")] ]
+       ,div [ class "row", style "padding-top" "2em" ]
           [ div [ class "col-lg-4" ]
               [ i [ attribute "aria-hidden" "true", class "fa fa-child fa-3x iconic" ]
                   []
-              , h2 [style [("padding-top", "1em")]]
+              , h2 [style "padding-top" "1em"]
                   [ text "» simple" ]
               , p []
                   [ text "Fairly simple and understandable. Every showcase is implemented in a single elm file."
@@ -83,7 +83,7 @@ view model =
              ,div [ class "col-lg-4" ]
                 [ i [ attribute "aria-hidden" "true", class "fa fa-search fa-3x iconic" ]
                     []
-                , h2 [style [("padding-top", "1em")]]
+                , h2 [style "padding-top" "1em"]
                     [ text "» exploratory" ]
                 , p []
                     [  text "Highlight some aspects of the "
@@ -101,7 +101,7 @@ view model =
              ,div [ class "col-lg-4" ]
                 [ i [ attribute "aria-hidden" "true", class "fa fa-futbol-o fa-3x iconic" ]
                     []
-                , h2 [style [("padding-top", "1em")]]
+                , h2 [style "padding-top" "1em"]
                     [ text "» playable" ]
                 , p []
                     [ text "As much as possible, provides a useful and functional content."

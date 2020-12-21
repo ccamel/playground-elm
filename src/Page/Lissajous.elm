@@ -1,26 +1,29 @@
 module Page.Lissajous exposing (..)
 
-import AnimationFrame
-import Collage exposing (Form, LineStyle, Path, circle, collage, defaultLine, filled, group, move, moveY, oval, path, rect, rotate, segment, traced)
-import Color exposing (Color, darkPurple, green, lightGrey, red, rgb)
+import GraphicSVG exposing (LineType, Shape, Stencil, circle, filled, fixedwidth, group, line, move, openPolygon, outlined, rect, rotate, solid)
+import GraphicSVG.Widget as Widget
+import Basics.Extra exposing (flip)
+import Color exposing (rgb255, green, red, toCssString)
 import ColorPicker
-import Element exposing (container, middle, toHtml)
 import FormatNumber exposing (format)
 import FormatNumber.Locales exposing (Locale, usLocale)
-import Html exposing (Html, a, br, button, code, div, form, h2, h3, hr, i, img, input, label, li, p, span, text, u, ul)
-import Html.Attributes exposing (alt, attribute, class, href, id, max, min, name, size, src, step, style, type_, value)
-import Html.Events exposing (defaultOptions, onClick, onInput, onWithOptions)
-import List exposing (append, concatMap, drop, length, map, range, sum)
+import Html exposing (Html, a, br, button, div, hr, input, p, span, text)
+import Html.Attributes exposing (attribute, class, href, id, name, size, step, style, type_, value)
+import Html.Events exposing (onInput)
+import List exposing (concatMap, drop, length, map, range, sum)
 import Markdown
-import Maybe exposing (andThen, withDefault)
-import Page.Common exposing (asCss, onClickNotPropagate, strToFloatWithMinMax, strToIntWithMinMax)
-import Result exposing (toMaybe)
+import Maybe exposing (withDefault)
+import Page.Common exposing (strToFloatWithMinMax, strToIntWithMinMax)
+import Platform.Cmd exposing (batch)
 import Round
 import String exposing (padLeft)
 import String.Interpolate exposing (interpolate)
-import Text exposing (color, fromString, monospace)
-import Time exposing (Time)
-
+import Task
+import Browser.Events
+import Page.Common exposing (onClickNotPropagate)
+import String exposing (fromInt)
+import Browser.Events exposing (onAnimationFrameDelta)
+import String exposing (fromFloat)
 
 
 -- PAGE INFO
@@ -59,28 +62,40 @@ type alias Model = {
     -- a list containing n last ticks, used to compute the fps (frame per seconds)
     ,ticks : Ticks
     ,foregroundColorPicker : ColorPicker.State
+    -- widget underlying model
+    ,widgetState : Widget.Model
   }
 
-initialModel : Model
-initialModel = {
-      a = 3
-     ,b = 4
-     ,p = 90 -- π/2
-     ,vp = 1
-     ,started = True
-     ,curveStyle = { defaultLine | width = 2, color = rgb 31 122 31 }
-     ,resolution = 500
-     ,ticks = createTicks 100 -- initial capacity
-     ,foregroundColorPicker = ColorPicker.empty
-  }
+type alias LineStyle =
+    { color : Color.Color
+    , lineType : LineType
+    }
 
-initialCmd : Cmd Msg
-initialCmd = Cmd.none
+init: (Model, Cmd Msg)
+init =
+    let
+        (widgetModel, widgetCmd) = Widget.init (toFloat constants.width) (toFloat constants.height) "lissajous"
+    in
+        ({
+              a = 3
+             ,b = 4
+             ,p = 90 -- π/2
+             ,vp = 1
+             ,started = True
+             ,curveStyle = { color = Color.rgb255 31 122 31, lineType = solid 2 }
+             ,resolution = 500
+             ,ticks = createTicks 100 -- initial capacity
+             ,foregroundColorPicker = ColorPicker.empty
+             ,widgetState = widgetModel
+          },
+          batch [
+            Cmd.map WidgetMessage widgetCmd
+          ])
 
 -- UPDATE
 type Msg =
-      Reset Model
-    | Tick Time
+      Reset
+    | Tick Float
     | Start
     | Stop
     | SetPhaseVelocity String
@@ -89,11 +104,14 @@ type Msg =
     | SetResolution String
     | SetPhase String
     | ForegroundColorPickerMsg ColorPicker.Msg
+    | WidgetMessage Widget.Msg
+    | Batch (List Msg)
+    | NoOp
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    Reset m -> (m, initialCmd)
+    Reset -> init
     Tick diff ->
         let
           -- compute the new phase according to velocity (diff is in ms)
@@ -130,28 +148,44 @@ update msg model =
     SetPhase p ->
         if not model.started then
             case (String.toFloat p) of
-                Ok v -> ({ model | p = modulo 180.0 v }, Cmd.none)
-                Err _ -> (model, Cmd.none)
+                Just v -> ({ model | p = modulo 180.0 v }, Cmd.none)
+                Nothing -> (model, Cmd.none)
         else
             (model, Cmd.none)
-    ForegroundColorPickerMsg msg ->
+    ForegroundColorPickerMsg msgf ->
             let
                 curveStyle = model.curveStyle
                 ( state, color ) =
-                    ColorPicker.update msg curveStyle.color model.foregroundColorPicker
+                    ColorPicker.update msgf curveStyle.color model.foregroundColorPicker
             in
                 ({ model
                     | foregroundColorPicker = state
-                    , curveStyle = { curveStyle | color = color |> Maybe.withDefault curveStyle.color }
+                    , curveStyle = { curveStyle | color = Maybe.withDefault curveStyle.color color }
                  }
                  , Cmd.none)
+    WidgetMessage msgw ->
+            let
+                (widgetModel, widgetCmd) = Widget.update msgw model.widgetState
+            in
+                ({ model | widgetState = widgetModel }, Cmd.map WidgetMessage widgetCmd)
+    Batch [] ->
+       ( model, Cmd.none )
+    Batch (x :: xs) ->
+        let
+            ( newModel, cmd ) =
+                update x model
+        in
+            ( newModel
+            , Cmd.batch [ cmd, sendMsg (Batch xs) ]
+            )
+    NoOp -> (model, Cmd.none)
 
 -- SUBSCRIPTIONS
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     if model.started then
-        AnimationFrame.diffs Tick
+        onAnimationFrameDelta Tick
     else
         Sub.none
 
@@ -174,35 +208,31 @@ view model =
   div [ class "container animated flipInX" ]
       [ hr [] []
        , Markdown.toHtml [class "info"] """
-##### Animated [Lissajouss figures](https://en.wikipedia.org/wiki/Lissajouss_curve) using HTML5 canvas.
+##### Animated [Lissajouss figures](https://en.wikipedia.org/wiki/Lissajouss_curve) using [Scalable Vector Graphics](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) (SVG).
                     """
        ,br [] []
        ,div [class "row display"]
        [
            -- canvas for the lissajous
-           div [ id "lissajous-scope col-sm-6" ]
+           div [ id "lissajous-scope col-sm-6", style "width" (toPixels constants.width), style "height" (toPixels constants.height)]
            [
-             toHtml <|
-              container constants.width constants.height middle  <|
-                  collage constants.width constants.height
-                    [
-                       backgroundForm (rgb 0 0 0)
-                      ,xAxisForm
-                      ,yAxisForm
-                      ,(lissajous model.a model.b (toRadian model.p)) model.resolution
-                        |> traced model.curveStyle
-                      ,interpolate "{0} fps"
-                                   [ fps model.ticks
-                                           |> Maybe.map (format locale1digit)
-                                           |> withDefault "-"
-                                           |> padLeft 5 ' '
-                                   ]
-                        |> fromString
-                        |> monospace
-                        |> color (rgb 217 217 217)
-                        |> Collage.text
-                        |> move ((constants.height // 2) - constants.margin |> toFloat, (constants.width - 12) // 2 |> toFloat)
-                    ]
+             Widget.view model.widgetState [
+                 backgroundForm (rgb255 0 0 0)
+                ,xAxisForm
+                ,yAxisForm
+                ,(lissajous model.a model.b (toRadian model.p)) model.resolution
+                    |> outlined model.curveStyle.lineType (toSvgColor model.curveStyle.color)
+                ,interpolate "{0} fps"
+                             [ fps model.ticks
+                                     |> Maybe.map (format locale1digit)
+                                     |> withDefault "-"
+                                     |> padLeft 5 ' '
+                             ]
+                  |> GraphicSVG.text
+                  |> fixedwidth
+                  |> filled (Color.rgb255 217 217 217 |> toSvgColor)
+                  |> move ((constants.height // 2) - (constants.margin + 20) |> toFloat, (constants.width - 20) // 2 |> toFloat)
+             ]
            ]
            , div [class "description col-sm-6"]
            [
@@ -213,19 +243,19 @@ view model =
                     False -> a [class "action", href "", onClickNotPropagate Start ] [ text "start" ]
                     True  -> a [class "action", href "", onClickNotPropagate Stop ] [ text "stop" ]
                 , text " the animation. You can also "
-                , a [class "action", href "", onClickNotPropagate (Reset initialModel) ] [ text "reset" ]
+                , a [class "action", href "", onClickNotPropagate (Reset) ] [ text "reset" ]
                 , text " the values to default."
               ]
             , p [] [text "The equations are:"]
             , div [class "equation"] [
                   p [] [ text " •  x = "
-                        ,text (toString constants.width)
+                        ,text (fromInt constants.width)
                         ,text " sin("
                         ,input [ class "input-number"
                                   ,name "a-parameter"
                                   ,type_ "number"
                                   ,size 1
-                                  ,value (toString model.a)
+                                  ,value (fromInt model.a)
                                   ,onInput SetAParemeter] []
                         ,text "t + "
                         ,input [ class "input-number"
@@ -237,13 +267,13 @@ view model =
                         ,text "°)"
                   ]
                  ,p [] [ text " •  y = "
-                        ,text (toString constants.width)
+                        ,text (fromInt constants.width)
                         ,text " sin("
                         ,input [ class "input-number"
                                   ,name "b-parameter"
                                   ,type_ "number"
                                   ,size 1
-                                  ,value (toString model.b)
+                                  ,value (fromInt model.b)
                                   ,onInput SetBParameter] []
                         ,text "t)"
                   ]
@@ -255,9 +285,9 @@ view model =
                         selected = if (pa,pb) == (model.a, model.b) then " selected" else ""
                         clazz = "action" ++ selected
                     in
-                        [  a [class clazz, href "", onClickNotPropagate (Reset { model | a = pa, b = pb }) ]
+                        [  a [class clazz, href "", onClickNotPropagate (Batch [SetAParemeter (fromInt pa), SetBParameter (fromInt pb)]) ]
                            [
-                                text (interpolate "({0},{1})" ([pa,pb] |> map toString))
+                                text (interpolate "({0},{1})" ([pa,pb] |> map fromInt))
                            ]
                           ,text "  " -- add some space, but this is not great
                         ]
@@ -269,14 +299,15 @@ view model =
                   text "The color for the plot is"
                  ,div []
                     [
-                      button [ attribute "aria-expanded" "false"
+                      button [
+                               attribute "aria-expanded" "false"
                               ,attribute "aria-haspopup" "true"
                               ,class "btn btn-light dropdown-toggle"
                               ,attribute "data-toggle" "dropdown"
                               ,id "dropdownForegroundColorPickerButton"
                               ,type_ "button" ]
                               [ span [ class "color-tag"
-                                      ,Html.Attributes.style [("background-color", asCss model.curveStyle.color)]
+                                      ,style "background-color" (toCssString model.curveStyle.color)
                                      ] []
                               ]
                      ,div [ attribute "aria-labelledby" "dropdownForegroundColorPickerButton"
@@ -292,7 +323,7 @@ view model =
                      ,name "phase-velocity"
                      ,type_ "number"
                      ,size 3
-                     ,value (toString model.vp)
+                     ,value (fromFloat model.vp)
                      ,onInput SetPhaseVelocity] []
                 , a [href "https://en.wikipedia.org/wiki/Revolutions_per_minute" ] [text "rev/min"]
                 , text ". The resolution is "
@@ -300,7 +331,7 @@ view model =
                                      ,name "curve-resolution"
                                      ,type_ "number"
                                      ,size 4
-                                     ,value (toString model.resolution)
+                                     ,value (fromInt model.resolution)
                                      ,step "10"
                                      ,onInput SetResolution] []
                 , text ", which represents the total number of points used to draw the curve (more is better)."
@@ -309,38 +340,38 @@ view model =
         ]
       ]
 
-xAxisForm : Form
+xAxisForm : Shape Msg
 xAxisForm =
     let
         halfW = constants.width // 2
         halfH = constants.height // 2
-        axis = segment (-halfW |> toFloat, 0) ( halfH  |> toFloat, 0)
+        axis = line (-halfW |> toFloat, 0) ( halfH  |> toFloat, 0)
         ticks = rangeStep -halfW halfW 10 -- TODO: not sure it's optimal
           |> List.map toFloat
-          |> List.map (\v -> segment (v, 0) (v, 5))
+          |> List.map (\v -> line (v, 0) (v, 5))
 
     in
         axis :: ticks
-         |> map (traced { defaultLine | color = rgb 89 89 89 })
+         |> map (outlined  (solid 1) (Color.rgb255 89 89 89 |> toSvgColor) )
          |> group
 
-yAxisForm : Form
+yAxisForm : Shape Msg
 yAxisForm =
     xAxisForm
       |> rotate (degrees 90)
 
-backgroundForm : Color -> Form
+backgroundForm : Color.Color -> Shape Msg
 backgroundForm color =
     let
         halfW = constants.width // 2
         halfH = constants.height // 2
         circleAt (x,y) = circle 1.0
-                        |> filled (rgb 64 64 64)
+                        |> filled (Color.rgb255 64 64 64 |> toSvgColor)
                         |> move ((toFloat x),(toFloat y))
     in
         group [
             (rect (constants.width |> toFloat) (constants.height |> toFloat)
-              |> filled color)
+              |> filled (toSvgColor color))
             ,(cartesian (rangeStep -halfW halfW 25) (rangeStep -halfH halfH 25)
               |> map circleAt
               |> group )
@@ -352,7 +383,7 @@ backgroundForm color =
 
 -- returns a function that compute the path for the lissajous given the desired resolution.
 -- the curve is computed according to the given parameters a, b and phase
-lissajous : Int -> Int -> Float -> (Int-> Path)
+lissajous : Int -> Int -> Float -> (Int-> Stencil)
 lissajous a b phase =
   let
     half v = toFloat v / 2
@@ -365,7 +396,7 @@ lissajous a b phase =
         range 0 res
           |> map (\step -> (toFloat step) * (constants.period) / (toFloat res))
           |> map (coord)
-          |> path
+          |> openPolygon
 
 modulo : Float -> Float -> Float
 modulo range v =
@@ -391,18 +422,18 @@ locale1digit = {
 -- ticks holds a sequence of times.
 -- the list is bounded to accept a max number of elements -> inserting a new only discards the oldest one
 type alias Ticks = {
-    times : List Time,
+    times : List Float,
     capacity: Int
   }
 
 createTicks : Int -> Ticks
 createTicks capacity = { times = [], capacity = capacity }
 
-addTick : Ticks -> Time -> Ticks
+addTick : Ticks -> Float -> Ticks
 addTick ticks time =
     let
         delta = (length ticks.times) - ticks.capacity
-        makePlace ticks = if delta >= 0 then (drop (delta + 1) ticks) else ticks
+        makePlace ticks2 = if delta >= 0 then (drop (delta + 1) ticks2) else ticks2
     in
     { ticks | times = ticks.times
                                 |> makePlace
@@ -436,10 +467,27 @@ cartesian xs ys =
 rangeStep : Int -> Int -> Int -> List Int
 rangeStep lo hi step =
   let
-    rangeRec lo hi step list =
-      if lo <= hi then
-        rangeRec lo (hi - step) step (hi :: list)
+    rangeRec lo2 hi2 step2 list =
+      if lo2 <= hi2 then
+        rangeRec lo2 (hi2 - step2) step2 (hi2 :: list)
       else
         list
   in
     rangeRec lo hi step []
+
+toSvgColor : Color.Color -> GraphicSVG.Color
+toSvgColor c =
+  let
+    { red, green, blue, alpha } = Color.toRgba c
+  in
+    GraphicSVG.rgb (255.0 * red) (255.0 * green) (255.0 * blue)
+
+sendMsg : msg -> Cmd msg
+sendMsg msg =
+    Task.succeed msg |> Task.perform identity
+
+toPixels: Int -> String
+toPixels size =
+    size
+      |> fromInt
+      |> (flip String.append) "px"

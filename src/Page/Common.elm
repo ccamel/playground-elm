@@ -1,15 +1,14 @@
 module Page.Common exposing (..)
 
-import Color exposing (Color, toRgb)
 import Html exposing (Html)
-import Html.Events exposing (defaultOptions, onWithOptions)
-import Json.Decode exposing (succeed)
-import List exposing (map)
+import Html.Events exposing (..)
+import Json.Decode
+import List
 import Maybe exposing (andThen)
-import Result exposing (toMaybe)
-import String.Interpolate exposing (interpolate)
 import Svg
 import Svg.Attributes exposing (class)
+import String
+import Json.Decode as Decode
 
 type alias PageInfo a = {
       name : String
@@ -28,13 +27,12 @@ strToFloatWithMinMax : String -> Float -> Float -> Maybe Float
 strToFloatWithMinMax s minv maxv  = strToNumberWithMinMax s String.toFloat minv maxv
 
 -- convert the string to a number preserving the bounds [min, max]
-strToNumberWithMinMax : String -> (String -> Result String comparable) -> comparable -> comparable -> Maybe comparable
+strToNumberWithMinMax : String -> (String -> Maybe comparable) -> comparable -> comparable -> Maybe comparable
 strToNumberWithMinMax s converter minv maxv  =
     case s of
-        "" -> Just 0
+        "" -> Just minv
         x -> x
             |> converter
-            |> toMaybe
             |> andThen (Just << Basics.min maxv)
             |> andThen (Just << Basics.max minv)
 
@@ -48,14 +46,13 @@ classList list =
     |> List.map Tuple.first
     |> String.join " "
     |> class
-
-
-asCss : Color -> String
-asCss color =
-    let
-        rgb = toRgb color
-    in
-        interpolate "rgb({0},{1},{2})" ([rgb.red, rgb.green, rgb.blue] |> map toString)
-
+       
 onClickNotPropagate : a -> Html.Attribute a
-onClickNotPropagate msg = onWithOptions "click" {defaultOptions | preventDefault = True} (succeed msg)
+onClickNotPropagate msg = 
+    custom "click"
+        (Decode.succeed
+            { message = msg
+            , stopPropagation = True
+            , preventDefault = True
+            }
+        )

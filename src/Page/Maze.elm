@@ -1,24 +1,24 @@
 module Page.Maze exposing (..)
 
-import Array exposing (Array, get, initialize, set, toList)
+import Array exposing (Array, get, initialize, set)
 import FormatNumber exposing (format)
 import FormatNumber.Locales exposing (Locale, usLocale)
-import Html exposing (Html, a, button, div, h2, h3, hr, i, img, input, li, p, pre, span, text, ul)
-import Html.Attributes exposing (alt, attribute, class, classList, download, downloadAs, href, id, name, size, src, style, title, type_, value)
+import Html exposing (Html, a, button, div, hr, i, input, span, text)
+import Html.Attributes exposing (attribute, class, classList, href, id, name, style, title, type_, value)
 import Html.Events exposing (onInput)
-import Http exposing (encodeUri)
-import Json.Encode exposing (Value, array, encode, int, list, object, string)
-import List exposing (append, map, range, repeat)
+import File.Download as Download
+import Json.Encode exposing (Value, encode, int, list, object, string)
+import List exposing (map, range, repeat)
 import List.Extra exposing (last, splitAt)
 import Markdown
 import Maybe exposing (withDefault)
 import Page.Common exposing (onClickNotPropagate, strToIntWithMinMax)
 import Random exposing (Seed, initialSeed, step)
 import Random.List exposing (shuffle)
-import String exposing (padLeft)
+import String exposing (fromInt, padLeft)
 import String.Interpolate exposing (interpolate)
 import Task
-import Time exposing (Time, every)
+import Time exposing (Posix, every, posixToMillis)
 
 -- PAGE INFO
 
@@ -83,6 +83,11 @@ type alias Model = {
         ,memento: List Maze
     }
 
+init: (Model, Cmd Msg)
+init = (
+    initialModelWithMazeSize 20 15, Cmd.none
+    )
+
 initialModel : Model
 initialModel = initialModelWithMazeSize 20 15
 
@@ -92,14 +97,11 @@ initialModelWithMazeSize w h =
      ,auto = False
      ,memento = []}
 
-initialCmd : Cmd Msg
-initialCmd = Cmd.none
-
-initialInitializingContext : Time -> InitializingCtx
+initialInitializingContext : Posix -> InitializingCtx
 initialInitializingContext time =
     let
         -- generate random sides
-        (shuffled, seed) = step (shuffle sides) (initialSeed (round time))
+        (shuffled, seed) = step (shuffle sides) (initialSeed (posixToMillis time))
     in
         { visitedCell = [{x = 0, y = 0, dirs = shuffled}]
          ,seed = seed
@@ -218,7 +220,7 @@ nameSide side =
 -- UPDATE
 
 type Msg =
-    Tick Time
+    Tick Posix
   | StartAutoGeneration
   | StopAutoGeneration
   | Steps Int -- number of steps (relative)
@@ -226,7 +228,7 @@ type Msg =
   | SetWidth String
   | SetHeight String
   | SetDimension (Int, Int)
-
+  | Download
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -272,7 +274,7 @@ update msg model =
                 ( { model | maze = (last first) |> withDefault initialModel.maze
                            ,memento = second}, Cmd.none )
 
-    Reset -> ( initialModelWithMazeSize model.maze.width model.maze.height, initialCmd )
+    Reset -> ( initialModelWithMazeSize model.maze.width model.maze.height, Cmd.none )
 
     SetWidth s ->
         let
@@ -282,6 +284,7 @@ update msg model =
                 Just width -> initialModelWithMazeSize width model.maze.height
                 Nothing -> model
              ,Cmd.none)
+
     SetHeight s ->
         let
             maze = model.maze
@@ -297,6 +300,9 @@ update msg model =
             height = h |> min maxDimensionsMaze.maxH |>  max maxDimensionsMaze.minH
         in
             (initialModelWithMazeSize width height, Cmd.none)
+
+    Download ->
+        (model, Download.string "maze.json" "text/csv" (model.maze |> asJsonValue |> encode 4))
 
 -- SUBSCRIPTIONS
 
@@ -339,7 +345,7 @@ rowsView : Maze -> List (Html Msg)
 rowsView maze =
     range 0 (maze.height - 1)
         |> List.map (\y ->
-            div [class "maze-row", attribute "y" (toString y)]
+            div [class "maze-row", attribute "y" (fromInt y)]
                 (cellView maze y))
 
 controlView : Model -> Html Msg
@@ -394,14 +400,9 @@ controlView model =
                                    a [ classList [("btn btn-info", True)]
                                          ,attribute "role" "button"
                                          ,title "Export the maze state to JSON"
-                                         ,href (model
-                                                  |> .maze
-                                                  |> asJsonValue
-                                                  |> encode 4
-                                                  |> encodeUri
-                                                  |> (++) "data:text/csv;charset=utf-8,")
-                                         ,download True
-                                         ,downloadAs "maze.json"]
+                                         ,href "."
+                                         ,onClickNotPropagate Download
+                                       ]
                                     [ i [class "fa fa-download"] [] ]
                             ]
                         ,div [ attribute "aria-label" "Maze dimensions", class "btn-group mr-2", attribute "role" "group" ]
@@ -414,7 +415,7 @@ controlView model =
                                              ,attribute "aria-describedby" "btnMazeWidth"
                                              ,name "maze-w"
                                              ,type_ "number"
-                                             ,value (toString model.maze.width)
+                                             ,value (fromInt model.maze.width)
                                              ,onInput SetWidth] []
                                     ]
                                ,div [ class "input-group" ]
@@ -425,7 +426,7 @@ controlView model =
                                              ,attribute "aria-describedby" "btnMazeHeight"
                                              ,name "maze-h"
                                              ,type_ "number"
-                                             ,value (toString model.maze.height)
+                                             ,value (fromInt model.maze.height)
                                              ,onInput SetHeight] []
                                     ]
                                ,div [ class "dropdown" ]
@@ -445,7 +446,7 @@ controlView model =
                                                         ]
                                                        ,onClickNotPropagate (SetDimension (w,h))
                                                        ,href "#" ]
-                                                       [ text <| (toString w) ++ " x " ++ (toString h) ])
+                                                       [ text <| (fromInt w) ++ " x " ++ (fromInt h) ])
                                         )
                                     ]
                             ]
@@ -475,7 +476,7 @@ controlView model =
                                     pString = progressString model.maze
                                     pText = pString  ++ "%"
                                   in
-                                    div [class "progress form-control", style [("width", "150px")]] [
+                                    div [class "progress form-control", style "width" "150px"] [
                                         div [ attribute "aria-valuemax" "100"
                                              ,attribute "aria-valuemin" "0"
                                              ,attribute "aria-valuenow" pString
@@ -500,8 +501,8 @@ controlView model =
                                          ,name "maze-steps"
                                          ,type_ "text"
                                          ,value <| interpolate "{0}/{1}"
-                                                               [ currentSteps model.maze |> toString |> padLeft 5 ' '
-                                                                ,totalSteps model.maze |> toString |> padLeft 5 ' ']
+                                                               [ currentSteps model.maze |> fromInt |> padLeft 5 ' '
+                                                                ,totalSteps model.maze |> fromInt |> padLeft 5 ' ']
                                         ] []
                                 ]
                           ]
@@ -627,7 +628,7 @@ cellView maze y  =
                         |> Maybe.map (\explCell -> (explCell.x == x) && (explCell.y == y) && (explCell.dirs |> List.isEmpty))
                         |> withDefault False
             in
-                div [ attribute "x" (toString x)
+                div [ attribute "x" (fromInt x)
                      ,classList [
                          ("cell", True)
                         ,("up", (List.member Up cell))
@@ -657,6 +658,7 @@ cellView maze y  =
 asJsonValue : Maze -> Value
 asJsonValue maze =
     let
+        cellsToValue : Int -> Int -> List Value -> List Value
         cellsToValue x y acc =
             if x < 0
             then cellsToValue (maze.width - 1) (y - 1) acc
@@ -668,17 +670,19 @@ asJsonValue maze =
                      ((object [
                          ("x", int x)
                         ,("y", int y)
-                        ,("sides", maze
-                                    |> cellAt x y
-                                    |> withDefault []
-                                    |> map (nameSide >> string)
-                                    |> list)
+                        ,("sides",
+                            maze
+                            |> cellAt x y
+                            |> withDefault []
+                            |> map nameSide
+                            |> list string)
                      ]) :: acc)
+        cellValues = (cellsToValue (maze.width - 1) (maze.height - 1) [])
     in
         object [
             ("width", int maze.width)
            ,("height", int maze.height)
-           ,("cells", list <| cellsToValue (maze.width - 1) (maze.height - 1) [])
+           ,("cells", list identity cellValues)
            ,("state", string <| stateString maze)
     ]
 
