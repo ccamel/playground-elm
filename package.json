@@ -30,7 +30,7 @@
     "npm": ">=6.14.9"
   },
   "scripts": {
-    "build": "parcel build src/index.html",
+    "build": "parcel build src/index.html --public-url ./",
     "serve": "parcel src/index.html",
     "release": "release-it"
   },
