@@ -1,8 +1,13 @@
 module App.Routing exposing (..)
 
 import App.Messages exposing (Page(..))
+import Page.Calc
+import Page.DigitalClock
+import Page.Lissajous
+import Page.Maze
 import Url.Parser exposing (..)
 import Url exposing (Url)
+import Page.About
 
 type Route
     = Home
@@ -18,13 +23,19 @@ parseFragment fragment =
     case fragment of
         Nothing -> Home
         Just "" -> Home
-        Just "about" -> Page About
-        Just "calc" -> Page Calc
-        Just "lissajous" -> Page Lissajous
-        Just "digital-clock" -> Page DigitalClock
-        Just "maze" -> Page Maze
-
-        _ -> NotFoundRoute
+        Just p ->
+            if p == Page.About.info.name then
+                Page About
+            else if p == Page.Calc.info.name then
+                Page Calc
+            else if p == Page.Lissajous.info.name then
+                Page Lissajous
+            else if p == Page.DigitalClock.info.name then
+                Page DigitalClock
+            else if p == Page.Maze.info.name then
+                Page Maze
+            else
+                NotFoundRoute
 
 -- returns the route parsed given the provided Url
 toRoute : Url -> Route
