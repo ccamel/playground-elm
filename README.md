@@ -7,7 +7,7 @@ playground-elm
 [![ELM](https://img.shields.io/badge/elm-0.19.1-blue.svg?style=flat)](http://elm-lang.org/)
 [![Boostrap](https://img.shields.io/badge/bootstrap-4.0.1-orange.svg?style=flat)](https://getbootstrap.com/)
 [![StackShare](https://img.shields.io/badge/tech-stack-0690fa.svg?style=flat)](https://stackshare.io/ccamel/playground-elm)
-[![Demo](https://img.shields.io/badge/play-demo!-b30059.svg?style=flat)](https://ccamel.github.io/playground-elm/index.html)
+[![Demo](https://img.shields.io/badge/play-demo!-b30059.svg?style=flat)](https://ccamel.github.io/playground-elm/)
 
 > My playground I use for playing with fancy and exciting technologies. This one's for [elm].
 
@@ -17,7 +17,7 @@ The purpose of this playground is to explore, study and assess the [elm] languag
 
 ## Demo site
 
-Visit the :small_blue_diamond: [demo site](https://ccamel.github.io/playground-elm/index.html) and play in your browser. 
+Visit the :small_blue_diamond: [demo site](https://ccamel.github.io/playground-elm/) and play in your browser. 
 The demo is a pure [SPA]  (100% clientside application) written in [elm].
 
 

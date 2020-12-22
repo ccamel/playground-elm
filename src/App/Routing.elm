@@ -38,9 +38,11 @@ parseFragment fragment =
                 NotFoundRoute
 
 -- returns the route parsed given the provided Url
-toRoute : Url -> Route
-toRoute url =
-    Maybe.withDefault NotFoundRoute (parse matchRoute url)
+toRoute : String -> Url -> Route
+toRoute basePath url =
+    { url | path = String.replace basePath "" url.path }
+      |> parse matchRoute
+      |> Maybe.withDefault NotFoundRoute
 
 -- returns the next page for the given route, if any
 nextPage : Route -> List Page -> Maybe Page

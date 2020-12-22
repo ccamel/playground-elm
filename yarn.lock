@@ -2504,6 +2504,15 @@ dom-serializer@0:
     domelementtype "^2.0.1"
     entities "^2.0.0"
 
+dom-serializer@^1.0.1:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/dom-serializer/-/dom-serializer-1.2.0.tgz#3433d9136aeb3c627981daa385fc7f32d27c48f1"
+  integrity sha512-n6kZFH/KlCrqs/1GHMOd5i2fd/beQHuehKdWvNNffbGHTr/almdhuVvTVFb3V7fglz+nC50fFusu3lY33h12pA==
+  dependencies:
+    domelementtype "^2.0.1"
+    domhandler "^4.0.0"
+    entities "^2.0.0"
+
 domain-browser@^1.1.1:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com//domain-browser/-/domain-browser-1.2.0.tgz#3d31f50191a6749dd1375a7f522e823d42e54eda"
@@ -2514,7 +2523,7 @@ domelementtype@1, domelementtype@^1.3.1:
   resolved "https://registry.yarnpkg.com//domelementtype/-/domelementtype-1.3.1.tgz#d048c44b37b0d10a7f2a3d5fee3f4333d790481f"
   integrity sha512-BSKB+TSpMpFI/HOxCNr1O8aMOTZ8hT3pM3GQ0w/mWRmkhEDSFJkkyzz4XQsBV44BChwGkrDfMyjVD0eA2aFV3w==
 
-domelementtype@^2.0.1:
+domelementtype@^2.0.1, domelementtype@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com//domelementtype/-/domelementtype-2.1.0.tgz#a851c080a6d1c3d94344aed151d99f669edf585e"
   integrity sha512-LsTgx/L5VpD+Q8lmsXSHW2WpA+eBlZ9HPf3erD1IoPF00/3JKHZ3BknUVA2QGDNu69ZNmyFmCWBSO45XjYKC5w==
@@ -2533,6 +2542,20 @@ domhandler@^2.3.0:
   dependencies:
     domelementtype "1"
 
+domhandler@^3.3.0:
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/domhandler/-/domhandler-3.3.0.tgz#6db7ea46e4617eb15cf875df68b2b8524ce0037a"
+  integrity sha512-J1C5rIANUbuYK+FuFL98650rihynUOEzRLxW+90bKZRWB6A1X1Tf82GxR1qAWLyfNPRvjqfip3Q5tdYlmAa9lA==
+  dependencies:
+    domelementtype "^2.0.1"
+
+domhandler@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/domhandler/-/domhandler-4.0.0.tgz#01ea7821de996d85f69029e81fa873c21833098e"
+  integrity sha512-KPTbnGQ1JeEMQyO1iYXoagsI6so/C96HZiFyByU3T6iAzpXn8EGEvct6unm1ZGoed8ByO2oirxgwxBmqKF9haA==
+  dependencies:
+    domelementtype "^2.1.0"
+
 domutils@^1.5.1, domutils@^1.7.0:
   version "1.7.0"
   resolved "https://registry.yarnpkg.com//domutils/-/domutils-1.7.0.tgz#56ea341e834e06e6748af7a1cb25da67ea9f8c2a"
@@ -2540,6 +2563,15 @@ domutils@^1.5.1, domutils@^1.7.0:
   dependencies:
     dom-serializer "0"
     domelementtype "1"
+
+domutils@^2.4.2:
+  version "2.4.4"
+  resolved "https://registry.yarnpkg.com/domutils/-/domutils-2.4.4.tgz#282739c4b150d022d34699797369aad8d19bbbd3"
+  integrity sha512-jBC0vOsECI4OMdD0GC9mGn7NXPLb+Qt6KW1YDQzeQYRUFKmNG8lh7mO5HiELfr+lLQE7loDVI4QcAxV80HS+RA==
+  dependencies:
+    dom-serializer "^1.0.1"
+    domelementtype "^2.0.1"
+    domhandler "^4.0.0"
 
 dot-prop@^5.2.0:
   version "5.3.0"
@@ -2934,6 +2966,11 @@ fastq@^1.6.0:
   integrity sha512-NL2Qc5L3iQEsyYzweq7qfgy5OtXCmGzGvhElGEd/SoFWEMOEczNh5s5ocaF01HDetxz+p8ecjNPA6cZxxIHmzA==
   dependencies:
     reusify "^1.0.4"
+
+fclone@^1.0.11:
+  version "1.0.11"
+  resolved "https://registry.yarnpkg.com/fclone/-/fclone-1.0.11.tgz#10e85da38bfea7fc599341c296ee1d77266ee640"
+  integrity sha1-EOhdo4v+p/xZk0HClu4ddyZu5kA=
 
 figures@^3.0.0:
   version "3.2.0"
@@ -3413,6 +3450,16 @@ htmlparser2@^3.9.2:
     entities "^1.1.1"
     inherits "^2.0.1"
     readable-stream "^3.1.1"
+
+htmlparser2@^5.0.1:
+  version "5.0.1"
+  resolved "https://registry.yarnpkg.com/htmlparser2/-/htmlparser2-5.0.1.tgz#7daa6fc3e35d6107ac95a4fc08781f091664f6e7"
+  integrity sha512-vKZZra6CSe9qsJzh0BjBGXo8dvzNsq/oGvsjfRdOrrryfeD9UOBEEQdeoqCRmKZchF5h2zOBMQ6YuQ0uRUmdbQ==
+  dependencies:
+    domelementtype "^2.0.1"
+    domhandler "^3.3.0"
+    domutils "^2.4.2"
+    entities "^2.0.0"
 
 http-cache-semantics@^4.0.0:
   version "4.1.0"
@@ -5359,6 +5406,15 @@ postcss@^7.0.0, postcss@^7.0.1, postcss@^7.0.11, postcss@^7.0.17, postcss@^7.0.2
     source-map "^0.6.1"
     supports-color "^6.1.0"
 
+posthtml-expressions@^1.7.1:
+  version "1.7.1"
+  resolved "https://registry.yarnpkg.com/posthtml-expressions/-/posthtml-expressions-1.7.1.tgz#b62b47a9c2cc8216cbbb07d2e9e7b293f3c1f5bc"
+  integrity sha512-OtshMi4yJO/KAUSzLOdhWPaffPApY3lXZpJKzu4jVHfO7b8/a26Hgsl/cjC6PGtpyDEHbYChnV/b4DbIUoVREw==
+  dependencies:
+    fclone "^1.0.11"
+    posthtml-parser "^0.6.0"
+    posthtml-render "^1.4.0"
+
 posthtml-parser@^0.4.0, posthtml-parser@^0.4.1:
   version "0.4.2"
   resolved "https://registry.yarnpkg.com//posthtml-parser/-/posthtml-parser-0.4.2.tgz#a132bbdf0cd4bc199d34f322f5c1599385d7c6c1"
@@ -5373,7 +5429,14 @@ posthtml-parser@^0.5.0:
   dependencies:
     htmlparser2 "^3.9.2"
 
-posthtml-render@^1.1.3, posthtml-render@^1.1.5, posthtml-render@^1.2.3, posthtml-render@^1.3.0:
+posthtml-parser@^0.6.0:
+  version "0.6.0"
+  resolved "https://registry.yarnpkg.com/posthtml-parser/-/posthtml-parser-0.6.0.tgz#52488cdb4fa591c3102de73197c471859ee0be63"
+  integrity sha512-5ffwKQNgtVHdhZniWxu+1ryvaZv5l25HPLUV6W5xy5nYVWMXtvjtwRnbSpfbKFvbyl7XI+d4AqkjmonkREqnXA==
+  dependencies:
+    htmlparser2 "^5.0.1"
+
+posthtml-render@^1.1.3, posthtml-render@^1.1.5, posthtml-render@^1.2.3, posthtml-render@^1.3.0, posthtml-render@^1.4.0:
   version "1.4.0"
   resolved "https://registry.yarnpkg.com//posthtml-render/-/posthtml-render-1.4.0.tgz#40114070c45881cacb93347dae3eff53afbcff13"
   integrity sha512-W1779iVHGfq0Fvh2PROhCe2QhB8mEErgqzo1wpIt36tCgChafP+hbXIhLDOM8ePJrZcFs0vkNEtdibEWVqChqw==

@@ -13,7 +13,11 @@ require('./digital-clock.css');
 require('./maze.css');
 
 const { Elm } = require('./Main.elm');
+const basePath = new URL(document.baseURI).pathname;
+
+console.log(basePath)
 
 Elm.Main.init({
-    node: document.querySelector('main')
+    node: document.querySelector('main'),
+    flags: { basePath }
 });
