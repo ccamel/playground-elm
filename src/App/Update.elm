@@ -28,7 +28,7 @@ update msg model =
         UrlChanged location ->
             let
                 newRoute =
-                    toRoute location
+                    toRoute model.flags.basePath location
 
                 clearedModel = { model | aboutPage = Nothing }
 

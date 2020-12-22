@@ -10,9 +10,13 @@ import Browser.Navigation as Nav
 import Page.Maze
 import Platform.Cmd exposing (batch)
 
+type alias Flags =
+    { basePath : String }
+
 type alias Model =
     {
-       route : Route
+        flags : Flags
+       ,route : Route
        ,navKey : Nav.Key
        -- models for pages
        ,aboutPage : Maybe Page.About.Model
@@ -23,8 +27,8 @@ type alias Model =
     }
 
 
-initialModel : Nav.Key -> Route -> (Model, Cmd App.Messages.Msg)
-initialModel navKey route =
+initialModel : Flags -> Nav.Key -> Route -> (Model, Cmd App.Messages.Msg)
+initialModel flags navKey route =
     let
         ( aboutModel, aboutCmd ) = Page.About.init
         ( calcModel, calcCmd ) = Page.Calc.init
@@ -33,7 +37,8 @@ initialModel navKey route =
         ( digitalClockModel, digitalClockCmd ) = Page.DigitalClock.init
     in
         ({
-        route = route
+         flags = flags
+        ,route = route
         ,navKey = navKey
         -- models for pages
         ,aboutPage = Just aboutModel
