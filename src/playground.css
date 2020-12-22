@@ -44,7 +44,6 @@ body {
     font-family: 'Share Tech Mono', monospace;
 }
 
-
 .jumbotron .container {
     max-width: 80rem;
 }
@@ -80,6 +79,10 @@ body {
     min-height: 9em;
     font-size: 1.15rem;
     font-family: 'Bad Script', cursive;
+}
+
+.demo-content {
+    padding-bottom: 30px;
 }
 
 .footer {

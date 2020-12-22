@@ -111,7 +111,7 @@ view model =
                             ]
                         ]
                 -- content
-                , div [ id (contentId model.route) ] [
+                , div [ id (contentId model.route), class "demo-content" ] [
                   content model
                 ]
                 -- footer
