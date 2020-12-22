@@ -21,4 +21,4 @@ var t,e=arguments[3];function n(t){return(n="function"==typeof Symbol&&"symbol"=
 },{}],"Focm":[function(require,module,exports) {
 "use strict";require("./fonts/font.css"),require("tether/dist/css/tether.css"),require("bootstrap/dist/css/bootstrap.css"),require("bootstrap/dist/js/bootstrap.bundle.js"),require("font-awesome/css/font-awesome.css"),require("animate.css/animate.css"),require("./playground.css"),require("./calc.css"),require("./lissajous.css"),require("./digital-clock.css"),require("./maze.css");var e=require("./Main.elm"),s=e.Elm,r=new URL(document.baseURI).pathname;console.log(r),s.Main.init({node:document.querySelector("main"),flags:{basePath:r}});
 },{"./fonts/font.css":"mZrO","tether/dist/css/tether.css":"MjQU","bootstrap/dist/css/bootstrap.css":"MjQU","bootstrap/dist/js/bootstrap.bundle.js":"TUYM","font-awesome/css/font-awesome.css":"N3hV","animate.css/animate.css":"MjQU","./playground.css":"MjQU","./calc.css":"MjQU","./lissajous.css":"MjQU","./digital-clock.css":"MjQU","./maze.css":"MjQU","./Main.elm":"asWa"}]},{},["Focm"], null)
-//# sourceMappingURL=/src.10caf57b.js.map
+//# sourceMappingURL=src.c5038236.js.map
