@@ -120,7 +120,7 @@ view model =
                               [ ul [ class "text-center" ]
                                   [
                                    li [class "text-muted"]
-                                      [ text "© 2017 Chris Camel - MIT License" ]
+                                      [ text "© 2017-2021 Christophe Camel - MIT License" ]
                                   , li [class "text-muted"] [text "  •  "]
                                   , li []
                                     [
