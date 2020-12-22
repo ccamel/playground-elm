@@ -35,6 +35,7 @@ view model =
                               ,("fadeOut",  prev |> exists |> not)
                               ,("fadeIn", prev |> exists)
                              ]
+                         ,style "cursor" (if prev |> exists then "cursor" else "default")
                          ,href (prev |> Maybe.map pageHash |> Maybe.withDefault "" |> (++) "#")
                          ,onClick (prev |> Maybe.map GoToPage |> Maybe.withDefault GoToHome )
                         ]
@@ -51,6 +52,7 @@ view model =
                                 ,("fadeOut",  next |> exists |> not)
                                 ,("fadeIn", next |> exists)
                               ]
+                          ,style "cursor" (if next |> exists then "cursor" else "default")
                           ,href (next |> Maybe.map pageHash |> Maybe.withDefault "" |> (++) "#")
                           ,onClick (next |> Maybe.map GoToPage |> Maybe.withDefault GoToHome )
                          ]
