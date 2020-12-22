@@ -30,8 +30,8 @@
     "npm": ">=6.14.9"
   },
   "scripts": {
-    "build": "parcel build src/index.html --public-url ./",
-    "serve": "parcel src/index.html",
+    "build": "BASE_URL=/playground-elm parcel build src/index.html",
+    "serve": "BASE_URL=/ parcel src/index.html",
     "release": "release-it"
   },
   "dependencies": {
