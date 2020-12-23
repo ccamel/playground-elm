@@ -11,7 +11,10 @@ import Page.Maze
 import Platform.Cmd exposing (batch)
 
 type alias Flags =
-    { basePath : String }
+    {
+        basePath : String
+       ,version: String
+    }
 
 type alias Model =
     {

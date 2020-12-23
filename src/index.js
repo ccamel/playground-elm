@@ -14,10 +14,9 @@ require('./maze.css');
 
 const { Elm } = require('./Main.elm');
 const basePath = new URL(document.baseURI).pathname;
-
-console.log(basePath)
+const version = (document.querySelector('meta[name="version"]') || {}).content ??  '?';
 
 Elm.Main.init({
     node: document.querySelector('main'),
-    flags: { basePath }
+    flags: { basePath, version }
 });
