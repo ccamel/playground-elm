@@ -145,7 +145,7 @@ view model =
                           ,id "dropdownColorPickerButton"
                           ,type_ "button" ]
                           [ span [ class "color-tag"
-                                  ,Html.Attributes.style "background-color" (toCssString model.color)
+                                  ,style "background-color" (toCssString model.color)
                                  ] []
                           ]
                  ,div [ attribute "aria-labelledby" "dropdownColorPickerButton"
