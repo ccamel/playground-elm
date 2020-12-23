@@ -35,6 +35,7 @@ view model =
                               ,("fadeOut",  prev |> exists |> not)
                               ,("fadeIn", prev |> exists)
                              ]
+                         ,style "cursor" (if prev |> exists then "cursor" else "default")
                          ,href (prev |> Maybe.map pageHash |> Maybe.withDefault "" |> (++) "#")
                          ,onClick (prev |> Maybe.map GoToPage |> Maybe.withDefault GoToHome )
                         ]
@@ -51,6 +52,7 @@ view model =
                                 ,("fadeOut",  next |> exists |> not)
                                 ,("fadeIn", next |> exists)
                               ]
+                          ,style "cursor" (if next |> exists then "cursor" else "default")
                           ,href (next |> Maybe.map pageHash |> Maybe.withDefault "" |> (++) "#")
                           ,onClick (next |> Maybe.map GoToPage |> Maybe.withDefault GoToHome )
                          ]
@@ -111,7 +113,7 @@ view model =
                             ]
                         ]
                 -- content
-                , div [ id (contentId model.route) ] [
+                , div [ id (contentId model.route), class "demo-content" ] [
                   content model
                 ]
                 -- footer
@@ -120,7 +122,7 @@ view model =
                               [ ul [ class "text-center" ]
                                   [
                                    li [class "text-muted"]
-                                      [ text "© 2017 Chris Camel - MIT License" ]
+                                      [ text "© 2017-2021 Christophe Camel - MIT License" ]
                                   , li [class "text-muted"] [text "  •  "]
                                   , li []
                                     [
