@@ -13,13 +13,71 @@ playground-elm
 
 ## Purpose
 
-The purpose of this playground is to explore, study and assess the [elm] language.
+The purpose of this playground is to explore, study and assess the [elm] language — a delightful language for reliable webapps.
 
-## Demo site
+The showcases are intended to be:
+
+  - **simple**: Fairly simple and understandable. Every showcase is implemented in a single elm file.
+  - **exploratory**: 
+    - *Highlight* some aspects of the [elm] language, like immutability, reactiveness, performance and
+    interoperability with other JS libraries and CSS frameworks.
+    - *Explore* some architectural/design patterns around reactive static/serverless [SPA].
+  - **playable**: As much as possible, provides a useful and functional content.  
+
+## Showcases
 
 Visit the :small_blue_diamond: [demo site](https://ccamel.github.io/playground-elm/) and play in your browser. 
-The demo is a pure [SPA]  (100% clientside application) written in [elm].
+The demo is a pure [SPA] (100% clientside application) written in [elm].
 
+### Calc
+
+Calc is a very simple and basic calculator.
+
+<p align="center">
+  <b>Links:</b><br>
+  <a href="https://ccamel.github.io/playground-elm/#calc">Play</a>  | 
+  <a href="https://github.com/ccamel/playground-elm/blob/master/src/Page/Calc.elm">Code</a>
+  <br><br>
+  <kbd><img src="doc/assets/showcase-calc.png"></kbd>
+</p>
+
+### Digital clock
+
+Simple digital clock using [Scalable Vector Graphics](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) (SVG).
+
+<p align="center">
+  <b>Links:</b><br>
+  <a href="https://ccamel.github.io/playground-elm/#digital-clock">Play</a> |
+  <a href="https://github.com/ccamel/playground-elm/blob/master/src/Page/DigitalClock.elm">Code</a>
+  <br><br>
+  <kbd><img src="doc/assets/showcase-digitalclock.png"></kbd>
+</p>
+
+### Lissajous
+
+Animated [Lissajous figures](https://en.wikipedia.org/wiki/Lissajouss_curve) using 
+[Scalable Vector Graphics](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) (SVG).
+
+<p align="center">
+  <b>Links:</b><br>
+  <a href="https://ccamel.github.io/playground-elm/#lissajous">Play</a> |
+  <a href="https://github.com/ccamel/playground-elm/blob/master/src/Page/Lissajous.elm">Code</a>
+  <br><br>
+  <kbd><img src="doc/assets/showcase-lissajous.png"></kbd>
+</p>
+
+### Maze generator
+
+Maze generator using a [recursive backtracking](https://en.wikipedia.org/wiki/Maze_generation_algorithm#Recursive_backtracker)
+algorithm with control of the generation process.
+
+<p align="center">
+  <b>Links:</b><br>
+  <a href="https://ccamel.github.io/playground-elm/#maze">Play</a> |
+  <a href="https://github.com/ccamel/playground-elm/blob/master/src/Page/Maze.elm">Code</a>
+  <br><br>
+  <kbd><img src="doc/assets/showcase-maze.png"></kbd>
+</p>
 
 ## Building and Running
 
@@ -35,7 +93,7 @@ Elm 0.19 broke me as many other coders, due to a lot of changes on topics I used
 - lots of incompatible packages  
 - ...
 
-I finally managed to migrate to this new version but instabilities can be noticed.
+I finally managed to migrate to this new version but instabilities can be noticed though.
 
 ### Build
 
