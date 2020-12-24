@@ -1,5 +1,6 @@
 module Page.Common exposing (..)
 
+import Array exposing (Array)
 import Html exposing (Html)
 import Html.Events exposing (..)
 import Json.Decode
@@ -56,3 +57,17 @@ onClickNotPropagate msg =
             , preventDefault = True
             }
         )
+
+indexOfHelper: Array a -> a -> Int -> Int
+indexOfHelper array elem offset =
+    case (Array.get offset array) of
+        Just x ->
+            if x == elem then
+                offset
+            else
+               indexOfHelper array elem (offset + 1)
+        Nothing ->
+            -1
+
+indexOf: Array a -> a -> Int
+indexOf array elem = indexOfHelper array elem 0

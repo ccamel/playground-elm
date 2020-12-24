@@ -9,6 +9,7 @@ import Page.Common
 import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
+import Page.Cloth
 
 emptyNode : Html msg
 emptyNode = Html.text ""
@@ -30,6 +31,7 @@ pages = [
     , Lissajous
     , DigitalClock
     , Maze
+    , Cloth
  ]
 
 toView aPageView pageMsg modelExtractor model =
@@ -72,7 +74,7 @@ pageSpec page =
             Lissajous -> toSpec Page.Lissajous.info Page.Lissajous.view Page.Lissajous.subscriptions LissajousPageMsg (\model -> model.lissajousPage)
             DigitalClock -> toSpec Page.DigitalClock.info Page.DigitalClock.view Page.DigitalClock.subscriptions DigitalClockPageMsg (\model -> model.digitalClockPage)
             Maze -> toSpec Page.Maze.info Page.Maze.view Page.Maze.subscriptions MazePageMsg (\model -> model.mazePage)
-
+            Cloth -> toSpec Page.Cloth.info Page.Cloth.view Page.Cloth.subscriptions ClothPageMsg (\model -> model.ropePage)
 
 pageName : Page -> String
 pageName page = pageSpec page
