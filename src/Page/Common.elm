@@ -4,7 +4,7 @@ import Array exposing (Array)
 import Html exposing (Html)
 import Html.Events exposing (..)
 import Json.Decode
-import List
+import List exposing (drop, length, sum)
 import Maybe exposing (andThen)
 import Svg
 import Svg.Attributes exposing (class)
@@ -71,3 +71,42 @@ indexOfHelper array elem offset =
 
 indexOf: Array a -> a -> Int
 indexOf array elem = indexOfHelper array elem 0
+
+
+-- frames holds a sequence of times.
+-- the list is bounded to accept a max number of elements -> inserting a new only discards the oldest one
+type alias Frames = {
+    times : List Float,
+    capacity: Int
+  }
+
+createFrames : Int -> Frames
+createFrames capacity = { times = [], capacity = capacity }
+
+addFrame : Frames -> Float -> Frames
+addFrame frames time =
+    let
+        delta = (length frames.times) - frames.capacity
+        makePlace theFrames = if delta >= 0 then (drop (delta + 1) theFrames) else theFrames
+    in
+    { frames | times = frames.times
+                                |> makePlace
+                                |> (::) time
+    }
+
+resetFrames : Frames -> Frames
+resetFrames frames = {frames | times = [] }
+
+-- compute the FPS from the given fps set (if possible)
+fps : Frames -> Maybe Float
+fps frames =
+    let
+        size = length frames.times
+    in if size > 1 then
+        frames.times
+          |> sum
+          |> (/) (toFloat size)
+          |> (*) 1000.0
+          |> Just
+    else
+        Nothing
