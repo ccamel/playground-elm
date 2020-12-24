@@ -1,6 +1,6 @@
 module Page.Cloth exposing (..)
 
-import Array exposing (Array, foldl, foldr, fromList, get, map, set, toList)
+import Array exposing (Array, foldr, fromList, get, map, set, toList)
 import Basics.Extra exposing (flip)
 import Canvas exposing (Renderable, Shape, arc, clear, lineTo, path, shapes)
 import Canvas.Settings exposing (fill, stroke)
@@ -8,13 +8,11 @@ import Color exposing (Color)
 import Html exposing (Html, button, div, hr, text)
 import Html.Attributes exposing (class, style, type_)
 import Html.Events as Html
-import Json.Decode as Decode
-import List exposing (concat)
+import List
 import Markdown
 import Maybe exposing (withDefault)
-import Page.Calc exposing (apply)
 import Page.Common
-import Browser.Events exposing (onAnimationFrameDelta, onClick, onMouseDown, onMouseMove, onMouseUp)
+import Browser.Events exposing (onAnimationFrameDelta)
 import Platform.Sub exposing (batch)
 import Vector2 exposing (Index(..), Vector2, map2)
 import Html.Events.Extra.Mouse as Mouse exposing (Button(..))
@@ -26,8 +24,8 @@ info = {
      name = "cloth"
      , hash = "cloth"
      , description = Markdown.toHtml [class "info"] """
-
-A cloth renderer using HTML 5 canvas
+A cloth rendered using HTML5 canvas simulated with simple [Verlet](https://en.wikipedia.org/wiki/Verlet_integration)
+integration.
        """
      , srcRel = "Page/Cloth.elm"
  }
