@@ -2,7 +2,7 @@ module Page.Cloth exposing (..)
 
 import Array exposing (Array, foldr, fromList, get, map, set, toList)
 import Basics.Extra exposing (flip)
-import Canvas exposing (Renderable, Shape, arc, clear, lineTo, path, shapes)
+import Canvas exposing (Renderable, Shape, arc, clear, lineTo, path, rect, shapes)
 import Canvas.Settings exposing (fill, stroke)
 import Color exposing (Color)
 import Html exposing (Html, a, br, button, div, hr, p, text)
@@ -111,19 +111,7 @@ type alias Cloth =
     }
 
 makeDot: ID -> Vector2D -> Dot
-makeDot id v =
-        {
-            id = id
-           ,pos = v
-           ,oldPos = v
-           ,friction = 0.97
-           ,groundFriction = 0.7
-           ,gravity = makeVector2D (0, 1)
-           ,radius = 2.0
-           ,color = Color.red
-           ,mass = 1
-           ,pin = Nothing
-        }
+makeDot id p = makeDotWithVelocity id p (makeVector2D (0, 0))
 
 makeDotWithVelocity: ID -> Vector2D -> Vector2D -> Dot
 makeDotWithVelocity id p v =
@@ -135,7 +123,7 @@ makeDotWithVelocity id p v =
            ,groundFriction = 0.7
            ,gravity = makeVector2D (0, 1)
            ,radius = 2.0
-           ,color = Color.red
+           ,color = Color.darkGreen
            ,mass = 1
            ,pin = Nothing
         }
@@ -232,7 +220,7 @@ makeStick p1 p2 length =
          p1Id = p1.id
         ,p2Id = p2.id
         ,stiffness = 2.5
-        ,color = Color.black
+        ,color = Color.blue
         ,length =
             case length of
                 Just alength -> alength
@@ -314,10 +302,10 @@ makeCloth2 =
 makeCloth: Cloth
 makeCloth =
     let
-        (w, h) = (20,10)
-        startx = 100
+        (w, h) = (20,20)
+        startx = 40
         starty = 10
-        spacing = 7
+        spacing = 15
 
         cloth = {
             dots =
@@ -327,7 +315,7 @@ makeCloth =
                         coords = (startx + spacing * (toFloat x), starty + spacing * (toFloat y)) |> makeVector2D
                     in
                         if y == h - 1 then
-                            makeDotWithVelocity n coords (makeVector2D (10.0, 0.0))
+                            makeDotWithVelocity n coords (makeVector2D (5.0, 0.0))
                         else
                             makeDot n coords
                                 |> (if y == 0 then (flip pinDot) coords else identity)
@@ -505,6 +493,7 @@ view model =
                 (List.concat [
                     [
                         clear ( 0, 0 ) canvas_width canvas_height
+                       ,shapes [ fill Color.black ] [ rect ( 0, 0 ) canvas_width canvas_height ]
                     ]
                     ,(model.cloth
                       |> .dots
