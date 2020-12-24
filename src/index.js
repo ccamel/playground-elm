@@ -4,6 +4,7 @@ require('./fonts/font.css');
 require('tether/dist/css/tether.css');
 require('bootstrap/dist/css/bootstrap.css');
 require('bootstrap/dist/js/bootstrap.bundle.js');
+require('elm-canvas/elm-canvas.js');
 require('font-awesome/css/font-awesome.css');
 require('animate.css/animate.css')
 require('./playground.css');
