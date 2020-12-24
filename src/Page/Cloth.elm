@@ -5,13 +5,13 @@ import Basics.Extra exposing (flip)
 import Canvas exposing (Renderable, Shape, arc, clear, lineTo, path, shapes)
 import Canvas.Settings exposing (fill, stroke)
 import Color exposing (Color)
-import Html exposing (Html, button, div, hr, text)
-import Html.Attributes exposing (class, style, type_)
+import Html exposing (Html, a, br, button, div, hr, p, text)
+import Html.Attributes exposing (class, href, style, type_)
 import Html.Events as Html
 import List
 import Markdown
 import Maybe exposing (withDefault)
-import Page.Common
+import Page.Common exposing (onClickNotPropagate)
 import Browser.Events exposing (onAnimationFrameDelta)
 import Platform.Sub exposing (batch)
 import Vector2 exposing (Index(..), Vector2, map2)
@@ -34,7 +34,7 @@ integration.
 
 -- constants
 canvas_height     = 400
-canvas_width      = 800
+canvas_width      = 400
 physics_iteration = 3
 mouse_influence   = 10
 
@@ -423,6 +423,8 @@ updateMousePos mouse pos =
 type alias Model = {
      cloth: Cloth
     ,mouse: Maybe MouseState
+    -- if simulation is started or not
+    ,started: Bool
     }
 
 init: (Model, Cmd Msg)
@@ -430,6 +432,7 @@ init = (
     {
         cloth = makeCloth
        ,mouse = Nothing
+       ,started = True
     },
     Cmd.none
     )
@@ -440,6 +443,9 @@ type Msg =
     MouseDown Button Vector2D
   | MouseMove Vector2D
   | MouseUp Vector2D
+  | Start
+  | Stop
+  | Reset
   | Frame Float
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -463,14 +469,18 @@ update msg model =
                     ({ model | mouse = Just <| updateMousePos state pos }, Cmd.none)
                 Nothing ->
                     (model, Cmd.none)
+        Start -> ({ model | started = True },Cmd.none)
+        Stop ->  ({ model | started = False },Cmd.none)
+        Reset -> init
 
 -- SUBSCRIPTIONS
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    batch [
+    if model.started then
        onAnimationFrameDelta Frame
-    ]
+    else
+        Sub.none
 
 -- VIEW
 
@@ -479,33 +489,43 @@ view model =
   div [ class "container animated flipInX" ]
       [ hr [] []
        ,Markdown.toHtml [class "info"] """
-##### Elastic rope
+##### Cloth simulated using [Verlet Integration](https://en.wikipedia.org/wiki/Verlet_integration) and rendered through an HTML5 canvas.
         """
-        ,Html.button
-                       [  type_ "button"
-                        , class ("btn")
-                        , Html.onClick (Frame 0.0)
-                       ]
-                       [
-                         text "step"
-                       ]
-       ,Canvas.toHtml
-            (canvas_width, canvas_height)
-            [ style "display" "block"
-            , Mouse.onDown (\e -> MouseDown e.button (makeVector2D e.offsetPos))
-            , Mouse.onMove (.offsetPos >> makeVector2D >> MouseMove)
-            , Mouse.onUp (.offsetPos >> makeVector2D >> MouseUp)
-            ]
-            (List.concat [
-                [
-                    clear ( 0, 0 ) canvas_width canvas_height
+       ,br [] []
+       ,div [class "row display"]
+            [
+            --- canvas for the cloth
+            Canvas.toHtml
+                (canvas_width, canvas_height)
+                [ style "display" "block"
+                , Mouse.onDown (\e -> MouseDown e.button (makeVector2D e.offsetPos))
+                , Mouse.onMove (.offsetPos >> makeVector2D >> MouseMove)
+                , Mouse.onUp (.offsetPos >> makeVector2D >> MouseUp)
                 ]
-                ,(model.cloth
-                  |> .dots
-                  |> map renderDot
-                  |> toList)
-                ,(model.cloth
-                  |> .sticks
-                  |> List.map (renderStick model.cloth))
-              ])
+                (List.concat [
+                    [
+                        clear ( 0, 0 ) canvas_width canvas_height
+                    ]
+                    ,(model.cloth
+                      |> .dots
+                      |> map renderDot
+                      |> toList)
+                    ,(model.cloth
+                      |> .sticks
+                      |> List.map (renderStick model.cloth))
+                  ])
+                 , div [class "description col-sm-6"]
+                   [
+                      p []
+                      [
+                          text "You can "
+                        , case model.started of
+                            False -> a [class "action", href "", onClickNotPropagate Start ] [ text "start" ]
+                            True  -> a [class "action", href "", onClickNotPropagate Stop ] [ text "stop" ]
+                        , text " the simulation. You can also "
+                        , a [class "action", href "", onClickNotPropagate (Reset) ] [ text "reset" ]
+                        , text " the values to default."
+                      ]
+                     ]
+            ]
       ]
