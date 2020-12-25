@@ -1,19 +1,19 @@
 module Page.Cloth exposing (..)
 
-import Array exposing (Array, foldr, fromList, get, map, set, toList)
+import Array exposing (Array, foldr, get, map, set, toList)
 import Basics.Extra exposing (flip)
 import Canvas exposing (Renderable, Shape, arc, clear, lineTo, path, rect, shapes)
 import Canvas.Settings exposing (fill, stroke)
+import Canvas.Settings.Text exposing (TextAlign(..), align, font)
 import Color exposing (Color)
 import Html exposing (Html, a, br, button, div, hr, p, text)
-import Html.Attributes exposing (class, href, style, type_)
-import Html.Events as Html
-import List
+import Html.Attributes exposing (class, href, style)
+import List exposing (length)
 import Markdown
 import Maybe exposing (withDefault)
-import Page.Common exposing (onClickNotPropagate)
+import Page.Common exposing (Frames, addFrame, createFrames, fpsText, onClickNotPropagate)
 import Browser.Events exposing (onAnimationFrameDelta)
-import Platform.Sub exposing (batch)
+import Platform.Sub
 import Vector2 exposing (Index(..), Vector2, map2)
 import Html.Events.Extra.Mouse as Mouse exposing (Button(..))
 
@@ -278,27 +278,6 @@ renderStick cloth stick =
             [  path (getXY p1.pos) [ lineTo (getXY p2.pos) ]
             ]
 
-makeCloth2: Cloth
-makeCloth2 =
-    let
-        p0 = makeDotWithVelocity 0 (makeVector2D (100, 100)) (makeVector2D (20.43, 0))
-        p1 = makeDot 1 (makeVector2D (200, 100))
-        p2 = makeDot 2 (makeVector2D (200, 200))
-        p3 = makeDot 3 (makeVector2D (100, 200))
-        dots = [ p0, p1, p2, p3] |> fromList
-        sticks = [
-             makeStick p0 p1 Nothing
-            ,makeStick p1 p2 Nothing
-            ,makeStick p2 p3 Nothing
-            ,makeStick p3 p0 Nothing
-            ,makeStick p3 p1 Nothing
-           ]
-    in
-        {
-             dots = dots
-            ,sticks = sticks
-        }
-
 makeCloth: Cloth
 makeCloth =
     let
@@ -413,6 +392,8 @@ type alias Model = {
     ,mouse: Maybe MouseState
     -- if simulation is started or not
     ,started: Bool
+    -- a list containing n last frames, used to compute the fps (frame per seconds)
+    ,frames : Frames
     }
 
 init: (Model, Cmd Msg)
@@ -421,6 +402,7 @@ init = (
         cloth = makeCloth
        ,mouse = Nothing
        ,started = True
+       ,frames = createFrames 100 -- initial capacity
     },
     Cmd.none
     )
@@ -439,8 +421,11 @@ type Msg =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Frame _ ->
-            ({ model | cloth = model.cloth |> updateCloth |> interractCloth model.mouse }, Cmd.none)
+        Frame diff ->
+            ({ model |
+                cloth = model.cloth |> updateCloth |> interractCloth model.mouse
+               ,frames = addFrame model.frames diff}
+            ,Cmd.none)
         MouseDown b pos ->
             case b of
                 MainButton ->
@@ -502,6 +487,15 @@ view model =
                     ,(model.cloth
                       |> .sticks
                       |> List.map (renderStick model.cloth))
+                    ,[
+                      fpsText model.frames
+                      |> Canvas.text
+                             [ font { size = 10, family = "serif" }
+                             , align Center
+                             , fill Color.green
+                             ]
+                             ( canvas_width - 25, 12 )
+                      ]
                   ])
                  , div [class "description col-sm-6"]
                    [
