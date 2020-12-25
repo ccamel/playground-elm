@@ -4,8 +4,10 @@ import Array exposing (Array, foldr, get, map, set, toList)
 import Basics.Extra exposing (flip)
 import Canvas exposing (Renderable, Shape, arc, clear, lineTo, path, rect, shapes)
 import Canvas.Settings exposing (fill, stroke)
+import Canvas.Settings.Line exposing (lineWidth)
 import Canvas.Settings.Text exposing (TextAlign(..), align, font)
 import Color exposing (Color, rgb255)
+import Color.Interpolate as Color exposing (Space(..), interpolate)
 import Html exposing (Html, a, br, button, div, hr, p, text)
 import Html.Attributes exposing (class, href, style)
 import List exposing (length)
@@ -138,24 +140,29 @@ unpinDot p pin =
 
 updateDot: Dot -> Dot
 updateDot dot =
-  let
-      vel = sub dot.pos dot.oldPos
-              |> (flip mult) (dot.friction)
+    let
+        velocity = velocityDot dot
+    in
+        { dot |
+             oldPos = dot.pos
+            ,pos = dot.pos |> add velocity |> add dot.gravity
+        }
 
-      vel2 = if ((dot.pos |> getY) >= ((toFloat canvas_height) - dot.radius))
-                && ((magSq vel) > 0.000001) then
-                let
-                    m = mag vel
-                in
-                    divide vel m
-                      |> (flip mult) (m * dot.groundFriction)
-              else
-                vel
-  in
-    { dot |
-         oldPos = dot.pos
-        ,pos = dot.pos |> add vel2 |> add dot.gravity
-    }
+velocityDot: Dot -> Vector2D
+velocityDot dot =
+    let
+        vel = sub dot.pos dot.oldPos
+              |> (flip mult) (dot.friction)
+    in
+     if ((dot.pos |> getY) >= ((toFloat canvas_height) - dot.radius))
+        && ((magSq vel) > 0.000001) then
+        let
+            m = mag vel
+        in
+            divide vel m
+              |> (flip mult) (m * dot.groundFriction)
+    else
+        vel
 
 interractCloth: Maybe MouseState -> Cloth -> Cloth
 interractCloth mousestate cloth =
@@ -272,9 +279,15 @@ renderStick: Cloth -> Stick -> Renderable
 renderStick cloth stick =
     let
         (p1, p2) = (getDot stick.p1Id cloth, getDot stick.p2Id cloth)
+        tension = stick.length / (dist p1.pos p2.pos)
+        color =
+            if tension > 1.0 then
+                0.0
+            else 1.0 - tension
     in
         shapes
-            [ stroke stick.color ]
+            [  stroke (palette color)
+              ,lineWidth (1 / tension) ]
             [  path (getXY p1.pos) [ lineTo (getXY p2.pos) ]
             ]
 
@@ -457,6 +470,8 @@ subscriptions model =
 
 -- VIEW
 
+palette = interpolate Color.RGB Color.darkGray Color.lightRed
+
 view : Model -> Html Msg
 view model =
   div [ class "container animated flipInX" ]
@@ -493,7 +508,7 @@ Click on the left button of the mouse to interact with the cloth.
                       |> Canvas.text
                              [ font { size = 10, family = "serif" }
                              , align Center
-                             , fill Color.green
+                             , fill Color.darkBlue
                              ]
                              ( canvas_width - 25, 12 )
                       ]
