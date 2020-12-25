@@ -5,18 +5,16 @@ import GraphicSVG.Widget as Widget
 import Basics.Extra exposing (flip)
 import Color exposing (rgb255, green, red, toCssString)
 import ColorPicker
-import FormatNumber exposing (format)
-import FormatNumber.Locales exposing (Locale, usLocale)
 import Html exposing (Html, a, br, button, div, hr, input, p, span, text)
 import Html.Attributes exposing (attribute, class, href, id, name, size, step, style, type_, value)
 import Html.Events exposing (onInput)
-import List exposing (concatMap, drop, length, map, range, sum)
+import List exposing (concatMap, map, range)
 import Markdown
-import Maybe exposing (withDefault)
-import Page.Common exposing (Frames, addFrame, createFrames, fps, resetFrames, strToFloatWithMinMax, strToIntWithMinMax)
+import Maybe
+import Page.Common exposing (Frames, addFrame, createFrames, fpsText, resetFrames, strToFloatWithMinMax, strToIntWithMinMax)
 import Platform.Cmd exposing (batch)
 import Round
-import String exposing (padLeft)
+import String
 import String.Interpolate exposing (interpolate)
 import Task
 import Browser.Events
@@ -222,12 +220,7 @@ view model =
                 ,yAxisForm
                 ,(lissajous model.a model.b (toRadian model.p)) model.resolution
                     |> outlined model.curveStyle.lineType (toSvgColor model.curveStyle.color)
-                ,interpolate "{0} fps"
-                             [ fps model.ticks
-                                     |> Maybe.map (format locale1digit)
-                                     |> withDefault "-"
-                                     |> padLeft 5 ' '
-                             ]
+                ,fpsText model.ticks
                   |> GraphicSVG.text
                   |> fixedwidth
                   |> filled (Color.rgb255 217 217 217 |> toSvgColor)
@@ -407,15 +400,6 @@ modulo range v =
 
 toRadian : Float -> Float
 toRadian deg = deg * pi / 180.0
-
-locale1digit : Locale
-locale1digit = {
-    usLocale | 
-        decimals = 1,
-        thousandSeparator = ",",
-        decimalSeparator = ".",
-        negativePrefix = "−"    
-  }
 
 cartesian : List a -> List b -> List (a,b)
 cartesian xs ys =
