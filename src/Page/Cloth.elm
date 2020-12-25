@@ -5,7 +5,7 @@ import Basics.Extra exposing (flip)
 import Canvas exposing (Renderable, Shape, arc, clear, lineTo, path, rect, shapes)
 import Canvas.Settings exposing (fill, stroke)
 import Canvas.Settings.Text exposing (TextAlign(..), align, font)
-import Color exposing (Color)
+import Color exposing (Color, rgb255)
 import Html exposing (Html, a, br, button, div, hr, p, text)
 import Html.Attributes exposing (class, href, style)
 import List exposing (length)
@@ -123,7 +123,7 @@ makeDotWithVelocity id p v =
            ,groundFriction = 0.7
            ,gravity = makeVector2D (0, 1)
            ,radius = 2.0
-           ,color = Color.darkGreen
+           ,color = Color.darkGray
            ,mass = 1
            ,pin = Nothing
         }
@@ -220,7 +220,7 @@ makeStick p1 p2 length =
          p1Id = p1.id
         ,p2Id = p2.id
         ,stiffness = 2.5
-        ,color = Color.blue
+        ,color = Color.darkGray
         ,length =
             case length of
                 Just alength -> alength
@@ -281,7 +281,7 @@ renderStick cloth stick =
 makeCloth: Cloth
 makeCloth =
     let
-        (w, h) = (20,20)
+        (w, h) = (22,20)
         startx = 40
         starty = 10
         spacing = 15
@@ -463,6 +463,8 @@ view model =
       [ hr [] []
        ,Markdown.toHtml [class "info"] """
 ##### Cloth simulated using [Verlet Integration](https://en.wikipedia.org/wiki/Verlet_integration) and rendered through an HTML5 canvas.
+
+Click on the left button of the mouse to interact with the cloth.
         """
        ,br [] []
        ,div [class "row display"]
@@ -477,16 +479,15 @@ view model =
                 ]
                 (List.concat [
                     [
-                        clear ( 0, 0 ) canvas_width canvas_height
-                       ,shapes [ fill Color.black ] [ rect ( 0, 0 ) canvas_width canvas_height ]
+                       shapes [ fill (rgb255 242 242 242) ] [ rect ( 0, 0 ) canvas_width canvas_height ]
                     ]
+                    ,(model.cloth
+                      |> .sticks
+                      |> List.map (renderStick model.cloth))
                     ,(model.cloth
                       |> .dots
                       |> map renderDot
                       |> toList)
-                    ,(model.cloth
-                      |> .sticks
-                      |> List.map (renderStick model.cloth))
                     ,[
                       fpsText model.frames
                       |> Canvas.text
