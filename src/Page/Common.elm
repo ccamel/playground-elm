@@ -1,14 +1,17 @@
 module Page.Common exposing (..)
 
 import Array exposing (Array)
+import FormatNumber exposing (format)
+import FormatNumber.Locales exposing (Locale, usLocale)
 import Html exposing (Html)
 import Html.Events exposing (..)
 import Json.Decode
 import List exposing (drop, length, sum)
-import Maybe exposing (andThen)
+import Maybe exposing (andThen, withDefault)
+import String.Interpolate exposing (interpolate)
 import Svg
 import Svg.Attributes exposing (class)
-import String
+import String exposing (padLeft)
 import Json.Decode as Decode
 
 type alias PageInfo a = {
@@ -80,10 +83,10 @@ type alias Frames = {
     capacity: Int
   }
 
-createFrames : Int -> Frames
+createFrames: Int -> Frames
 createFrames capacity = { times = [], capacity = capacity }
 
-addFrame : Frames -> Float -> Frames
+addFrame: Frames -> Float -> Frames
 addFrame frames time =
     let
         delta = (length frames.times) - frames.capacity
@@ -94,11 +97,11 @@ addFrame frames time =
                                 |> (::) time
     }
 
-resetFrames : Frames -> Frames
+resetFrames: Frames -> Frames
 resetFrames frames = {frames | times = [] }
 
 -- compute the FPS from the given fps set (if possible)
-fps : Frames -> Maybe Float
+fps: Frames -> Maybe Float
 fps frames =
     let
         size = length frames.times
@@ -110,3 +113,21 @@ fps frames =
           |> Just
     else
         Nothing
+
+locale1digit : Locale
+locale1digit = {
+    usLocale |
+        decimals = 1,
+        thousandSeparator = ",",
+        decimalSeparator = ".",
+        negativePrefix = "−"
+  }
+
+fpsText: Frames -> String
+fpsText frames =
+    interpolate "{0} fps"
+         [ fps frames
+                 |> Maybe.map (format locale1digit)
+                 |> withDefault "-"
+                 |> padLeft 5 ' '
+         ]
