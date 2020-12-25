@@ -13,7 +13,7 @@ import Html.Events exposing (onInput)
 import List exposing (concatMap, drop, length, map, range, sum)
 import Markdown
 import Maybe exposing (withDefault)
-import Page.Common exposing (strToFloatWithMinMax, strToIntWithMinMax)
+import Page.Common exposing (Frames, addFrame, createFrames, fps, resetFrames, strToFloatWithMinMax, strToIntWithMinMax)
 import Platform.Cmd exposing (batch)
 import Round
 import String exposing (padLeft)
@@ -60,7 +60,7 @@ type alias Model = {
     -- resolution of the line - i.e. total number of points to draw the curve (1 period), more is best
     ,resolution : Int
     -- a list containing n last ticks, used to compute the fps (frame per seconds)
-    ,ticks : Ticks
+    ,ticks : Frames
     ,foregroundColorPicker : ColorPicker.State
     -- widget underlying model
     ,widgetState : Widget.Model
@@ -84,7 +84,7 @@ init =
              ,started = True
              ,curveStyle = { color = Color.rgb255 31 122 31, lineType = solid 2 }
              ,resolution = 500
-             ,ticks = createTicks 100 -- initial capacity
+             ,ticks = createFrames 100 -- initial capacity
              ,foregroundColorPicker = ColorPicker.empty
              ,widgetState = widgetModel
           },
@@ -119,10 +119,10 @@ update msg model =
                |> modulo 180
         in
           ({ model | p = v
-                   ,ticks = addTick model.ticks diff}
+                   ,ticks = addFrame model.ticks diff}
            ,Cmd.none)
     Start -> ({ model | started = True
-                      ,ticks = resetTick model.ticks }
+                      ,ticks = resetFrames model.ticks }
               ,Cmd.none)
     Stop ->  ({ model | started = False },Cmd.none)
     SetPhaseVelocity s ->
@@ -416,47 +416,6 @@ locale1digit = {
         decimalSeparator = ".",
         negativePrefix = "−"    
   }
-
--- the ticks data type
-
--- ticks holds a sequence of times.
--- the list is bounded to accept a max number of elements -> inserting a new only discards the oldest one
-type alias Ticks = {
-    times : List Float,
-    capacity: Int
-  }
-
-createTicks : Int -> Ticks
-createTicks capacity = { times = [], capacity = capacity }
-
-addTick : Ticks -> Float -> Ticks
-addTick ticks time =
-    let
-        delta = (length ticks.times) - ticks.capacity
-        makePlace ticks2 = if delta >= 0 then (drop (delta + 1) ticks2) else ticks2
-    in
-    { ticks | times = ticks.times
-                                |> makePlace
-                                |> (::) time
-
-    }
-
-resetTick : Ticks -> Ticks
-resetTick ticks = {ticks | times = [] }
-
--- compute the FPS from the given fps set (if possible)
-fps : Ticks -> Maybe Float
-fps ticks =
-    let
-        size = length ticks.times
-    in if size > 1 then
-        ticks.times
-          |> sum
-          |> (/) (toFloat size)
-          |> (*) 1000.0
-          |> Just
-    else
-        Nothing
 
 cartesian : List a -> List b -> List (a,b)
 cartesian xs ys =
