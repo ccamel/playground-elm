@@ -7,7 +7,7 @@ import Canvas.Settings exposing (fill, stroke)
 import Canvas.Settings.Advanced exposing (Transform, transform, translate)
 import Canvas.Settings.Line exposing (lineWidth)
 import Canvas.Settings.Text as TextAlign exposing (TextAlign(..), align, font)
-import Color exposing (Color, rgb255)
+import Color exposing (Color, fromRgba, rgb255, toRgba)
 import Color.Interpolate as Color exposing (Space(..), interpolate)
 import Html exposing (Html, a, br, button, div, hr, input, label, p, text)
 import Html.Attributes exposing (checked, class, for, href, id, style, type_)
@@ -298,16 +298,32 @@ renderStick: List Transform -> Cloth -> Stick -> Renderable
 renderStick transforms cloth stick =
     let
         (p1, p2) = (getDot stick.p1Id cloth, getDot stick.p2Id cloth)
+        pos1 = getXY p1.pos
+        pos2 = getXY p2.pos
+    in
+        shapes
+            [  stroke stick.color
+              ,transform transforms]
+            [  path pos1 [ lineTo pos2 ]
+            ]
+
+renderStickTension: List Transform -> Cloth -> Stick -> Renderable
+renderStickTension transforms cloth stick =
+    let
+        (p1, p2) = (getDot stick.p1Id cloth, getDot stick.p2Id cloth)
+        pos1 = getXY p1.pos
+        pos2 = getXY p2.pos
         tension = stick.length / (dist p1.pos p2.pos)
-        color =
+        alpha =
             if tension > 1.0 then
                 0.0
             else 1.0 - tension
+        color = (Color.darkRed |> toRgba)
     in
         shapes
-            [  stroke (constants.stickPalette color)
-              ,lineWidth (1 / tension)
-              ,transform transforms ]
+            [  stroke (fromRgba <| { color | alpha = alpha })
+              ,lineWidth 5
+              ,transform transforms]
             [  path (getXY p1.pos) [ lineTo (getXY p2.pos) ]
             ]
 
@@ -426,6 +442,7 @@ type alias Model = {
     ,offset: Vector2D
     ,showDots: Bool
     ,showSticks: Bool
+    ,showStickTension: Bool
     }
 
 init: (Model, Cmd Msg)
@@ -438,6 +455,7 @@ init = (
        ,offset = makeVector2D (20, 20)
        ,showDots = True
        ,showSticks = True
+       ,showStickTension = False
     },
     Cmd.none
     )
@@ -453,6 +471,7 @@ type Msg =
   | Reset
   | ToggleShowDots
   | ToggleShowSticks
+  | ToggleShowStickTension
   | Frame Float
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -483,6 +502,7 @@ update msg model =
         Stop ->  ({ model | started = False },Cmd.none)
         ToggleShowDots -> ({ model | showDots = not model.showDots },Cmd.none)
         ToggleShowSticks -> ({ model | showSticks = not model.showSticks },Cmd.none)
+        ToggleShowStickTension -> ({ model | showStickTension = not model.showStickTension },Cmd.none)
         Reset -> init
 
 -- SUBSCRIPTIONS
@@ -523,7 +543,12 @@ Click on the left button of the mouse to interact with the cloth.
                     ,if model.showSticks then
                         (model.cloth
                           |> .sticks
-                          |> List.map (renderStick [apply translate model.offset]  model.cloth))
+                          |> List.map (renderStick [apply translate model.offset] model.cloth))
+                     else []
+                    ,if model.showStickTension then
+                        (model.cloth
+                          |> .sticks
+                          |> List.map (renderStickTension [apply translate model.offset] model.cloth))
                      else []
                     ,if model.showDots then
                         (model.cloth
@@ -574,6 +599,12 @@ Click on the left button of the mouse to interact with the cloth.
                               []
                           , label [ class "form-check-label", for "toggleShowTicks" ]
                               [ text "Show sticks" ]
+                          ]
+                      ,div [ class "form-check form-check-inline mb-2" ]
+                          [ input [ class "form-check-input", id "toggleShowTickTension", type_ "checkbox", checked model.showStickTension, onClick ToggleShowStickTension ]
+                              []
+                          , label [ class "form-check-label", for "toggleShowTickTension" ]
+                              [ text "Show stick tension" ]
                           ]]
             ]
       ]
