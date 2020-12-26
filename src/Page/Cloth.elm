@@ -4,6 +4,7 @@ import Array exposing (Array, foldr, get, map, set, toList)
 import Basics.Extra exposing (flip)
 import Canvas exposing (Renderable, Shape, arc, clear, lineTo, path, rect, shapes)
 import Canvas.Settings exposing (fill, stroke)
+import Canvas.Settings.Advanced exposing (Transform, transform, translate)
 import Canvas.Settings.Line exposing (lineWidth)
 import Canvas.Settings.Text exposing (TextAlign(..), align, font)
 import Color exposing (Color, rgb255)
@@ -11,13 +12,13 @@ import Color.Gradient exposing (Palette)
 import Color.Interpolate as Color exposing (Space(..), interpolate)
 import Html exposing (Html, a, br, button, div, hr, p, text)
 import Html.Attributes exposing (class, href, style)
-import List exposing (length)
+import List as Pair exposing (length)
 import Markdown
 import Maybe exposing (withDefault)
 import Page.Common exposing (Frames, addFrame, createFrames, fpsText, onClickNotPropagate)
 import Browser.Events exposing (onAnimationFrameDelta)
 import Platform.Sub
-import Vector2 exposing (Index(..), Vector2, map2)
+import Vector2 exposing (Index(..), Vector2, foldl, map2)
 import Html.Events.Extra.Mouse as Mouse exposing (Button(..))
 
 -- PAGE INFO
@@ -65,6 +66,13 @@ getY v = Vector2.get Index1 v
 
 getXY: Vector2D -> (Float, Float)
 getXY v = (getX v, getY v)
+
+apply: (Float -> Float -> a) -> Vector2D -> a
+apply f v =
+    let
+        (x, y) = getXY v
+    in
+        f x y
 
 distSq: Vector2D -> Vector2D -> Float
 distSq v1 v2 =
@@ -224,10 +232,10 @@ constraintDot dot =
             pos = p
         }
 
-renderDot: Dot -> Renderable
-renderDot dot =
+renderDot: List Transform -> Dot -> Renderable
+renderDot transforms dot =
     shapes
-        [ fill dot.color ]
+        [ fill dot.color, transform transforms ]
         [  arc (getXY dot.pos) dot.radius { startAngle = degrees 0, endAngle = degrees 360, clockwise = True }
         ]
 
@@ -285,8 +293,8 @@ updateStick cloth stick =
         |> setDot p2u
 
 
-renderStick: Cloth -> Stick -> Renderable
-renderStick cloth stick =
+renderStick: List Transform -> Cloth -> Stick -> Renderable
+renderStick transforms cloth stick =
     let
         (p1, p2) = (getDot stick.p1Id cloth, getDot stick.p2Id cloth)
         tension = stick.length / (dist p1.pos p2.pos)
@@ -297,24 +305,20 @@ renderStick cloth stick =
     in
         shapes
             [  stroke (constants.stickPalette color)
-              ,lineWidth (1 / tension) ]
+              ,lineWidth (1 / tension)
+              ,transform transforms ]
             [  path (getXY p1.pos) [ lineTo (getXY p2.pos) ]
             ]
 
-makeCloth: Cloth
-makeCloth =
+makeCloth: Int -> Int -> Float -> Cloth
+makeCloth w h spacing =
     let
-        (w, h) = (22,20)
-        startx = 40
-        starty = 10
-        spacing = 15
-
         cloth = {
             dots =
                 Array.initialize (w*h) (\n ->
                     let
                         (x, y) = (remainderBy w n, n // w)
-                        coords = (startx + spacing * (toFloat x), starty + spacing * (toFloat y)) |> makeVector2D
+                        coords = makeVector2D (spacing * toFloat x, spacing * toFloat y)
                     in
                         if y == h - 1 then
                             makeDotWithVelocity n coords (makeVector2D (5.0, 0.0))
@@ -416,16 +420,19 @@ type alias Model = {
     -- if simulation is started or not
     ,started: Bool
     -- a list containing n last frames, used to compute the fps (frame per seconds)
-    ,frames : Frames
+    ,frames: Frames
+    -- offset used to display the cloth
+    ,offset: Vector2D
     }
 
 init: (Model, Cmd Msg)
 init = (
     {
-        cloth = makeCloth
+        cloth = makeCloth 25 20 15.0
        ,mouse = Nothing
        ,started = True
        ,frames = createFrames 100 -- initial capacity
+       ,offset = makeVector2D (20, 20)
     },
     Cmd.none
     )
@@ -481,7 +488,7 @@ subscriptions model =
 -- VIEW
 
 view : Model -> Html Msg
-view model =
+view ({ offset } as model) =
   div [ class "container animated flipInX" ]
       [ hr [] []
        ,Markdown.toHtml [class "info"] """
@@ -506,10 +513,10 @@ Click on the left button of the mouse to interact with the cloth.
                     ]
                     ,(model.cloth
                       |> .sticks
-                      |> List.map (renderStick model.cloth))
+                      |> List.map (renderStick [apply translate model.offset]  model.cloth))
                     ,(model.cloth
                       |> .dots
-                      |> map renderDot
+                      |> map (renderDot [apply translate model.offset])
                       |> toList)
                     ,[
                       fpsText model.frames
