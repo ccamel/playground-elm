@@ -6,7 +6,7 @@ import Canvas exposing (Renderable, Shape, arc, lineTo, path, rect, shapes)
 import Canvas.Settings exposing (fill, stroke)
 import Canvas.Settings.Advanced exposing (Transform, transform, translate)
 import Canvas.Settings.Line exposing (lineWidth)
-import Canvas.Settings.Text exposing (TextAlign(..), align, font)
+import Canvas.Settings.Text as TextAlign exposing (TextAlign(..), align, font)
 import Color exposing (Color, rgb255)
 import Color.Interpolate as Color exposing (Space(..), interpolate)
 import Html exposing (Html, a, br, button, div, hr, input, label, p, text)
@@ -18,6 +18,7 @@ import Maybe exposing (withDefault)
 import Page.Common exposing (Frames, addFrame, createFrames, fpsText, onClickNotPropagate)
 import Browser.Events exposing (onAnimationFrameDelta)
 import Platform.Sub
+import String exposing (fromInt)
 import Vector2 exposing (Index(..), Vector2, map2)
 import Html.Events.Extra.Mouse as Mouse exposing (Button(..))
 
@@ -531,13 +532,20 @@ Click on the left button of the mouse to interact with the cloth.
                           |> toList)
                      else []
                     ,[
-                      fpsText model.frames
-                      |> Canvas.text
+                      String.join " " [
+                         fpsText model.frames
+                        ," - "
+                        ,model.cloth.dots |> Array.length |> fromInt
+                        ,"dots"
+                        ," - "
+                        ,model.cloth.sticks |> length |> fromInt
+                        ,"sticks"]
+                        |> Canvas.text
                              [ font { size = 10, family = "serif" }
-                             , align Center
+                             , align TextAlign.Left
                              , fill Color.darkBlue
                              ]
-                             ( constants.width - 25, 12 )
+                             ( 15, 10 )
                       ]
                   ])
                  , div [class "description col-sm-6"]
