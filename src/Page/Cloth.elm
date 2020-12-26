@@ -7,6 +7,7 @@ import Canvas.Settings exposing (fill, stroke)
 import Canvas.Settings.Line exposing (lineWidth)
 import Canvas.Settings.Text exposing (TextAlign(..), align, font)
 import Color exposing (Color, rgb255)
+import Color.Gradient exposing (Palette)
 import Color.Interpolate as Color exposing (Space(..), interpolate)
 import Html exposing (Html, a, br, button, div, hr, p, text)
 import Html.Attributes exposing (class, href, style)
@@ -35,10 +36,19 @@ integration.
 -- MODEL
 
 -- constants
-canvas_height     = 400
-canvas_width      = 400
-physics_iteration = 3
-mouse_influence   = 10
+constants : { height : number, width : number, physics_iteration : Int, mouse_influence : Float, stickPalette : Float -> Color }
+constants = {
+    -- width of the canvas
+    height     = 400
+    -- height of the canvas
+   ,width      = 400
+   -- number of iterations
+   ,physics_iteration = 3
+   -- radius of the mouse when interacting with the cloth
+   ,mouse_influence   = 10.0
+   -- palette used to colorize sticks according to their tension
+   ,stickPalette = interpolate Color.RGB Color.darkGray Color.lightRed
+  }
 
 type alias ID = Int
 
@@ -154,7 +164,7 @@ velocityDot dot =
         vel = sub dot.pos dot.oldPos
               |> (flip mult) (dot.friction)
     in
-     if ((dot.pos |> getY) >= ((toFloat canvas_height) - dot.radius))
+     if ((dot.pos |> getY) >= ((toFloat constants.height) - dot.radius))
         && ((magSq vel) > 0.000001) then
         let
             m = mag vel
@@ -174,7 +184,7 @@ interractCloth mousestate cloth =
                     let
                         d = dist dot.pos mouse.pos
                     in
-                        if d < mouse_influence then
+                        if d < constants.mouse_influence then
                             { dot |
                                 oldPos = sub dot.pos (sub mouse.pos mouse.oldPos |> (flip mult) 1.8)
                             }
@@ -190,7 +200,7 @@ constraintDot dot =
     let
         d = dot.radius * 2
         (x, y) = dot.pos |> getXY
-        (limitHighW, limitHighH) = (canvas_width - d, canvas_height - d)
+        (limitHighW, limitHighH) = (constants.width - d, constants.height - d)
         (limitLowW, limitLowH) = (d, d)
 
         p =
@@ -286,7 +296,7 @@ renderStick cloth stick =
             else 1.0 - tension
     in
         shapes
-            [  stroke (palette color)
+            [  stroke (constants.stickPalette color)
               ,lineWidth (1 / tension) ]
             [  path (getXY p1.pos) [ lineTo (getXY p2.pos) ]
             ]
@@ -331,7 +341,7 @@ makeCloth =
 updateCloth: Cloth -> Cloth
 updateCloth cloth =
     cloth
-      |> updateClothSticksHelper physics_iteration
+      |> updateClothSticksHelper constants.physics_iteration
       |> updateClothDots
       |> updateClothSticks
 
@@ -470,8 +480,6 @@ subscriptions model =
 
 -- VIEW
 
-palette = interpolate Color.RGB Color.darkGray Color.lightRed
-
 view : Model -> Html Msg
 view model =
   div [ class "container animated flipInX" ]
@@ -486,7 +494,7 @@ Click on the left button of the mouse to interact with the cloth.
             [
             --- canvas for the cloth
             Canvas.toHtml
-                (canvas_width, canvas_height)
+                (constants.width, constants.height)
                 [ style "display" "block"
                 , Mouse.onDown (\e -> MouseDown e.button (makeVector2D e.offsetPos))
                 , Mouse.onMove (.offsetPos >> makeVector2D >> MouseMove)
@@ -494,7 +502,7 @@ Click on the left button of the mouse to interact with the cloth.
                 ]
                 (List.concat [
                     [
-                       shapes [ fill (rgb255 242 242 242) ] [ rect ( 0, 0 ) canvas_width canvas_height ]
+                       shapes [ fill (rgb255 242 242 242) ] [ rect ( 0, 0 ) constants.width constants.height ]
                     ]
                     ,(model.cloth
                       |> .sticks
@@ -510,7 +518,7 @@ Click on the left button of the mouse to interact with the cloth.
                              , align Center
                              , fill Color.darkBlue
                              ]
-                             ( canvas_width - 25, 12 )
+                             ( constants.width - 25, 12 )
                       ]
                   ])
                  , div [class "description col-sm-6"]
