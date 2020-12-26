@@ -2,23 +2,23 @@ module Page.Cloth exposing (..)
 
 import Array exposing (Array, foldr, get, map, set, toList)
 import Basics.Extra exposing (flip)
-import Canvas exposing (Renderable, Shape, arc, clear, lineTo, path, rect, shapes)
+import Canvas exposing (Renderable, Shape, arc, lineTo, path, rect, shapes)
 import Canvas.Settings exposing (fill, stroke)
 import Canvas.Settings.Advanced exposing (Transform, transform, translate)
 import Canvas.Settings.Line exposing (lineWidth)
 import Canvas.Settings.Text exposing (TextAlign(..), align, font)
 import Color exposing (Color, rgb255)
-import Color.Gradient exposing (Palette)
 import Color.Interpolate as Color exposing (Space(..), interpolate)
-import Html exposing (Html, a, br, button, div, hr, p, text)
-import Html.Attributes exposing (class, href, style)
-import List as Pair exposing (length)
+import Html exposing (Html, a, br, button, div, hr, input, label, p, text)
+import Html.Attributes exposing (checked, class, for, href, id, style, type_)
+import Html.Events exposing (onClick)
+import List exposing (length)
 import Markdown
 import Maybe exposing (withDefault)
 import Page.Common exposing (Frames, addFrame, createFrames, fpsText, onClickNotPropagate)
 import Browser.Events exposing (onAnimationFrameDelta)
 import Platform.Sub
-import Vector2 exposing (Index(..), Vector2, foldl, map2)
+import Vector2 exposing (Index(..), Vector2, map2)
 import Html.Events.Extra.Mouse as Mouse exposing (Button(..))
 
 -- PAGE INFO
@@ -423,6 +423,8 @@ type alias Model = {
     ,frames: Frames
     -- offset used to display the cloth
     ,offset: Vector2D
+    ,showDots: Bool
+    ,showSticks: Bool
     }
 
 init: (Model, Cmd Msg)
@@ -433,6 +435,8 @@ init = (
        ,started = True
        ,frames = createFrames 100 -- initial capacity
        ,offset = makeVector2D (20, 20)
+       ,showDots = True
+       ,showSticks = True
     },
     Cmd.none
     )
@@ -446,6 +450,8 @@ type Msg =
   | Start
   | Stop
   | Reset
+  | ToggleShowDots
+  | ToggleShowSticks
   | Frame Float
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -474,6 +480,8 @@ update msg model =
                     (model, Cmd.none)
         Start -> ({ model | started = True },Cmd.none)
         Stop ->  ({ model | started = False },Cmd.none)
+        ToggleShowDots -> ({ model | showDots = not model.showDots },Cmd.none)
+        ToggleShowSticks -> ({ model | showSticks = not model.showSticks },Cmd.none)
         Reset -> init
 
 -- SUBSCRIPTIONS
@@ -511,13 +519,17 @@ Click on the left button of the mouse to interact with the cloth.
                     [
                        shapes [ fill (rgb255 242 242 242) ] [ rect ( 0, 0 ) constants.width constants.height ]
                     ]
-                    ,(model.cloth
-                      |> .sticks
-                      |> List.map (renderStick [apply translate model.offset]  model.cloth))
-                    ,(model.cloth
-                      |> .dots
-                      |> map (renderDot [apply translate model.offset])
-                      |> toList)
+                    ,if model.showSticks then
+                        (model.cloth
+                          |> .sticks
+                          |> List.map (renderStick [apply translate model.offset]  model.cloth))
+                     else []
+                    ,if model.showDots then
+                        (model.cloth
+                          |> .dots
+                          |> map (renderDot [apply translate model.offset])
+                          |> toList)
+                     else []
                     ,[
                       fpsText model.frames
                       |> Canvas.text
@@ -540,6 +552,20 @@ Click on the left button of the mouse to interact with the cloth.
                         , a [class "action", href "", onClickNotPropagate (Reset) ] [ text "reset" ]
                         , text " the values to default."
                       ]
-                     ]
+                     ,p []
+                      [ text "You can show/hide the following elements:" ]
+
+                     ,div [ class "form-check form-check-inline mb-2" ]
+                          [ input [ class "form-check-input", id "toggleShowDots", type_ "checkbox", checked model.showDots, onClick ToggleShowDots ]
+                              []
+                          , label [ class "form-check-label", for "toggleShowDots" ]
+                              [ text "Show dots" ]
+                          ]
+                      ,div [ class "form-check form-check-inline mb-2" ]
+                          [ input [ class "form-check-input", id "toggleShowTicks", type_ "checkbox", checked model.showSticks, onClick ToggleShowSticks ]
+                              []
+                          , label [ class "form-check-label", for "toggleShowTicks" ]
+                              [ text "Show sticks" ]
+                          ]]
             ]
       ]
