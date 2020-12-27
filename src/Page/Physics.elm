@@ -10,9 +10,9 @@ import Canvas.Settings.Text as TextAlign exposing (TextAlign(..), align, font)
 import Color exposing (Color, rgb255)
 import Color.Interpolate as Color exposing (Space(..), interpolate)
 import Html exposing (Html, a, br, button, div, hr, input, label, p, text)
-import Html.Attributes exposing (checked, class, for, href, id, style, type_)
+import Html.Attributes exposing (attribute, checked, class, classList, for, href, id, style, type_)
 import Html.Events exposing (onClick)
-import List exposing (length)
+import List exposing (head, length)
 import Markdown
 import Maybe exposing (withDefault)
 import Page.Common exposing (Frames, addFrame, createFrames, fpsText, onClickNotPropagate, withAlpha)
@@ -26,8 +26,8 @@ import Html.Events.Extra.Mouse as Mouse exposing (Button(..))
 
 info : Page.Common.PageInfo Msg
 info = {
-     name = "physics"
-     , hash = "verlet-physics-engine"
+     name = "physics-engine"
+     , hash = "physics-engine"
      , description = Markdown.toHtml [class "info"] """
 Some physics simulation computed with simple [Verlet](https://en.wikipedia.org/wiki/Verlet_integration)
 integration and rendered using HTML5 canvas.
@@ -335,6 +335,19 @@ renderStickTension transforms entity stick =
             [  path pos1 [ lineTo pos2 ]
             ]
 
+type alias EntityMaker = () -> Entity
+
+emptyEntityMaker: EntityMaker
+emptyEntityMaker () =
+    {
+        dots = Array.empty
+       ,sticks = []
+    }
+
+-- Factory witch produces a brand new cloth (with default values).
+clothEntityMaker: EntityMaker
+clothEntityMaker () = makeCloth 25 20 15.0
+
 -- Creates a "cloth" entity with the given width, height and spacing.
 makeCloth: Int -> Int -> Float -> Entity
 makeCloth w h spacing =
@@ -365,6 +378,12 @@ makeCloth w h spacing =
                          step2)
                 cloth
                 cloth.dots
+
+-- List of available simulations (entities, with associated factory function)
+simulations: List ( String, EntityMaker )
+simulations = [
+    ("cloth", clothEntityMaker)
+  ]
 
 updateEntity: Entity -> Entity
 updateEntity entity =
@@ -441,6 +460,8 @@ updateMousePos mouse pos =
 type alias Model = {
     -- the entity simulated
      entity: Entity
+    -- the name (short) simulated
+    ,entityName: String
     -- maintain the state of the mouse (old position, current position and mouse button clicks)
     ,mouse: Maybe MouseState
     -- if simulation is started or not
@@ -458,9 +479,13 @@ type alias Model = {
     }
 
 init: (Model, Cmd Msg)
-init = (
+init =
+    let
+        (simulationName, simulationMaker) = head simulations |> withDefault ("empty", emptyEntityMaker)
+    in (
     {
-        entity = makeCloth 25 20 15.0
+        entity = simulationMaker ()
+       ,entityName = simulationName
        ,mouse = Nothing
        ,started = True
        ,frames = createFrames 100 -- initial capacity
@@ -481,6 +506,7 @@ type Msg =
   | Start
   | Stop
   | Reset
+  | ChangeSimulation String EntityMaker
   | ToggleShowDots
   | ToggleShowSticks
   | ToggleShowStickTension
@@ -512,6 +538,14 @@ update msg model =
                     (model, Cmd.none)
         Start -> ({ model | started = True },Cmd.none)
         Stop ->  ({ model | started = False },Cmd.none)
+        ChangeSimulation name factory ->
+            if name /= model.entityName then
+                ({ model |
+                    entity = factory ()
+                   ,entityName = name }
+                ,Cmd.none)
+            else
+                (model, Cmd.none)
         ToggleShowDots -> ({ model | showDots = not model.showDots },Cmd.none)
         ToggleShowSticks -> ({ model | showSticks = not model.showSticks },Cmd.none)
         ToggleShowStickTension -> ({ model | showStickTension = not model.showStickTension },Cmd.none)
@@ -600,8 +634,29 @@ Click on the left button of the mouse to interact with the simulation.
                         , text " the values to default."
                       ]
                      ,p []
+                      [ text "You can change the simulated entity: " ]
+                     ,div [ class "dropdown" ]
+                      [ button [ attribute "aria-expanded" "false"
+                                ,attribute "aria-haspopup" "true"
+                                ,class "btn btn-info dropdown-toggle"
+                                ,attribute "data-toggle" "dropdown"
+                                ,id "dropdownEntitySimulated", type_ "button" ]
+                          [ text model.entityName ]
+                      , div [ attribute "aria-labelledby" "dropdownEntitySimulated", class "dropdown-menu" ]
+                          (
+                              simulations
+                                  |> List.map (\(name,factory) ->
+                                      a [ classList [
+                                              ("dropdown-item", True)
+                                             ,("selected", name == model.entityName)
+                                          ]
+                                         ,onClickNotPropagate (ChangeSimulation name factory)
+                                         ,href "#" ]
+                                         [ text name ])
+                          )
+                      ]
+                     ,p []
                       [ text "You can show/hide the following elements:" ]
-
                      ,div [ class "form-check form-check-inline mb-2" ]
                           [ input [ class "form-check-input", id "toggleShowDots", type_ "checkbox", checked model.showDots, onClick ToggleShowDots ]
                               []
