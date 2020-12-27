@@ -132,14 +132,11 @@ type alias Cloth =
     }
 
 makeDot: ID -> Vector2D -> Dot
-makeDot id p = makeDotWithVelocity id p (makeVector2D (0, 0))
-
-makeDotWithVelocity: ID -> Vector2D -> Vector2D -> Dot
-makeDotWithVelocity id p v =
+makeDot id p =
         {
             id = id
            ,pos = p
-           ,oldPos = (add p v)
+           ,oldPos = p
            ,friction = 0.97
            ,groundFriction = 0.7
            ,gravity = makeVector2D (0, 1)
@@ -147,6 +144,18 @@ makeDotWithVelocity id p v =
            ,color = Color.darkGray
            ,mass = 1
            ,pin = Nothing
+        }
+
+withDotVelocity: Dot -> Vector2D -> Dot
+withDotVelocity dot v =
+        { dot |
+            oldPos = (add dot.pos v)
+        }
+
+withDotColor: Dot -> Color -> Dot
+withDotColor dot color =
+        { dot |
+            color = color
         }
 
 pinDot: Dot -> Vector2D -> Dot
@@ -336,11 +345,9 @@ makeCloth w h spacing =
                         (x, y) = (remainderBy w n, n // w)
                         coords = makeVector2D (spacing * toFloat x, spacing * toFloat y)
                     in
-                        if y == h - 1 then
-                            makeDotWithVelocity n coords (makeVector2D (5.0, 0.0))
-                        else
-                            makeDot n coords
-                                |> (if y == 0 then (flip pinDot) coords else identity)
+                        makeDot n coords
+                            |> (if y == 0 then (flip pinDot) coords >> (flip withDotColor) Color.darkBrown else identity)
+                            |> (if y == h - 1 then (flip withDotVelocity) (makeVector2D (5.0, 0.0)) else identity)
                 )
             ,sticks = []
             }
