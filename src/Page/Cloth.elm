@@ -7,7 +7,7 @@ import Canvas.Settings exposing (fill, stroke)
 import Canvas.Settings.Advanced exposing (Transform, transform, translate)
 import Canvas.Settings.Line exposing (lineWidth)
 import Canvas.Settings.Text as TextAlign exposing (TextAlign(..), align, font)
-import Color exposing (Color, fromRgba, rgb255, toRgba)
+import Color exposing (Color, rgb255)
 import Color.Interpolate as Color exposing (Space(..), interpolate)
 import Html exposing (Html, a, br, button, div, hr, input, label, p, text)
 import Html.Attributes exposing (checked, class, for, href, id, style, type_)
@@ -15,7 +15,7 @@ import Html.Events exposing (onClick)
 import List exposing (length)
 import Markdown
 import Maybe exposing (withDefault)
-import Page.Common exposing (Frames, addFrame, createFrames, fpsText, onClickNotPropagate)
+import Page.Common exposing (Frames, addFrame, createFrames, fpsText, onClickNotPropagate, withAlpha)
 import Browser.Events exposing (onAnimationFrameDelta)
 import Platform.Sub
 import String exposing (fromInt)
@@ -318,13 +318,12 @@ renderStickTension transforms cloth stick =
             if tension > 1.0 then
                 0.0
             else 1.0 - tension
-        color = (Color.darkRed |> toRgba)
     in
         shapes
-            [  stroke (fromRgba <| { color | alpha = alpha })
+            [  stroke (Color.darkRed |> withAlpha alpha)
               ,lineWidth 5
               ,transform transforms]
-            [  path (getXY p1.pos) [ lineTo (getXY p2.pos) ]
+            [  path pos1 [ lineTo pos2 ]
             ]
 
 makeCloth: Int -> Int -> Float -> Cloth
@@ -432,7 +431,9 @@ updateMousePos mouse pos =
     }
 
 type alias Model = {
+    -- the cloth simulated
      cloth: Cloth
+    -- maintain the state of the mouse (old position, current position and mouse button clicks)
     ,mouse: Maybe MouseState
     -- if simulation is started or not
     ,started: Bool
@@ -440,8 +441,11 @@ type alias Model = {
     ,frames: Frames
     -- offset used to display the cloth
     ,offset: Vector2D
+    -- tells if dots are displayed or not
     ,showDots: Bool
+    -- tells if sticks are displayed or not
     ,showSticks: Bool
+    -- tells if stick tension is displayed or not
     ,showStickTension: Bool
     }
 

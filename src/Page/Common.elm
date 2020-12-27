@@ -1,6 +1,7 @@
 module Page.Common exposing (..)
 
 import Array exposing (Array)
+import Color exposing (Color, fromRgba, toRgba)
 import FormatNumber exposing (format)
 import FormatNumber.Locales exposing (Locale, usLocale)
 import Html exposing (Html)
@@ -131,3 +132,10 @@ fpsText frames =
                  |> withDefault "-"
                  |> padLeft 5 ' '
          ]
+
+withAlpha: Float -> Color -> Color
+withAlpha alpha color =
+    let
+        rgba = toRgba color
+    in
+        { rgba | alpha = alpha } |> fromRgba
