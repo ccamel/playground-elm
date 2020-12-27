@@ -1,6 +1,6 @@
 module Page.Physics exposing (..)
 
-import Array exposing (Array, foldr, get, map, set, toList)
+import Array exposing (Array, foldr, fromList, get, map, set, toList)
 import Basics.Extra exposing (flip)
 import Canvas exposing (Renderable, Shape, arc, lineTo, path, rect, shapes)
 import Canvas.Settings exposing (fill, stroke)
@@ -158,9 +158,18 @@ withDotColor dot color =
             color = color
         }
 
-pinDot: Dot -> Vector2D -> Dot
-pinDot p pin =
+withDotRadius: Dot -> Float -> Dot
+withDotRadius dot radius =
+        { dot |
+            radius = radius
+        }
+
+pinDotWith: Dot -> Vector2D -> Dot
+pinDotWith p pin =
     { p | pin = Just pin }
+
+pinDotPos: Dot -> Dot
+pinDotPos p = pinDotWith p p.pos
 
 unpinDot: Dot -> Vector2D -> Dot
 unpinDot p pin =
@@ -360,7 +369,7 @@ makeCloth w h spacing =
                         coords = makeVector2D (spacing * toFloat x, spacing * toFloat y)
                     in
                         makeDot n coords
-                            |> (if y == 0 then (flip pinDot) coords >> (flip withDotColor) Color.darkBrown else identity)
+                            |> (if y == 0 then pinDotPos >> (flip withDotColor) Color.darkBrown else identity)
                             |> (if y == h - 1 then (flip withDotVelocity) (makeVector2D (5.0, 0.0)) else identity)
                 )
             ,sticks = []
@@ -379,10 +388,25 @@ makeCloth w h spacing =
                 cloth
                 cloth.dots
 
+-- Factory witch produces a pendulum, i.e. a body suspended from a fixed support.
+pendulumEntityMaker: EntityMaker
+pendulumEntityMaker () =
+    let
+        p0 = makeDot 0 (makeVector2D (100.0, 10.0)) |> pinDotPos |> (flip withDotColor) Color.darkBrown
+        p1 = makeDot 1 (makeVector2D (200.0, 60.0)) |> (flip withDotRadius) 10.0
+    in
+       {
+            dots = fromList [p0, p1]
+            ,sticks = [
+                    makeStick p0 p1 Nothing
+               ]
+            }
+
 -- List of available simulations (entities, with associated factory function)
 simulations: List ( String, EntityMaker )
 simulations = [
-    ("cloth", clothEntityMaker)
+    ("pendulum", pendulumEntityMaker)
+   ,("cloth", clothEntityMaker)
   ]
 
 updateEntity: Entity -> Entity
