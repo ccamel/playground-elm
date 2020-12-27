@@ -46,7 +46,7 @@ constants = {
    ,width      = 400
    -- number of iterations
    ,physics_iteration = 3
-   -- radius of the mouse when interacting with the cloth
+   -- radius of the mouse when interacting with the entity
    ,mouse_influence   = 10.0
    -- palette used to colorize sticks according to their tension
    ,stickPalette = interpolate Color.RGB Color.darkGray Color.lightRed
@@ -125,7 +125,7 @@ type alias Stick =
         ,length: Float
     }
 
-type alias Cloth =
+type alias Entity =
     {
       dots: Array Dot
      ,sticks: List Stick
@@ -192,12 +192,12 @@ velocityDot dot =
     else
         vel
 
-interractCloth: Maybe MouseState -> Cloth -> Cloth
-interractCloth mousestate cloth =
+interractWithEntity: Maybe MouseState -> Entity -> Entity
+interractWithEntity mousestate entity =
     case mousestate of
         Just mouse ->
-            { cloth |
-                  dots = cloth.dots
+            { entity |
+                  dots = entity.dots
                   |> map (\dot ->
                     let
                         d = dist dot.pos mouse.pos
@@ -211,7 +211,7 @@ interractCloth mousestate cloth =
                   )
             }
         _ ->
-            cloth
+            entity
 
 constraintDot: Dot -> Dot
 constraintDot dot =
@@ -263,19 +263,19 @@ makeStick p1 p2 length =
     }
 
 
-addStick: ID -> ID -> Cloth -> Cloth
-addStick p1Id p2Id cloth =
+addStick: ID -> ID -> Entity -> Entity
+addStick p1Id p2Id entity =
     let
-        (p1, p2) = (getDot p1Id cloth, getDot p2Id cloth)
+        (p1, p2) = (getDot p1Id entity, getDot p2Id entity)
     in
-    { cloth |
-        sticks = makeStick p1 p2 Nothing :: cloth.sticks
+    { entity |
+        sticks = makeStick p1 p2 Nothing :: entity.sticks
     }
 
-updateStick: Cloth -> Stick -> Cloth
-updateStick cloth stick =
+updateStick: Entity -> Stick -> Entity
+updateStick entity stick =
     let
-        (p1, p2) = (getDot stick.p1Id cloth, getDot stick.p2Id cloth)
+        (p1, p2) = (getDot stick.p1Id entity, getDot stick.p2Id entity)
         delta = sub p2.pos p1.pos
         d = dist p1.pos p2.pos
         diff = (stick.length - d) / d * stick.stiffness
@@ -298,15 +298,15 @@ updateStick cloth stick =
             else
                 p2
     in
-        cloth
+        entity
         |> setDot p1u
         |> setDot p2u
 
 
-renderStick: List Transform -> Cloth -> Stick -> Renderable
-renderStick transforms cloth stick =
+renderStick: List Transform -> Entity -> Stick -> Renderable
+renderStick transforms entity stick =
     let
-        (p1, p2) = (getDot stick.p1Id cloth, getDot stick.p2Id cloth)
+        (p1, p2) = (getDot stick.p1Id entity, getDot stick.p2Id entity)
         pos1 = getXY p1.pos
         pos2 = getXY p2.pos
     in
@@ -316,10 +316,10 @@ renderStick transforms cloth stick =
             [  path pos1 [ lineTo pos2 ]
             ]
 
-renderStickTension: List Transform -> Cloth -> Stick -> Renderable
-renderStickTension transforms cloth stick =
+renderStickTension: List Transform -> Entity -> Stick -> Renderable
+renderStickTension transforms entity stick =
     let
-        (p1, p2) = (getDot stick.p1Id cloth, getDot stick.p2Id cloth)
+        (p1, p2) = (getDot stick.p1Id entity, getDot stick.p2Id entity)
         pos1 = getXY p1.pos
         pos2 = getXY p2.pos
         tension = stick.length / (dist p1.pos p2.pos)
@@ -335,7 +335,8 @@ renderStickTension transforms cloth stick =
             [  path pos1 [ lineTo pos2 ]
             ]
 
-makeCloth: Int -> Int -> Float -> Cloth
+-- Creates a "cloth" entity with the given width, height and spacing.
+makeCloth: Int -> Int -> Float -> Entity
 makeCloth w h spacing =
     let
         cloth = {
@@ -365,48 +366,48 @@ makeCloth w h spacing =
                 cloth
                 cloth.dots
 
-updateCloth: Cloth -> Cloth
-updateCloth cloth =
-    cloth
-      |> updateClothSticksHelper constants.physics_iteration
-      |> updateClothDots
-      |> updateClothSticks
+updateEntity: Entity -> Entity
+updateEntity entity =
+    entity
+      |> updateEntitySticksHelper constants.physics_iteration
+      |> updateEntityDots
+      |> updateEntitySticks
 
-constraintClothDots: Cloth -> Cloth
-constraintClothDots cloth =
-    { cloth |
-        dots = map constraintDot cloth.dots
+constraintEntityDots: Entity -> Entity
+constraintEntityDots entity =
+    { entity |
+        dots = map constraintDot entity.dots
     }
 
-updateClothDots: Cloth -> Cloth
-updateClothDots cloth =
-    { cloth |
-        dots = map updateDot cloth.dots
+updateEntityDots: Entity -> Entity
+updateEntityDots entity =
+    { entity |
+        dots = map updateDot entity.dots
     }
 
-updateClothSticks: Cloth -> Cloth
-updateClothSticks cloth =
+updateEntitySticks: Entity -> Entity
+updateEntitySticks cloth =
     List.foldl
         (flip updateStick)
         cloth
         cloth.sticks
 
-updateClothSticksHelper: Int -> Cloth -> Cloth
-updateClothSticksHelper n cloth =
+updateEntitySticksHelper: Int -> Entity -> Entity
+updateEntitySticksHelper n cloth =
     if n > 0 then
-        (updateClothSticksHelper
+        (updateEntitySticksHelper
             (n - 1)
             (cloth
-             |> constraintClothDots
-             |> updateClothSticks))
+             |> constraintEntityDots
+             |> updateEntitySticks))
     else
         cloth
 
-getDot: ID -> Cloth -> Dot
+getDot: ID -> Entity -> Dot
 getDot id cloth =
     get id cloth.dots |> withDefault (makeDot id (makeVector2D (0.0, 0.0)))
 
-setDot: Dot -> Cloth -> Cloth
+setDot: Dot -> Entity -> Entity
 setDot p cloth =
     { cloth |
         dots = set p.id p cloth.dots
@@ -438,15 +439,15 @@ updateMousePos mouse pos =
     }
 
 type alias Model = {
-    -- the cloth simulated
-     cloth: Cloth
+    -- the entity simulated
+     entity: Entity
     -- maintain the state of the mouse (old position, current position and mouse button clicks)
     ,mouse: Maybe MouseState
     -- if simulation is started or not
     ,started: Bool
     -- a list containing n last frames, used to compute the fps (frame per seconds)
     ,frames: Frames
-    -- offset used to display the cloth
+    -- offset used to display the entity
     ,offset: Vector2D
     -- tells if dots are displayed or not
     ,showDots: Bool
@@ -459,7 +460,7 @@ type alias Model = {
 init: (Model, Cmd Msg)
 init = (
     {
-        cloth = makeCloth 25 20 15.0
+        entity = makeCloth 25 20 15.0
        ,mouse = Nothing
        ,started = True
        ,frames = createFrames 100 -- initial capacity
@@ -490,7 +491,7 @@ update msg model =
     case msg of
         Frame diff ->
             ({ model |
-                cloth = model.cloth |> updateCloth |> interractCloth model.mouse
+                entity = model.entity |> updateEntity |> interractWithEntity model.mouse
                ,frames = addFrame model.frames diff}
             ,Cmd.none)
         MouseDown b pos ->
@@ -541,7 +542,7 @@ Click on the left button of the mouse to interact with the simulation.
        ,br [] []
        ,div [class "row display"]
             [
-            --- canvas for the cloth
+            --- canvas for the simulation
             Canvas.toHtml
                 (constants.width, constants.height)
                 [ style "display" "block"
@@ -554,17 +555,17 @@ Click on the left button of the mouse to interact with the simulation.
                        shapes [ fill (rgb255 242 242 242) ] [ rect ( 0, 0 ) constants.width constants.height ]
                     ]
                     ,if model.showSticks then
-                        (model.cloth
+                        (model.entity
                           |> .sticks
-                          |> List.map (renderStick [apply translate model.offset] model.cloth))
+                          |> List.map (renderStick [apply translate model.offset] model.entity))
                      else []
                     ,if model.showStickTension then
-                        (model.cloth
+                        (model.entity
                           |> .sticks
-                          |> List.map (renderStickTension [apply translate model.offset] model.cloth))
+                          |> List.map (renderStickTension [apply translate model.offset] model.entity))
                      else []
                     ,if model.showDots then
-                        (model.cloth
+                        (model.entity
                           |> .dots
                           |> map (renderDot [apply translate model.offset])
                           |> toList)
@@ -573,10 +574,10 @@ Click on the left button of the mouse to interact with the simulation.
                       String.join " " [
                          fpsText model.frames
                         ," - "
-                        ,model.cloth.dots |> Array.length |> fromInt
+                        ,model.entity.dots |> Array.length |> fromInt
                         ,"dots"
                         ," - "
-                        ,model.cloth.sticks |> length |> fromInt
+                        ,model.entity.sticks |> length |> fromInt
                         ,"sticks"]
                         |> Canvas.text
                              [ font { size = 10, family = "serif" }
