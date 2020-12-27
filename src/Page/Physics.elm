@@ -26,11 +26,11 @@ import Html.Events.Extra.Mouse as Mouse exposing (Button(..))
 
 info : Page.Common.PageInfo Msg
 info = {
-     name = "cloth"
-     , hash = "cloth"
+     name = "physics"
+     , hash = "verlet-physics-engine"
      , description = Markdown.toHtml [class "info"] """
-A cloth rendered using HTML5 canvas simulated with simple [Verlet](https://en.wikipedia.org/wiki/Verlet_integration)
-integration.
+Some physics simulation computed with simple [Verlet](https://en.wikipedia.org/wiki/Verlet_integration)
+integration and rendered using HTML5 canvas.
        """
      , srcRel = "Page/Physics.elm"
  }
@@ -532,9 +532,11 @@ view ({ offset } as model) =
   div [ class "container animated flipInX" ]
       [ hr [] []
        ,Markdown.toHtml [class "info"] """
-##### Cloth simulated using [Verlet Integration](https://en.wikipedia.org/wiki/Verlet_integration) and rendered through an HTML5 canvas.
+##### Physics Verlet engine (simple)
 
-Click on the left button of the mouse to interact with the cloth.
+Using [Verlet Integration](https://en.wikipedia.org/wiki/Verlet_integration) algorithm and rendered through an HTML5 canvas.
+
+Click on the left button of the mouse to interact with the simulation.
         """
        ,br [] []
        ,div [class "row display"]
