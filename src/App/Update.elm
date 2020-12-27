@@ -13,7 +13,7 @@ import Page.Calc
 import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
-import Page.Cloth
+import Page.Physics
 import String exposing (cons)
 import Tuple exposing (first, second)
 
@@ -38,7 +38,7 @@ update msg model =
                 ( lissajousModel, lissajousCmd ) = Page.Lissajous.init
                 ( digitalClockModel, digitalClockCmd ) = Page.DigitalClock.init
                 ( mazeModel, mazeCmd ) = Page.Maze.init
-                ( ropeModel, ropeCmd ) = Page.Cloth.init
+                ( ropeModel, ropeCmd ) = Page.Physics.init
             in
                 case newRoute of
                      NotFoundRoute ->
@@ -124,7 +124,7 @@ update msg model =
         ClothPageMsg m ->
             model
               |> .ropePage
-              |> Maybe.map (Page.Cloth.update m)
+              |> Maybe.map (Page.Physics.update m)
               |> Maybe.map ( adapt
                               (\mdl -> {model | ropePage = Just mdl})
                               (Cmd.map ClothPageMsg))

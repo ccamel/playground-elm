@@ -8,7 +8,7 @@ import Page.DigitalClock
 import Page.Lissajous
 import Browser.Navigation as Nav
 import Page.Maze
-import Page.Cloth
+import Page.Physics
 import Platform.Cmd exposing (batch)
 
 type alias Flags =
@@ -28,7 +28,7 @@ type alias Model =
        ,lissajousPage : Maybe Page.Lissajous.Model
        ,digitalClockPage : Maybe Page.DigitalClock.Model
        ,mazePage : Maybe Page.Maze.Model
-       ,ropePage : Maybe Page.Cloth.Model
+       ,ropePage : Maybe Page.Physics.Model
     }
 
 
@@ -40,7 +40,7 @@ initialModel flags navKey route =
         ( lissajousModel, lissajousCmd ) = Page.Lissajous.init
         ( mazeModel, mazeCmd ) = Page.Maze.init
         ( digitalClockModel, digitalClockCmd ) = Page.DigitalClock.init
-        ( ropeModel, ropeCmd ) = Page.Cloth.init
+        ( ropeModel, ropeCmd ) = Page.Physics.init
     in
         ({
          flags = flags

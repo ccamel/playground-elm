@@ -3,7 +3,7 @@ module App.Messages exposing (..)
 import Page.About
 import Page.Calc
 import Page.Maze
-import Page.Cloth
+import Page.Physics
 import Url exposing (Url)
 import Browser exposing (Document)
 import Page.DigitalClock
@@ -29,4 +29,4 @@ type Msg
     | LissajousPageMsg Page.Lissajous.Msg
     | DigitalClockPageMsg Page.DigitalClock.Msg
     | MazePageMsg Page.Maze.Msg
-    | ClothPageMsg Page.Cloth.Msg
+    | ClothPageMsg Page.Physics.Msg

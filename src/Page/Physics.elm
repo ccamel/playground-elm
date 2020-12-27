@@ -1,4 +1,4 @@
-module Page.Cloth exposing (..)
+module Page.Physics exposing (..)
 
 import Array exposing (Array, foldr, get, map, set, toList)
 import Basics.Extra exposing (flip)
@@ -32,7 +32,7 @@ info = {
 A cloth rendered using HTML5 canvas simulated with simple [Verlet](https://en.wikipedia.org/wiki/Verlet_integration)
 integration.
        """
-     , srcRel = "Page/Cloth.elm"
+     , srcRel = "Page/Physics.elm"
  }
 
 -- MODEL
