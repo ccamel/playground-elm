@@ -82,7 +82,7 @@ init =
              ,started = True
              ,curveStyle = { color = Color.rgb255 31 122 31, lineType = solid 2 }
              ,resolution = 500
-             ,ticks = createFrames 100 -- initial capacity
+             ,ticks = createFrames 20 -- initial capacity
              ,foregroundColorPicker = ColorPicker.empty
              ,widgetState = widgetModel
           },

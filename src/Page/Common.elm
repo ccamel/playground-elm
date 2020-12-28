@@ -1,13 +1,13 @@
 module Page.Common exposing (..)
 
-import Array exposing (Array)
+import Array exposing (Array, foldl, get, indexedMap)
 import Color exposing (Color, fromRgba, toRgba)
 import FormatNumber exposing (format)
 import FormatNumber.Locales exposing (Locale, usLocale)
 import Html exposing (Html)
 import Html.Events exposing (..)
 import Json.Decode
-import List exposing (drop, length, sum)
+import List exposing (length)
 import Maybe exposing (andThen, withDefault)
 import String.Interpolate exposing (interpolate)
 import Svg
@@ -80,36 +80,40 @@ indexOf array elem = indexOfHelper array elem 0
 -- frames holds a sequence of times.
 -- the list is bounded to accept a max number of elements -> inserting a new only discards the oldest one
 type alias Frames = {
-    times : List Float,
-    capacity: Int
+    times : Array Float
+   ,length: Int
+   ,capacity: Int
   }
 
 createFrames: Int -> Frames
-createFrames capacity = { times = [], capacity = capacity }
+createFrames capacity = { times = Array.initialize capacity (always 0), length = 0, capacity = capacity }
 
 addFrame: Frames -> Float -> Frames
 addFrame frames time =
     let
-        delta = (length frames.times) - frames.capacity
-        makePlace theFrames = if delta >= 0 then (drop (delta + 1) theFrames) else theFrames
+        (times, length) =
+            if frames.length == frames.capacity then
+                (frames.times
+                  |> indexedMap (\i _ -> get (i+1) frames.times |> withDefault 0.0)
+                ,frames.capacity - 1)
+            else
+                (frames.times, frames.length)
     in
-    { frames | times = frames.times
-                                |> makePlace
-                                |> (::) time
+    { frames |
+        times = Array.set length time times
+       ,length = length + 1
     }
 
 resetFrames: Frames -> Frames
-resetFrames frames = {frames | times = [] }
+resetFrames { capacity } = createFrames capacity
 
 -- compute the FPS from the given fps set (if possible)
 fps: Frames -> Maybe Float
 fps frames =
-    let
-        size = length frames.times
-    in if size > 1 then
+    if frames.length > 1 then
         frames.times
-          |> sum
-          |> (/) (toFloat size)
+          |> foldl (+) 0
+          |> (/) (toFloat frames.length)
           |> (*) 1000.0
           |> Just
     else
