@@ -402,7 +402,7 @@ pendulumEntityMaker () =
                ]
             }
 
---
+-- Factory which produces 2 pendulums linked by a stick.
 doublePendulumEntityMaker: EntityMaker
 doublePendulumEntityMaker () =
     let
@@ -427,11 +427,39 @@ doublePendulumEntityMaker () =
                ]
             }
 
+-- Factory which produces a rope.
+ropeEntityMaker: EntityMaker
+ropeEntityMaker () =
+    let
+        length = 50
+        entity = {
+            dots =
+                Array.initialize length (\n ->
+                    let
+                        coords = makeVector2D (200.0, 3.0 * toFloat n)
+                    in
+                        makeDot n coords
+                            |> (if n == 0 then pinDotPos >> (flip withDotColor) Color.darkBrown else identity)
+                            |> (if n == length - 1 then (flip withDotVelocity) (makeVector2D (5.0, 0.0)) else identity)
+                )
+            ,sticks = []
+            }
+    in
+        foldr
+                (\d acc ->
+                    let
+                         n = d.id
+                    in
+                         if n /= 0 then addStick n (n - 1) acc else acc)
+                entity
+                entity.dots
+
 -- List of available simulations (entities, with associated factory function)
 simulations: List ( String, EntityMaker )
 simulations = [
     ("pendulum", pendulumEntityMaker)
    ,("double pendulum", doublePendulumEntityMaker)
+   ,("rope", ropeEntityMaker)
    ,("cloth", clothEntityMaker)
   ]
 
