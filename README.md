@@ -9,25 +9,25 @@ playground-elm
 [![StackShare](https://img.shields.io/badge/tech-stack-0690fa.svg?style=flat)](https://stackshare.io/ccamel/playground-elm)
 [![Demo](https://img.shields.io/badge/play-demo!-b30059.svg?style=flat)](https://ccamel.github.io/playground-elm/)
 
-> My playground I use for playing with fancy and exciting technologies. This one's for [elm].
+> My playground I use for playing with fancy and exciting technologies. This one's for [elm][].
 
 ## Purpose
 
-The purpose of this playground is to explore, study and assess the [elm] language — a delightful language for reliable webapps.
+The purpose of this playground is to explore, study and assess the [elm][] language — a delightful language for reliable webapps.
 
 The showcases are intended to be:
 
   - **simple**: Fairly simple and understandable. Every showcase is implemented in a single elm file.
   - **exploratory**: 
-    - *Highlight* some aspects of the [elm] language, like immutability, reactiveness, performance and
+    - *Highlight* some aspects of the [elm][] language, like immutability, reactiveness, performance and
     interoperability with other JS libraries and CSS frameworks.
-    - *Explore* some architectural/design patterns around reactive static/serverless [SPA].
+    - *Explore* some architectural/design patterns around reactive static/serverless [SPA][].
   - **playable**: As much as possible, provides a useful and functional content.  
 
 ## Showcases
 
 Visit the :small_blue_diamond: [demo site](https://ccamel.github.io/playground-elm/) and play in your browser. 
-The demo is a pure [SPA] (100% clientside application) written in [elm].
+The demo is a pure [SPA][] (100% clientside application) written in [elm][].
 
 ### Calc
 
@@ -83,7 +83,7 @@ algorithm with control of the generation process.
 
 Very simple physics engine using [Verlet Integration](https://en.wikipedia.org/wiki/Verlet_integration) algorithm and rendered through an HTML5 canvas.
 
-Demonstrates how [elm] can deal with some basic mathematical and physical calculations, as well as basic rendering of objects in an HTML canvas,
+Demonstrates how [elm][] can deal with some basic mathematical and physical calculations, as well as basic rendering of objects in an HTML canvas,
 using elementary functions from the fantastic [joakin/elm-canvas](https://package.elm-lang.org/packages/joakin/elm-canvas/latest/) package.
 
 <p align="center">
@@ -116,7 +116,7 @@ I finally managed to migrate to this new version but instabilities can be notice
 
 ### Build
 
-The project now relies on [parceljs], a web application bundler which handles [elm] builds at free.
+The project now relies on [parceljs][], a web application bundler which handles [elm][] builds at free.
 
 At first, all the node packages this project depends on must be installed locally. This can be done with the 
 following command:
