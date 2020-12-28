@@ -15,7 +15,7 @@ type Page
     | Lissajous
     | DigitalClock
     | Maze
-    | Cloth
+    | Physics
 
 
 type Msg
@@ -29,4 +29,4 @@ type Msg
     | LissajousPageMsg Page.Lissajous.Msg
     | DigitalClockPageMsg Page.DigitalClock.Msg
     | MazePageMsg Page.Maze.Msg
-    | ClothPageMsg Page.Physics.Msg
+    | PhysicsPageMsg Page.Physics.Msg

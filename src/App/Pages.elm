@@ -31,7 +31,7 @@ pages = [
     , Lissajous
     , DigitalClock
     , Maze
-    , Cloth
+    , Physics
  ]
 
 toView aPageView pageMsg modelExtractor model =
@@ -74,7 +74,7 @@ pageSpec page =
             Lissajous -> toSpec Page.Lissajous.info Page.Lissajous.view Page.Lissajous.subscriptions LissajousPageMsg (\model -> model.lissajousPage)
             DigitalClock -> toSpec Page.DigitalClock.info Page.DigitalClock.view Page.DigitalClock.subscriptions DigitalClockPageMsg (\model -> model.digitalClockPage)
             Maze -> toSpec Page.Maze.info Page.Maze.view Page.Maze.subscriptions MazePageMsg (\model -> model.mazePage)
-            Cloth -> toSpec Page.Physics.info Page.Physics.view Page.Physics.subscriptions ClothPageMsg (\model -> model.ropePage)
+            Physics -> toSpec Page.Physics.info Page.Physics.view Page.Physics.subscriptions PhysicsPageMsg (\model -> model.ropePage)
 
 pageName : Page -> String
 pageName page = pageSpec page

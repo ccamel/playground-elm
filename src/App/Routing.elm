@@ -36,7 +36,7 @@ parseFragment fragment =
             else if p == Page.Maze.info.name then
                 Page Maze
             else if p == Page.Physics.info.name then
-                Page Cloth
+                Page Physics
             else
                 NotFoundRoute
 

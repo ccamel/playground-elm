@@ -62,8 +62,8 @@ update msg model =
                      Page Maze ->
                         ( { clearedModel | route = newRoute, mazePage = Just mazeModel  }, Cmd.map MazePageMsg mazeCmd )
 
-                     Page Cloth ->
-                        ( { clearedModel | route = newRoute, ropePage = Just ropeModel  }, Cmd.map ClothPageMsg ropeCmd )
+                     Page Physics ->
+                        ( { clearedModel | route = newRoute, ropePage = Just ropeModel  }, Cmd.map PhysicsPageMsg ropeCmd )
 
 
 
@@ -121,13 +121,13 @@ update msg model =
                               (Cmd.map MazePageMsg))
               |> withDefault (model, Cmd.none)
 
-        ClothPageMsg m ->
+        PhysicsPageMsg m ->
             model
               |> .ropePage
               |> Maybe.map (Page.Physics.update m)
               |> Maybe.map ( adapt
                               (\mdl -> {model | ropePage = Just mdl})
-                              (Cmd.map ClothPageMsg))
+                              (Cmd.map PhysicsPageMsg))
               |> withDefault (model, Cmd.none)
 
 adapt : (m -> Model) -> (Cmd a -> Cmd Msg) -> (m, Cmd a) -> (Model, Cmd Msg)

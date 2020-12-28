@@ -60,6 +60,6 @@ initialModel flags navKey route =
            ,Cmd.map LissajousPageMsg lissajousCmd
            ,Cmd.map DigitalClockPageMsg digitalClockCmd
            ,Cmd.map MazePageMsg mazeCmd
-           ,Cmd.map ClothPageMsg ropeCmd
+           ,Cmd.map PhysicsPageMsg ropeCmd
         ])
 
