@@ -91,7 +91,7 @@ using elementary functions from the fantastic [joakin/elm-canvas](https://packag
   <a href="https://ccamel.github.io/playground-elm/#physics-engine">Play</a> |
   <a href="https://github.com/ccamel/playground-elm/blob/master/src/Page/Physics.elm">Code</a>
   <br><br>
-  <kbd><img src="doc/assets/showcase-physics-cloath.png"></kbd>
+  <kbd><img src="doc/assets/showcase-physics-cloth.png"></kbd>
 </p>
 
 <p align="center">
