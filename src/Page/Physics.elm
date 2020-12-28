@@ -1,7 +1,7 @@
 module Page.Physics exposing (..)
 
 import Array exposing (Array, foldr, fromList, get, map, set, toList)
-import Basics.Extra exposing (flip)
+import Basics.Extra exposing (curry, flip, uncurry)
 import Canvas exposing (Renderable, Shape, arc, lineTo, path, rect, shapes)
 import Canvas.Settings exposing (fill, stroke)
 import Canvas.Settings.Advanced exposing (Transform, transform, translate)
@@ -70,10 +70,7 @@ getXY v = (getX v, getY v)
 
 apply: (Float -> Float -> a) -> Vector2D -> a
 apply f v =
-    let
-        (x, y) = getXY v
-    in
-        f x y
+    (uncurry f) <| getXY v
 
 distSq: Vector2D -> Vector2D -> Float
 distSq v1 v2 =
@@ -91,11 +88,11 @@ add v1 v2 = map2 (+) v1 v2
 sub: Vector2D -> Vector2D -> Vector2D
 sub v1 v2 = map2 (-) v1 v2
 
-mult: Vector2D -> Float -> Vector2D
-mult v a = Vector2.map ((*) a) v
+mult: Float -> Vector2D -> Vector2D
+mult a v = Vector2.map ((*) a) v
 
-divide: Vector2D -> Float -> Vector2D
-divide v a = Vector2.map ((/) a) v
+divide: Float -> Vector2D -> Vector2D
+divide a v = Vector2.map ((/) a) v
 
 magSq: Vector2D -> Float
 magSq v = Vector2.foldl (\x r -> x*x + r ) 0 v
@@ -146,74 +143,77 @@ makeDot id p =
            ,pin = Nothing
         }
 
-withDotVelocity: Dot -> Vector2D -> Dot
-withDotVelocity dot v =
+withDotVelocity: Vector2D -> Dot -> Dot
+withDotVelocity v ({ pos } as dot) =
         { dot |
-            oldPos = (add dot.pos v)
+            oldPos = (add pos v)
         }
 
-withDotColor: Dot -> Color -> Dot
-withDotColor dot color =
+withDotColor: Color -> Dot -> Dot
+withDotColor color dot =
         { dot |
             color = color
         }
 
-withDotRadius: Dot -> Float -> Dot
-withDotRadius dot radius =
+withDotBrownColor: Dot -> Dot
+withDotBrownColor = withDotColor Color.darkBrown
+
+withDotRadius: Float -> Dot -> Dot
+withDotRadius radius dot =
         { dot |
             radius = radius
         }
 
-pinDotWith: Dot -> Vector2D -> Dot
-pinDotWith p pin =
+pinDotWith: Vector2D -> Dot-> Dot
+pinDotWith pin p =
     { p | pin = Just pin }
 
 pinDotPos: Dot -> Dot
-pinDotPos p = pinDotWith p p.pos
+pinDotPos ({ pos } as dot) = pinDotWith pos dot
 
-unpinDot: Dot -> Vector2D -> Dot
-unpinDot p pin =
+unpinDot: Dot -> Dot
+unpinDot p =
     {  p | pin = Nothing }
 
 updateDot: Dot -> Dot
-updateDot dot =
+updateDot ({ pos, gravity } as dot) =
     let
         velocity = velocityDot dot
     in
         { dot |
-             oldPos = dot.pos
-            ,pos = dot.pos |> add velocity |> add dot.gravity
+             oldPos = pos
+            ,pos = pos |> add velocity |> add gravity
         }
 
 velocityDot: Dot -> Vector2D
-velocityDot dot =
+velocityDot { pos, oldPos, friction, radius, groundFriction } =
     let
-        vel = sub dot.pos dot.oldPos
-              |> (flip mult) (dot.friction)
+        vel = sub pos oldPos
+              |> mult friction
     in
-     if ((dot.pos |> getY) >= ((toFloat constants.height) - dot.radius))
+     if ((pos |> getY) >= ((toFloat constants.height) - radius))
         && ((magSq vel) > 0.000001) then
         let
             m = mag vel
         in
-            divide vel m
-              |> (flip mult) (m * dot.groundFriction)
+            divide m vel
+              |> mult (m * groundFriction)
     else
         vel
 
-interractWithEntity: Maybe MouseState -> Entity -> Entity
-interractWithEntity mousestate entity =
-    case mousestate of
-        Just mouse ->
+interactWithEntity: Maybe MouseState -> Entity -> Entity
+interactWithEntity mouseState ({dots } as entity) =
+    case mouseState of
+        Just {pos, oldPos} ->
             { entity |
-                  dots = entity.dots
+                  dots = dots
                   |> map (\dot ->
                     let
-                        d = dist dot.pos mouse.pos
+                        d = dist dot.pos pos
                     in
                         if d < constants.mouse_influence then
                             { dot |
-                                oldPos = sub dot.pos (sub mouse.pos mouse.oldPos |> (flip mult) 1.8)
+                                oldPos = sub pos oldPos |> mult 1.8 |> sub dot.pos
                             }
                        else
                             dot
@@ -252,10 +252,10 @@ constraintDot dot =
         }
 
 renderDot: List Transform -> Dot -> Renderable
-renderDot transforms dot =
+renderDot transforms {pos, radius, color} =
     shapes
-        [ fill dot.color, transform transforms ]
-        [  arc (getXY dot.pos) dot.radius { startAngle = degrees 0, endAngle = degrees 360, clockwise = True }
+        [ fill color, transform transforms ]
+        [  arc (getXY pos) radius { startAngle = degrees 0, endAngle = degrees 360, clockwise = True }
         ]
 
 makeStick: Dot -> Dot -> Maybe Float -> Stick
@@ -275,7 +275,7 @@ makeStick p1 p2 length =
 addStick: ID -> ID -> Entity -> Entity
 addStick p1Id p2Id entity =
     let
-        (p1, p2) = (getDot p1Id entity, getDot p2Id entity)
+        (p1, p2) =  (getDot p1Id entity, getDot p2Id entity)
     in
     { entity |
         sticks = makeStick p1 p2 Nothing :: entity.sticks
@@ -289,7 +289,7 @@ updateStick entity stick =
         d = dist p1.pos p2.pos
         diff = (stick.length - d) / d * stick.stiffness
 
-        offset = delta |> (flip mult) (diff * 0.5)
+        offset = delta |> mult (diff * 0.5)
 
         m = p1.mass + p2.mass
         m2 = p1.mass / m
@@ -297,13 +297,13 @@ updateStick entity stick =
 
         p1u =
             if p1.pin == Nothing then
-                { p1 | pos = p1.pos |> (flip sub) (mult offset m1) }
+                { p1 | pos = p1.pos |> (flip sub) (mult m1 offset) }
             else
                 p1
 
         p2u =
             if p2.pin == Nothing then
-                { p2 | pos = p2.pos |> (flip add) (mult offset m2) }
+                { p2 | pos = p2.pos |> (flip add) (mult m2 offset) }
             else
                 p2
     in
@@ -313,35 +313,31 @@ updateStick entity stick =
 
 
 renderStick: List Transform -> Entity -> Stick -> Renderable
-renderStick transforms entity stick =
+renderStick transforms entity {p1Id, p2Id, color} =
     let
-        (p1, p2) = (getDot stick.p1Id entity, getDot stick.p2Id entity)
-        pos1 = getXY p1.pos
-        pos2 = getXY p2.pos
+        lens = getXY << .pos << (flip getDot) entity
+        (pos1, pos2) = (lens p1Id, lens p2Id)
     in
         shapes
-            [  stroke stick.color
+            [  stroke color
               ,transform transforms]
             [  path pos1 [ lineTo pos2 ]
             ]
 
 renderStickTension: List Transform -> Entity -> Stick -> Renderable
-renderStickTension transforms entity stick =
+renderStickTension transforms entity {p1Id, p2Id, length} =
     let
-        (p1, p2) = (getDot stick.p1Id entity, getDot stick.p2Id entity)
-        pos1 = getXY p1.pos
-        pos2 = getXY p2.pos
-        tension = stick.length / (dist p1.pos p2.pos)
-        alpha =
-            if tension > 1.0 then
-                0.0
-            else 1.0 - tension
+        lens = .pos << (flip getDot) entity
+        (v1, v2) = (lens p1Id, lens p2Id)
+        (p1, p2) = (getXY v1, getXY v2)
+        tension = length / (dist v1 v2)
+        alpha = if tension > 1.0 then 0.0 else 1.0 - tension
     in
         shapes
             [  stroke (Color.darkRed |> withAlpha alpha)
               ,lineWidth 5
               ,transform transforms]
-            [  path pos1 [ lineTo pos2 ]
+            [  path p1 [ lineTo p2 ]
             ]
 
 type alias EntityMaker = () -> Entity
@@ -361,17 +357,16 @@ clothEntityMaker () = makeCloth 25 20 15.0
 makeCloth: Int -> Int -> Float -> Entity
 makeCloth w h spacing =
     let
+        initializer n =
+            let
+                (x, y) = (remainderBy w n, n // w)
+                coords = makeVector2D (spacing * toFloat x, spacing * toFloat y)
+            in
+                makeDot n coords
+                    |> (if y == 0 then pinDotPos >> withDotBrownColor else identity)
+                    |> (if y == h - 1 then withDotVelocity <| makeVector2D (5.0, 0.0) else identity)
         cloth = {
-            dots =
-                Array.initialize (w*h) (\n ->
-                    let
-                        (x, y) = (remainderBy w n, n // w)
-                        coords = makeVector2D (spacing * toFloat x, spacing * toFloat y)
-                    in
-                        makeDot n coords
-                            |> (if y == 0 then pinDotPos >> (flip withDotColor) Color.darkBrown else identity)
-                            |> (if y == h - 1 then (flip withDotVelocity) (makeVector2D (5.0, 0.0)) else identity)
-                )
+            dots = Array.initialize (w*h) initializer
            ,sticks = []
            }
     in
@@ -392,8 +387,8 @@ makeCloth w h spacing =
 pendulumEntityMaker: EntityMaker
 pendulumEntityMaker () =
     let
-        p0 = makeDot 0 (makeVector2D (100.0, 10.0)) |> pinDotPos |> (flip withDotColor) Color.darkBrown
-        p1 = makeDot 1 (makeVector2D (200.0, 60.0)) |> (flip withDotRadius) 10.0
+        p0 = makeDot 0 (makeVector2D (100.0, 10.0)) |> pinDotPos |> withDotBrownColor
+        p1 = makeDot 1 (makeVector2D (200.0, 60.0)) |> withDotRadius 10.0
     in
        {
             dots = fromList [p0, p1]
@@ -406,13 +401,13 @@ pendulumEntityMaker () =
 doublePendulumEntityMaker: EntityMaker
 doublePendulumEntityMaker () =
     let
-        p00 = makeDot 0 (makeVector2D (100.0, 10.0)) |> pinDotPos |> (flip withDotColor) Color.darkBrown
+        p00 = makeDot 0 (makeVector2D (100.0, 10.0)) |> pinDotPos |> withDotBrownColor
         p01 = makeDot 1 (makeVector2D (100.0, 60.0))
-        p02 = makeDot 2 (makeVector2D (100.0, 110.0)) |> (flip withDotRadius) 10.0
+        p02 = makeDot 2 (makeVector2D (100.0, 110.0)) |> withDotRadius 10.0
 
-        p10 = makeDot 3 (makeVector2D (200.0, 10.0)) |> pinDotPos |> (flip withDotColor) Color.darkBrown
+        p10 = makeDot 3 (makeVector2D (200.0, 10.0)) |> pinDotPos |> withDotBrownColor
         p11 = makeDot 4 (makeVector2D (200.0, 60.0))
-        p12 = makeDot 5 (makeVector2D (200.0, 110.0)) |> (flip withDotRadius) 10.0 |> (flip withDotVelocity) (makeVector2D (15.0, 0.0))
+        p12 = makeDot 5 (makeVector2D (200.0, 110.0)) |> withDotRadius 10.0 |> withDotVelocity (makeVector2D (15.0, 0.0))
     in
        {
             dots = fromList [p00, p01, p02, p10, p11, p12]
@@ -432,16 +427,15 @@ ropeEntityMaker: EntityMaker
 ropeEntityMaker () =
     let
         length = 50
+        initializer n =
+            let
+                coords = makeVector2D (200.0, 3.0 * toFloat n)
+            in
+                makeDot n coords
+                    |> (if n == 0 then pinDotPos >> withDotBrownColor else identity)
+                    |> (if n == length - 1 then withDotVelocity (makeVector2D (5.0, 0.0)) else identity)
         entity = {
-            dots =
-                Array.initialize length (\n ->
-                    let
-                        coords = makeVector2D (200.0, 3.0 * toFloat n)
-                    in
-                        makeDot n coords
-                            |> (if n == 0 then pinDotPos >> (flip withDotColor) Color.darkBrown else identity)
-                            |> (if n == length - 1 then (flip withDotVelocity) (makeVector2D (5.0, 0.0)) else identity)
-                )
+             dots = Array.initialize length initializer
             ,sticks = []
             }
     in
@@ -477,37 +471,37 @@ constraintEntityDots entity =
     }
 
 updateEntityDots: Entity -> Entity
-updateEntityDots entity =
+updateEntityDots ({ dots } as entity) =
     { entity |
-        dots = map updateDot entity.dots
+        dots = map updateDot dots
     }
 
 updateEntitySticks: Entity -> Entity
-updateEntitySticks cloth =
+updateEntitySticks ({ sticks } as entity) =
     List.foldl
         (flip updateStick)
-        cloth
-        cloth.sticks
+        entity
+        sticks
 
 updateEntitySticksHelper: Int -> Entity -> Entity
-updateEntitySticksHelper n cloth =
+updateEntitySticksHelper n entity =
     if n > 0 then
         (updateEntitySticksHelper
             (n - 1)
-            (cloth
+            (entity
              |> constraintEntityDots
              |> updateEntitySticks))
     else
-        cloth
+        entity
 
 getDot: ID -> Entity -> Dot
-getDot id cloth =
-    get id cloth.dots |> withDefault (makeDot id (makeVector2D (0.0, 0.0)))
+getDot id { dots } =
+    get id dots |> withDefault (makeDot id (makeVector2D (0.0, 0.0)))
 
 setDot: Dot -> Entity -> Entity
-setDot p cloth =
-    { cloth |
-        dots = set p.id p cloth.dots
+setDot ({ id } as p) ({ dots } as entity) =
+    { entity |
+        dots = set id p entity.dots
     }
 
 type MouseButton =
@@ -595,7 +589,7 @@ update msg model =
     case msg of
         Frame diff ->
             ({ model |
-                entity = model.entity |> updateEntity |> interractWithEntity model.mouse
+                entity = model.entity |> updateEntity |> interactWithEntity model.mouse
                ,frames = addFrame model.frames diff}
             ,Cmd.none)
         MouseDown b pos ->
@@ -728,7 +722,7 @@ Click on the left button of the mouse to interact with the simulation.
                                               ("dropdown-item", True)
                                              ,("selected", name == model.entityName)
                                           ]
-                                         ,onClickNotPropagate (ChangeSimulation name factory)
+                                         ,onClick (ChangeSimulation name factory)
                                          ,href "#" ]
                                          [ text name ])
                           )
