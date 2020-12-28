@@ -79,6 +79,25 @@ algorithm with control of the generation process.
   <kbd><img src="doc/assets/showcase-maze.png"></kbd>
 </p>
 
+### Physics Verlet engine
+
+Very simple physics engine using [Verlet Integration](https://en.wikipedia.org/wiki/Verlet_integration) algorithm and rendered through an HTML5 canvas.
+
+Demonstrates how [elm] can deal with some basic mathematical and physical calculations, as well as basic rendering of objects in an HTML canvas,
+using elementary functions from the fantastic [joakin/elm-canvas](https://package.elm-lang.org/packages/joakin/elm-canvas/latest/) package.
+
+<p align="center">
+  <b>Links:</b><br>
+  <a href="https://ccamel.github.io/playground-elm/#physics-engine">Play</a> |
+  <a href="https://github.com/ccamel/playground-elm/blob/master/src/Page/Physics.elm">Code</a>
+  <br><br>
+  <kbd><img src="doc/assets/showcase-physics-cloath.png"></kbd>
+</p>
+
+<p align="center">
+  <img src="doc/assets/showcase-physics-necklace.png">
+</p>
+
 ## Building and Running
 
 ### Elm 0.19
