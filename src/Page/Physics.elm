@@ -59,6 +59,9 @@ type alias Vector2D = Vector2 Float
 makeVector2D: (Float, Float) -> Vector2D
 makeVector2D (x, y) = Vector2.from2 x y
 
+origin: Vector2D
+origin = makeVector2D (0, 0)
+
 getX: Vector2D -> Float
 getX v = Vector2.get Index0 v
 
@@ -126,6 +129,7 @@ type alias Entity =
     {
       dots: Array Dot
      ,sticks: List Stick
+     ,offset: Vector2D
     }
 
 makeDot: ID -> Vector2D -> Dot
@@ -202,36 +206,39 @@ velocityDot { pos, oldPos, friction, radius, groundFriction } =
         vel
 
 interactWithEntity: Maybe MouseState -> Entity -> Entity
-interactWithEntity mouseState ({dots } as entity) =
+interactWithEntity mouseState ({dots, offset} as entity) =
     case mouseState of
-        Just {pos, oldPos} ->
-            { entity |
-                  dots = dots
-                  |> map (\dot ->
-                    let
-                        d = dist dot.pos pos
-                    in
-                        if d < constants.mouse_influence then
-                            { dot |
-                                oldPos = sub pos oldPos |> mult 1.8 |> sub dot.pos
-                            }
-                       else
-                            dot
-                  )
-            }
+        Just aMouseState ->
+            let
+                (pos, oldPos) = (aMouseState.pos |> (flip sub) offset, aMouseState.oldPos |> (flip sub) offset)
+            in
+                { entity |
+                      dots = dots
+                      |> map (\dot ->
+                        let
+                            d = dist dot.pos pos
+                        in
+                            if d < constants.mouse_influence then
+                                { dot |
+                                    oldPos = sub pos oldPos |> mult 1.8 |> sub dot.pos
+                                }
+                           else
+                                dot
+                      )
+                }
         _ ->
             entity
 
-constraintDot: Dot -> Dot
-constraintDot dot =
+constraintDot: Vector2D -> Dot-> Dot
+constraintDot offset ({pos, radius, pin} as dot) =
     let
-        d = dot.radius * 2
-        (x, y) = dot.pos |> getXY
-        (limitHighW, limitHighH) = (constants.width - d, constants.height - d)
-        (limitLowW, limitLowH) = (d, d)
+        d = radius * 2
+        (x, y) = pos |> getXY
+        (limitHighW, limitHighH) = makeVector2D (constants.width - d, constants.height - d) |> (flip sub) offset |> getXY
+        (limitLowW, limitLowH) = makeVector2D (d, d) |> (flip sub) offset |> getXY
 
         p =
-            case dot.pin of
+            case pin of
                 Nothing ->
                     (
                         if x > limitHighW then
@@ -244,8 +251,8 @@ constraintDot dot =
                         else if y < limitLowH then
                             limitLowH
                         else y) |> makeVector2D
-                Just pin ->
-                    pin
+                Just apin ->
+                    apin
     in
         { dot |
             pos = p
@@ -303,7 +310,7 @@ updateStick entity stick =
 
         p2u =
             if p2.pin == Nothing then
-                { p2 | pos = p2.pos |> (flip add) (mult m2 offset) }
+                { p2 | pos = p2.pos |> add (mult m2 offset) }
             else
                 p2
     in
@@ -347,6 +354,7 @@ emptyEntityMaker () =
     {
         dots = Array.empty
        ,sticks = []
+       ,offset = origin
     }
 
 -- Factory witch produces a brand new cloth (with default values).
@@ -368,6 +376,7 @@ makeCloth w h spacing =
         cloth = {
             dots = Array.initialize (w*h) initializer
            ,sticks = []
+           ,offset = makeVector2D (20, 20)
            }
     in
         foldr
@@ -387,27 +396,28 @@ makeCloth w h spacing =
 pendulumEntityMaker: EntityMaker
 pendulumEntityMaker () =
     let
-        p0 = makeDot 0 (makeVector2D (100.0, 10.0)) |> pinDotPos |> withDotBrownColor
-        p1 = makeDot 1 (makeVector2D (200.0, 60.0)) |> withDotRadius 10.0
+        p0 = makeDot 0 (makeVector2D (0.0, 0.0)) |> pinDotPos |> withDotBrownColor
+        p1 = makeDot 1 (makeVector2D (0.0, 150.0)) |> withDotRadius 10.0 |> withDotVelocity (makeVector2D (15.0, 0.0))
     in
        {
             dots = fromList [p0, p1]
            ,sticks = [
                     makeStick p0 p1 Nothing
                ]
+           ,offset = makeVector2D (200, 60)
             }
 
 -- Factory which produces 2 pendulums linked by a stick.
 doublePendulumEntityMaker: EntityMaker
 doublePendulumEntityMaker () =
     let
-        p00 = makeDot 0 (makeVector2D (100.0, 10.0)) |> pinDotPos |> withDotBrownColor
-        p01 = makeDot 1 (makeVector2D (100.0, 60.0))
-        p02 = makeDot 2 (makeVector2D (100.0, 110.0)) |> withDotRadius 10.0
+        p00 = makeDot 0 (makeVector2D (0.0, 0.0)) |> pinDotPos |> withDotBrownColor
+        p01 = makeDot 1 (makeVector2D (0.0, 50.0))
+        p02 = makeDot 2 (makeVector2D (0.0, 100.0)) |> withDotRadius 10.0
 
-        p10 = makeDot 3 (makeVector2D (200.0, 10.0)) |> pinDotPos |> withDotBrownColor
-        p11 = makeDot 4 (makeVector2D (200.0, 60.0))
-        p12 = makeDot 5 (makeVector2D (200.0, 110.0)) |> withDotRadius 10.0 |> withDotVelocity (makeVector2D (15.0, 0.0))
+        p10 = makeDot 3 (makeVector2D (100.0, 0.0)) |> pinDotPos |> withDotBrownColor
+        p11 = makeDot 4 (makeVector2D (100.0, 50.0))
+        p12 = makeDot 5 (makeVector2D (100.0, 100.0)) |> withDotRadius 10.0 |> withDotVelocity (makeVector2D (15.0, 0.0))
     in
        {
             dots = fromList [p00, p01, p02, p10, p11, p12]
@@ -420,6 +430,7 @@ doublePendulumEntityMaker () =
                    ,makeStick p10 p12 Nothing
                    ,makeStick p01 p11 Nothing
                ]
+           ,offset = makeVector2D (150, 60)
             }
 
 -- Factory which produces a rope.
@@ -429,7 +440,7 @@ ropeEntityMaker () =
         length = 50
         initializer n =
             let
-                coords = makeVector2D (200.0, 3.0 * toFloat n)
+                coords = makeVector2D (0.0, 3.0 * toFloat n)
             in
                 makeDot n coords
                     |> (if n == 0 then pinDotPos >> withDotBrownColor else identity)
@@ -437,6 +448,7 @@ ropeEntityMaker () =
         entity = {
              dots = Array.initialize length initializer
             ,sticks = []
+            ,offset = makeVector2D (200, 20)
             }
     in
         foldr
@@ -467,7 +479,7 @@ updateEntity entity =
 constraintEntityDots: Entity -> Entity
 constraintEntityDots entity =
     { entity |
-        dots = map constraintDot entity.dots
+        dots = map (constraintDot entity.offset) entity.dots
     }
 
 updateEntityDots: Entity -> Entity
@@ -540,8 +552,6 @@ type alias Model = {
     ,started: Bool
     -- a list containing n last frames, used to compute the fps (frame per seconds)
     ,frames: Frames
-    -- offset used to display the entity
-    ,offset: Vector2D
     -- tells if dots are displayed or not
     ,showDots: Bool
     -- tells if sticks are displayed or not
@@ -561,7 +571,6 @@ init =
        ,mouse = Nothing
        ,started = True
        ,frames = createFrames 10 -- initial capacity
-       ,offset = makeVector2D (20, 20)
        ,showDots = True
        ,showSticks = True
        ,showStickTension = False
@@ -635,7 +644,7 @@ subscriptions model =
 -- VIEW
 
 view : Model -> Html Msg
-view ({ offset } as model) =
+view ({ entity } as model) =
   div [ class "container animated flipInX" ]
       [ hr [] []
        ,Markdown.toHtml [class "info"] """
@@ -661,29 +670,29 @@ Click on the left button of the mouse to interact with the simulation.
                        shapes [ fill (rgb255 242 242 242) ] [ rect ( 0, 0 ) constants.width constants.height ]
                     ]
                     ,if model.showSticks then
-                        (model.entity
+                        (entity
                           |> .sticks
-                          |> List.map (renderStick [apply translate model.offset] model.entity))
+                          |> List.map (renderStick [apply translate entity.offset] entity))
                      else []
                     ,if model.showStickTension then
-                        (model.entity
+                        (entity
                           |> .sticks
-                          |> List.map (renderStickTension [apply translate model.offset] model.entity))
+                          |> List.map (renderStickTension [apply translate entity.offset] entity))
                      else []
                     ,if model.showDots then
-                        (model.entity
+                        (entity
                           |> .dots
-                          |> map (renderDot [apply translate model.offset])
+                          |> map (renderDot [apply translate entity.offset])
                           |> toList)
                      else []
                     ,[
                       String.join " " [
                          fpsText model.frames
                         ," - "
-                        ,model.entity.dots |> Array.length |> fromInt
+                        ,entity.dots |> Array.length |> fromInt
                         ,"dots"
                         ," - "
-                        ,model.entity.sticks |> length |> fromInt
+                        ,entity.sticks |> length |> fromInt
                         ,"sticks"]
                         |> Canvas.text
                              [ font { size = 10, family = "serif" }
