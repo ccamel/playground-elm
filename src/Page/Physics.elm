@@ -372,8 +372,8 @@ makeCloth w h spacing =
                             |> (if y == 0 then pinDotPos >> (flip withDotColor) Color.darkBrown else identity)
                             |> (if y == h - 1 then (flip withDotVelocity) (makeVector2D (5.0, 0.0)) else identity)
                 )
-            ,sticks = []
-            }
+           ,sticks = []
+           }
     in
         foldr
                 (\d acc ->
@@ -397,8 +397,33 @@ pendulumEntityMaker () =
     in
        {
             dots = fromList [p0, p1]
-            ,sticks = [
+           ,sticks = [
                     makeStick p0 p1 Nothing
+               ]
+            }
+
+--
+doublePendulumEntityMaker: EntityMaker
+doublePendulumEntityMaker () =
+    let
+        p00 = makeDot 0 (makeVector2D (100.0, 10.0)) |> pinDotPos |> (flip withDotColor) Color.darkBrown
+        p01 = makeDot 1 (makeVector2D (100.0, 60.0))
+        p02 = makeDot 2 (makeVector2D (100.0, 110.0)) |> (flip withDotRadius) 10.0
+
+        p10 = makeDot 3 (makeVector2D (200.0, 10.0)) |> pinDotPos |> (flip withDotColor) Color.darkBrown
+        p11 = makeDot 4 (makeVector2D (200.0, 60.0))
+        p12 = makeDot 5 (makeVector2D (200.0, 110.0)) |> (flip withDotRadius) 10.0 |> (flip withDotVelocity) (makeVector2D (15.0, 0.0))
+    in
+       {
+            dots = fromList [p00, p01, p02, p10, p11, p12]
+           ,sticks = [
+                    makeStick p00 p01 Nothing
+                   ,makeStick p01 p02 Nothing
+                   ,makeStick p00 p02 Nothing
+                   ,makeStick p10 p11 Nothing
+                   ,makeStick p11 p12 Nothing
+                   ,makeStick p10 p12 Nothing
+                   ,makeStick p01 p11 Nothing
                ]
             }
 
@@ -406,6 +431,7 @@ pendulumEntityMaker () =
 simulations: List ( String, EntityMaker )
 simulations = [
     ("pendulum", pendulumEntityMaker)
+   ,("double pendulum", doublePendulumEntityMaker)
    ,("cloth", clothEntityMaker)
   ]
 
