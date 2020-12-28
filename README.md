@@ -22,7 +22,7 @@ The showcases are intended to be:
     - *Highlight* some aspects of the [elm][] language, like immutability, reactiveness, performance and
     interoperability with other JS libraries and CSS frameworks.
     - *Explore* some architectural/design patterns around reactive static/serverless [SPA][].
-  - **playable**: As much as possible, provides a useful and functional content.  
+  - **playable**: As much as possible, provides a useful and enjoyable content.  
 
 ## Showcases
 
@@ -168,7 +168,7 @@ The site is accessible through the `http://localhost:1234/` endpoint.
 
 [SPA]: https://en.wikipedia.org/wiki/Single-page_application
 
-[Scalable Vector Graphics]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
+[SVG]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
 
 [Chris Camel]: https://github.com/ccamel
 [MIT]: https://tldrlegal.com/license/mit-license
