@@ -43,7 +43,9 @@ Calc is a very simple and basic calculator.
 
 ### Digital clock
 
-Simple digital clock using [Scalable Vector Graphics](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) (SVG).
+Simple digital clock using [SVG][].
+
+💡 Demonstrates some capabilities of [elm][] for displaying [SVG][] content.
 
 <p align="center">
   <b>Links:</b><br>
@@ -55,8 +57,10 @@ Simple digital clock using [Scalable Vector Graphics](https://en.wikipedia.org/w
 
 ### Lissajous
 
-Animated [Lissajous figures](https://en.wikipedia.org/wiki/Lissajouss_curve) using 
-[Scalable Vector Graphics](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) (SVG).
+Animated [Lissajous figures](https://en.wikipedia.org/wiki/Lissajouss_curve) using [SVG][].
+
+💡 Demonstrates how [elm][] can deal with some basic mathematical and handle animated [SVG][] rendering using
+[MacCASOutreach/graphicsvg](https://package.elm-lang.org/packages/MacCASOutreach/graphicsvg/latest/) fantastic library.
 
 <p align="center">
   <b>Links:</b><br>
@@ -83,8 +87,10 @@ algorithm with control of the generation process.
 
 Very simple physics engine using [Verlet Integration](https://en.wikipedia.org/wiki/Verlet_integration) algorithm and rendered through an HTML5 canvas.
 
-Demonstrates how [elm][] can deal with some basic mathematical and physical calculations, as well as basic rendering of objects in an HTML canvas,
+💡 Demonstrates how [elm][] can deal with some basic mathematical and physical calculations, as well as basic rendering of objects in an HTML canvas,
 using elementary functions from the fantastic [joakin/elm-canvas](https://package.elm-lang.org/packages/joakin/elm-canvas/latest/) package.
+
+ℹ️ Implementation is inspired from [Making a Verlet Physics Engine in Javascript](https://anuraghazra.github.io/blog/making-a-verlet-physics-engine-in-javascript).
 
 <p align="center">
   <b>Links:</b><br>
@@ -95,7 +101,7 @@ using elementary functions from the fantastic [joakin/elm-canvas](https://packag
 </p>
 
 <p align="center">
-  <img src="doc/assets/showcase-physics-necklace.png">
+  <img src="doc/assets/showcase-physics-necklace.png" width="300">
 </p>
 
 ## Building and Running
@@ -161,6 +167,8 @@ The site is accessible through the `http://localhost:1234/` endpoint.
 [parceljs]: https://parceljs.org/
 
 [SPA]: https://en.wikipedia.org/wiki/Single-page_application
+
+[Scalable Vector Graphics]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
 
 [Chris Camel]: https://github.com/ccamel
 [MIT]: https://tldrlegal.com/license/mit-license
