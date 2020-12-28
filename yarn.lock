@@ -2635,7 +2635,7 @@ elliptic@^6.5.3:
 
 elm-canvas@^2.2.4:
   version "2.2.4"
-  resolved "https://nexus.ubleamops.com/repository/npm-public/elm-canvas/-/elm-canvas-2.2.4.tgz#7204789ca5667efe56804302938e6894df8f6751"
+  resolved "https://registry.yarnpkg.com//elm-canvas/-/elm-canvas-2.2.4.tgz#7204789ca5667efe56804302938e6894df8f6751"
   integrity sha512-Kc2MD5CO161/+6WWfzmRB14v4D4RFTK9+7oWOCKVLIxNdud4YYvFIwfJS5PrhMGfiyqxK64ie2FDIcFGLVJdbw==
 
 elm-hot@^1.1.0:
