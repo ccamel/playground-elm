@@ -279,13 +279,13 @@ makeStick p1 p2 length =
     }
 
 
-addStick: ID -> ID -> Entity -> Entity
-addStick p1Id p2Id entity =
+addStick: ID -> ID -> Maybe Float -> Entity -> Entity
+addStick p1Id p2Id length entity =
     let
         (p1, p2) =  (getDot p1Id entity, getDot p2Id entity)
     in
     { entity |
-        sticks = makeStick p1 p2 Nothing :: entity.sticks
+        sticks = makeStick p1 p2 length :: entity.sticks
     }
 
 updateStick: Entity -> Stick -> Entity
@@ -385,8 +385,8 @@ makeCloth w h spacing =
                          n = d.id
                          (x, y) = (remainderBy w n, n // w)
 
-                         step1 = if x /= 0 then addStick n (n - 1) acc else acc
-                         step2 = if y /= 0 then addStick n (x + (y - 1) * w) step1 else step1
+                         step1 = if x /= 0 then addStick n (n - 1) Nothing acc else acc
+                         step2 = if y /= 0 then addStick n (x + (y - 1) * w) Nothing step1 else step1
                     in
                          step2)
                 cloth
@@ -456,9 +456,39 @@ ropeEntityMaker () =
                     let
                          n = d.id
                     in
-                         if n /= 0 then addStick n (n - 1) acc else acc)
+                         if n /= 0 then addStick n (n - 1) Nothing acc else acc)
                 entity
                 entity.dots
+
+-- Factory which produces a necklace.
+necklaceEntityMaker: EntityMaker
+necklaceEntityMaker () =
+    let
+            length = 50
+            initialspacing = 5.0
+            spacing = 10.0
+            initializer n =
+                let
+                    coords = makeVector2D (initialspacing * toFloat n, 0)
+                in
+                    makeDot n coords
+                        |> withDotRadius 3.0
+                        |> (if n == 0 then pinDotPos >> withDotBrownColor else identity)
+                        |> (if n == length - 1 then pinDotPos >> withDotBrownColor else identity)
+            entity = {
+                 dots = Array.initialize length initializer
+                ,sticks = []
+                ,offset = makeVector2D ( (constants.width - (initialspacing * length)) / 2, 30)
+                }
+        in
+            foldr
+                    (\d acc ->
+                        let
+                             n = d.id
+                        in
+                             if n /= 0 then addStick n (n - 1) (Just spacing) acc else acc)
+                    entity
+                    entity.dots
 
 -- List of available simulations (entities, with associated factory function)
 simulations: List ( String, EntityMaker )
@@ -466,6 +496,7 @@ simulations = [
     ("pendulum", pendulumEntityMaker)
    ,("double pendulum", doublePendulumEntityMaker)
    ,("rope", ropeEntityMaker)
+   ,("necklace", necklaceEntityMaker)
    ,("cloth", clothEntityMaker)
   ]
 
