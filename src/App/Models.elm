@@ -8,10 +8,14 @@ import Page.DigitalClock
 import Page.Lissajous
 import Browser.Navigation as Nav
 import Page.Maze
+import Page.Physics
 import Platform.Cmd exposing (batch)
 
 type alias Flags =
-    { basePath : String }
+    {
+        basePath : String
+       ,version: String
+    }
 
 type alias Model =
     {
@@ -24,6 +28,7 @@ type alias Model =
        ,lissajousPage : Maybe Page.Lissajous.Model
        ,digitalClockPage : Maybe Page.DigitalClock.Model
        ,mazePage : Maybe Page.Maze.Model
+       ,ropePage : Maybe Page.Physics.Model
     }
 
 
@@ -35,6 +40,7 @@ initialModel flags navKey route =
         ( lissajousModel, lissajousCmd ) = Page.Lissajous.init
         ( mazeModel, mazeCmd ) = Page.Maze.init
         ( digitalClockModel, digitalClockCmd ) = Page.DigitalClock.init
+        ( ropeModel, ropeCmd ) = Page.Physics.init
     in
         ({
          flags = flags
@@ -46,6 +52,7 @@ initialModel flags navKey route =
         ,lissajousPage = Just lissajousModel
         ,digitalClockPage = Just digitalClockModel
         ,mazePage = Just mazeModel
+        ,ropePage = Just ropeModel
         }, batch [
             -- commands for pages
             Cmd.map AboutPageMsg aboutCmd
@@ -53,5 +60,6 @@ initialModel flags navKey route =
            ,Cmd.map LissajousPageMsg lissajousCmd
            ,Cmd.map DigitalClockPageMsg digitalClockCmd
            ,Cmd.map MazePageMsg mazeCmd
+           ,Cmd.map PhysicsPageMsg ropeCmd
         ])
 

@@ -10,6 +10,7 @@ import App.Models exposing (Model)
 import App.Routing exposing (Route(..), nextPage, prevPage)
 import Html.Events
 import Html.Events
+import String exposing (concat)
 
 
 -- the main view
@@ -123,7 +124,9 @@ view model =
                                   [
                                    li [class "text-muted"]
                                       [ text "© 2017-2021 Christophe Camel - MIT License" ]
-                                  , li [class "text-muted"] [text "  •  "]
+                                  , li [class "text-muted"] [text "  |  "]
+                                  , li [class "text-muted"] [text (String.append "v" model.flags.version) ]
+                                  , li [class "text-muted"] [text "  |  "]
                                   , li []
                                     [
                                       a [ href "https://github.com/ccamel" ]
@@ -131,7 +134,7 @@ view model =
                                                 []
                                             ]
                                     ]
-                                  , li [class "text-muted"] [text "  •  "]
+                                  , li [class "text-muted"] [text "  |  "]
                                   , li []
                                     [
                                       a [ href "https://www.linkedin.com/in/christophe-camel" ]

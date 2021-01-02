@@ -5,6 +5,7 @@ import Page.Calc
 import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
+import Page.Physics
 import Url.Parser exposing (..)
 import Url exposing (Url)
 import Page.About
@@ -34,6 +35,8 @@ parseFragment fragment =
                 Page DigitalClock
             else if p == Page.Maze.info.name then
                 Page Maze
+            else if p == Page.Physics.info.name then
+                Page Physics
             else
                 NotFoundRoute
 

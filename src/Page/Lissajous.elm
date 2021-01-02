@@ -5,18 +5,16 @@ import GraphicSVG.Widget as Widget
 import Basics.Extra exposing (flip)
 import Color exposing (rgb255, green, red, toCssString)
 import ColorPicker
-import FormatNumber exposing (format)
-import FormatNumber.Locales exposing (Locale, usLocale)
 import Html exposing (Html, a, br, button, div, hr, input, p, span, text)
 import Html.Attributes exposing (attribute, class, href, id, name, size, step, style, type_, value)
 import Html.Events exposing (onInput)
-import List exposing (concatMap, drop, length, map, range, sum)
+import List exposing (concatMap, map, range)
 import Markdown
-import Maybe exposing (withDefault)
-import Page.Common exposing (strToFloatWithMinMax, strToIntWithMinMax)
+import Maybe
+import Page.Common exposing (Frames, addFrame, createFrames, fpsText, resetFrames, strToFloatWithMinMax, strToIntWithMinMax)
 import Platform.Cmd exposing (batch)
 import Round
-import String exposing (padLeft)
+import String
 import String.Interpolate exposing (interpolate)
 import Task
 import Browser.Events
@@ -60,7 +58,7 @@ type alias Model = {
     -- resolution of the line - i.e. total number of points to draw the curve (1 period), more is best
     ,resolution : Int
     -- a list containing n last ticks, used to compute the fps (frame per seconds)
-    ,ticks : Ticks
+    ,ticks : Frames
     ,foregroundColorPicker : ColorPicker.State
     -- widget underlying model
     ,widgetState : Widget.Model
@@ -84,7 +82,7 @@ init =
              ,started = True
              ,curveStyle = { color = Color.rgb255 31 122 31, lineType = solid 2 }
              ,resolution = 500
-             ,ticks = createTicks 100 -- initial capacity
+             ,ticks = createFrames 20 -- initial capacity
              ,foregroundColorPicker = ColorPicker.empty
              ,widgetState = widgetModel
           },
@@ -119,10 +117,10 @@ update msg model =
                |> modulo 180
         in
           ({ model | p = v
-                   ,ticks = addTick model.ticks diff}
+                   ,ticks = addFrame model.ticks diff}
            ,Cmd.none)
     Start -> ({ model | started = True
-                      ,ticks = resetTick model.ticks }
+                      ,ticks = resetFrames model.ticks }
               ,Cmd.none)
     Stop ->  ({ model | started = False },Cmd.none)
     SetPhaseVelocity s ->
@@ -222,12 +220,7 @@ view model =
                 ,yAxisForm
                 ,(lissajous model.a model.b (toRadian model.p)) model.resolution
                     |> outlined model.curveStyle.lineType (toSvgColor model.curveStyle.color)
-                ,interpolate "{0} fps"
-                             [ fps model.ticks
-                                     |> Maybe.map (format locale1digit)
-                                     |> withDefault "-"
-                                     |> padLeft 5 ' '
-                             ]
+                ,fpsText model.ticks
                   |> GraphicSVG.text
                   |> fixedwidth
                   |> filled (Color.rgb255 217 217 217 |> toSvgColor)
@@ -407,56 +400,6 @@ modulo range v =
 
 toRadian : Float -> Float
 toRadian deg = deg * pi / 180.0
-
-locale1digit : Locale
-locale1digit = {
-    usLocale | 
-        decimals = 1,
-        thousandSeparator = ",",
-        decimalSeparator = ".",
-        negativePrefix = "−"    
-  }
-
--- the ticks data type
-
--- ticks holds a sequence of times.
--- the list is bounded to accept a max number of elements -> inserting a new only discards the oldest one
-type alias Ticks = {
-    times : List Float,
-    capacity: Int
-  }
-
-createTicks : Int -> Ticks
-createTicks capacity = { times = [], capacity = capacity }
-
-addTick : Ticks -> Float -> Ticks
-addTick ticks time =
-    let
-        delta = (length ticks.times) - ticks.capacity
-        makePlace ticks2 = if delta >= 0 then (drop (delta + 1) ticks2) else ticks2
-    in
-    { ticks | times = ticks.times
-                                |> makePlace
-                                |> (::) time
-
-    }
-
-resetTick : Ticks -> Ticks
-resetTick ticks = {ticks | times = [] }
-
--- compute the FPS from the given fps set (if possible)
-fps : Ticks -> Maybe Float
-fps ticks =
-    let
-        size = length ticks.times
-    in if size > 1 then
-        ticks.times
-          |> sum
-          |> (/) (toFloat size)
-          |> (*) 1000.0
-          |> Just
-    else
-        Nothing
 
 cartesian : List a -> List b -> List (a,b)
 cartesian xs ys =

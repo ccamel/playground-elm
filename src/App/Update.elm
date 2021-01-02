@@ -13,6 +13,7 @@ import Page.Calc
 import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
+import Page.Physics
 import String exposing (cons)
 import Tuple exposing (first, second)
 
@@ -37,6 +38,7 @@ update msg model =
                 ( lissajousModel, lissajousCmd ) = Page.Lissajous.init
                 ( digitalClockModel, digitalClockCmd ) = Page.DigitalClock.init
                 ( mazeModel, mazeCmd ) = Page.Maze.init
+                ( ropeModel, ropeCmd ) = Page.Physics.init
             in
                 case newRoute of
                      NotFoundRoute ->
@@ -60,6 +62,9 @@ update msg model =
                      Page Maze ->
                         ( { clearedModel | route = newRoute, mazePage = Just mazeModel  }, Cmd.map MazePageMsg mazeCmd )
 
+                     Page Physics ->
+                        ( { clearedModel | route = newRoute, ropePage = Just ropeModel  }, Cmd.map PhysicsPageMsg ropeCmd )
+
 
 
         GoToPage p ->
@@ -74,7 +79,7 @@ update msg model =
         AboutPageMsg m ->
             model
               |> .aboutPage
-              |> Maybe.map (Page.About.update m) -- Maybe(mdl, Cmd msg)
+              |> Maybe.map (Page.About.update m)
               |> Maybe.map ( adapt
                               (\mdl -> {model | aboutPage = Just mdl})
                               (Cmd.map AboutPageMsg))
@@ -83,7 +88,7 @@ update msg model =
         CalcPageMsg m ->
             model
               |> .calcPage
-              |> Maybe.map (Page.Calc.update m) -- Maybe(mdl, Cmd msg)
+              |> Maybe.map (Page.Calc.update m)
               |> Maybe.map ( adapt
                               (\mdl -> {model | calcPage = Just mdl})
                               (Cmd.map CalcPageMsg))
@@ -92,7 +97,7 @@ update msg model =
         LissajousPageMsg m ->
             model
               |> .lissajousPage
-              |> Maybe.map (Page.Lissajous.update m) -- Maybe(mdl, Cmd msg)
+              |> Maybe.map (Page.Lissajous.update m)
               |> Maybe.map ( adapt
                               (\mdl -> {model | lissajousPage = Just mdl})
                               (Cmd.map LissajousPageMsg))
@@ -101,7 +106,7 @@ update msg model =
         DigitalClockPageMsg m ->
             model
               |> .digitalClockPage
-              |> Maybe.map (Page.DigitalClock.update m) -- Maybe(mdl, Cmd msg)
+              |> Maybe.map (Page.DigitalClock.update m)
               |> Maybe.map ( adapt
                             (\mdl -> {model | digitalClockPage = Just mdl})
                             (Cmd.map DigitalClockPageMsg))
@@ -110,10 +115,19 @@ update msg model =
         MazePageMsg m ->
             model
               |> .mazePage
-              |> Maybe.map (Page.Maze.update m) -- Maybe(mdl, Cmd msg)
+              |> Maybe.map (Page.Maze.update m)
               |> Maybe.map ( adapt
                               (\mdl -> {model | mazePage = Just mdl})
                               (Cmd.map MazePageMsg))
+              |> withDefault (model, Cmd.none)
+
+        PhysicsPageMsg m ->
+            model
+              |> .ropePage
+              |> Maybe.map (Page.Physics.update m)
+              |> Maybe.map ( adapt
+                              (\mdl -> {model | ropePage = Just mdl})
+                              (Cmd.map PhysicsPageMsg))
               |> withDefault (model, Cmd.none)
 
 adapt : (m -> Model) -> (Cmd a -> Cmd Msg) -> (m, Cmd a) -> (Model, Cmd Msg)
