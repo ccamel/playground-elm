@@ -11,7 +11,7 @@ playground-elm
 
 > My playground I use for playing with fancy and exciting technologies. This one's for [elm][].
 
-## Purpose
+## 🎯 Purpose
 
 The purpose of this playground is to explore, study and assess the [elm][] language — a delightful language for reliable webapps.
 
@@ -24,7 +24,7 @@ The showcases are intended to be:
     - *Explore* some architectural/design patterns around reactive static/serverless [SPA][].
   - **playable**: As much as possible, provides a useful and enjoyable content.  
 
-## Showcases
+## 🍿 Showcases
 
 Visit the :small_blue_diamond: [demo site](https://ccamel.github.io/playground-elm/) and play in your browser. 
 The demo is a pure [SPA][] (100% clientside application) written in [elm][].
@@ -104,7 +104,7 @@ using elementary functions from the fantastic [joakin/elm-canvas](https://packag
   <img src="doc/assets/showcase-physics-necklace.png" width="300">
 </p>
 
-## Building and Running
+## 🛠 Building and Running
 
 ### Elm 0.19
 
@@ -150,13 +150,15 @@ yarn serve
 
 The site is accessible through the `http://localhost:1234/` endpoint.
 
-## Technologies
+## 🔋 Technologies
 
-[![elm-logo][elm-logo]][elm] ELM language
+  - [`elm`](http://elm-lang.org/): ELM language
+  - [`parceljs`](https://parceljs.org/): Web application bundler
+  - [`bootstrap`](https://getbootstrap.com/):  Free and open-source CSS framework
 
-## License
+## 📜 License
 
-[MIT] © [Chris Camel]
+[MIT][] © [Chris Camel][]
 
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fccamel%2Fplayground-elm.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fccamel%2Fplayground-elm?ref=badge_large)
 
