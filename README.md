@@ -1,5 +1,5 @@
-playground-elm
-==============
+# playground-elm
+
 [![release](https://img.shields.io/github/release/ccamel/playground-elm.svg?style=flat)](https://github.com/ccamel/playground-elm/releases)
 [![MIT](https://img.shields.io/badge/licence-MIT-lightgrey.svg?style=flat)](https://tldrlegal.com/license/mit-license)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fccamel%2Fplayground-elm.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fccamel%2Fplayground-elm?ref=badge_shield)
@@ -18,16 +18,16 @@ The purpose of this playground is to explore, study and assess the [elm][] langu
 
 The showcases are intended to be:
 
-  - **simple**: Fairly simple and understandable. Every showcase is implemented in a single elm file.
-  - **exploratory**: 
-    - *Highlight* some aspects of the [elm][] language, like immutability, reactiveness, performance and
+- **simple**: Fairly simple and understandable. Every showcase is implemented in a single elm file.
+- **exploratory**:
+  - _Highlight_ some aspects of the [elm][] language, like immutability, reactiveness, performance and
     interoperability with other JS libraries and CSS frameworks.
-    - *Explore* some architectural/design patterns around reactive static/serverless [SPA][].
-  - **playable**: As much as possible, provides a useful and enjoyable content.  
+  - _Explore_ some architectural/design patterns around reactive static/serverless [SPA][].
+- **playable**: As much as possible, provides a useful and enjoyable content.
 
 ## 🍿 Showcases
 
-Visit the :small_blue_diamond: [demo site](https://ccamel.github.io/playground-elm/) and play in your browser. 
+Visit the :small_blue_diamond: [demo site](https://ccamel.github.io/playground-elm/) and play in your browser.
 The demo is a pure [SPA][] (100% clientside application) written in [elm][].
 
 ### Calc
@@ -36,7 +36,7 @@ Calc is a very simple and basic calculator.
 
 <p align="center">
   <b>Links:</b><br>
-  <a href="https://ccamel.github.io/playground-elm/#calc">Play</a>  | 
+  <a href="https://ccamel.github.io/playground-elm/#calc">Play</a>  |
   <a href="https://github.com/ccamel/playground-elm/blob/master/src/Page/Calc.elm">Code</a>
   <br><br>
   <kbd><img src="doc/assets/showcase-calc.png"></kbd>
@@ -110,13 +110,14 @@ using elementary functions from the fantastic [joakin/elm-canvas](https://packag
 ### Elm 0.19
 
 Elm 0.19 broke me as many other coders, due to a lot of changes on topics I used in this project with previous version:
+
 - `elm.json` file
 - JSON decoding
 - String / Int / Float conversions
 - Browser application, routing
 - Url management
 - date time (`Posix`, `Zone`)
-- lots of incompatible packages  
+- lots of incompatible packages
 - ...
 
 I finally managed to migrate to this new version but instabilities can be noticed though.
@@ -125,7 +126,7 @@ I finally managed to migrate to this new version but instabilities can be notice
 
 The project now relies on [parceljs][], a web application bundler which handles [elm][] builds at free.
 
-At first, all the node packages this project depends on must be installed locally. This can be done with the 
+At first, all the node packages this project depends on must be installed locally. This can be done with the
 following command:
 
 ```bash
@@ -140,7 +141,7 @@ yarn build
 
 Then, open `./dist/index.html` file in your browser.
 
-If you prefer, the site can be published by a local HTTP server. In this mode, if any change is detected, the build of 
+If you prefer, the site can be published by a local HTTP server. In this mode, if any change is detected, the build of
 the project will be started again, and the site automatically updated in the browser; which is nice during the development phases.
 
 The publication is launched with the following command:
@@ -153,9 +154,9 @@ The site is accessible through the `http://localhost:1234/` endpoint.
 
 ## 🔋 Technologies
 
-  - [`elm`](http://elm-lang.org/): ELM language
-  - [`parceljs`](https://parceljs.org/): Web application bundler
-  - [`bootstrap`](https://getbootstrap.com/):  Free and open-source CSS framework
+- [`elm`](http://elm-lang.org/): ELM language
+- [`parceljs`](https://parceljs.org/): Web application bundler
+- [`bootstrap`](https://getbootstrap.com/): Free and open-source CSS framework
 
 ## 📜 License
 
@@ -164,14 +165,8 @@ The site is accessible through the `http://localhost:1234/` endpoint.
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fccamel%2Fplayground-elm.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fccamel%2Fplayground-elm?ref=badge_large)
 
 [elm]: http://elm-lang.org/
-
-[elm-logo]: doc/assets/logo-elm.png
-
 [parceljs]: https://parceljs.org/
-
-[SPA]: https://en.wikipedia.org/wiki/Single-page_application
-
-[SVG]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
-
-[Chris Camel]: https://github.com/ccamel
-[MIT]: https://tldrlegal.com/license/mit-license
+[spa]: https://en.wikipedia.org/wiki/Single-page_application
+[svg]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
+[chris camel]: https://github.com/ccamel
+[mit]: https://tldrlegal.com/license/mit-license

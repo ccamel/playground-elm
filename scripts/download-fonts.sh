@@ -9,7 +9,7 @@
 # Absolute path to this script
 SCRIPT=$(readlink -f $0)
 # Absolute path this script is in.
-SCRIPTPATH=`dirname $SCRIPT`
+SCRIPTPATH=$(dirname $SCRIPT)
 # Absolute path the downloaded fonts are in.
 PATH_FONT="$SCRIPTPATH/../src/resources/fonts"
 

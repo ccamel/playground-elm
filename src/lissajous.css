@@ -1,65 +1,63 @@
 #lissajous-scope {
-    margin-right: 4em;
-    border-style: solid;
-    border-width: 2px;
-    border-color: gray;
-    border-radius: 10px;
-    -webkit-border-radius: 10px;
-    order: -1;
-    box-shadow: 0px 12px 30px #444;
-    width: 405px;
-    height: 405px;
+  margin-right: 4em;
+  border-style: solid;
+  border-width: 2px;
+  border-color: gray;
+  border-radius: 10px;
+  -webkit-border-radius: 10px;
+  order: -1;
+  box-shadow: 0px 12px 30px #444;
+  width: 405px;
+  height: 405px;
 }
 
 .display {
-
 }
 
 .description {
-
 }
 
 .input-number {
-    width: 4em;
-    text-align: right;
+  width: 4em;
+  text-align: right;
 }
 
 .equation .input-number {
-    font-family: 'Oxygen Mono', monospace;
+  font-family: "Oxygen Mono", monospace;
 }
 
 .description input {
-    border-top-style: none;
-    border-right-style: none;
-    border-left-style: none;
-    border-bottom: #dedddd;
-    border-bottom-style: dotted;
-    border-bottom-width: 1px;
+  border-top-style: none;
+  border-right-style: none;
+  border-left-style: none;
+  border-bottom: #dedddd;
+  border-bottom-style: dotted;
+  border-bottom-width: 1px;
 }
 
 a.action {
-    border-color: transparent;
-    border-style: solid;
-    background: #f2f2f2;
-    border-radius: 6px;
+  border-color: transparent;
+  border-style: solid;
+  background: #f2f2f2;
+  border-radius: 6px;
 }
 
 a.selected {
-    background: beige;
+  background: beige;
 }
 
 .equation {
-    padding: .2rem 2.5rem;
-    font-family: 'Oxygen Mono', monospace;
-    font-size: 90%;
-    color: #bd4147;
+  padding: 0.2rem 2.5rem;
+  font-family: "Oxygen Mono", monospace;
+  font-size: 90%;
+  color: #bd4147;
 }
 
 .description .btn {
-    border-top-style: none;
-    border-right-style: none;
-    border-left-style: none;
-    border-bottom: #dedddd;
-    border-bottom-style: dotted;
-    border-bottom-width: 1px;
+  border-top-style: none;
+  border-right-style: none;
+  border-left-style: none;
+  border-bottom: #dedddd;
+  border-bottom-style: dotted;
+  border-bottom-width: 1px;
 }

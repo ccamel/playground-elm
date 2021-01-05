@@ -1,53 +1,53 @@
 language: node_js
 node_js:
-- node
+  - node
 os:
-- linux
+  - linux
 sudo: false
 cache:
   directories:
-  - tests/elm-stuff/build-artifacts
-  - node_modules
-  - "$HOME/.cpus"
+    - tests/elm-stuff/build-artifacts
+    - node_modules
+    - "$HOME/.cpus"
 branches:
   except:
-  - gh-pages
+    - gh-pages
 env:
   matrix:
-  - ELM_VERSION=0.19.1 TARGET_NODE_VERSION=node
+    - ELM_VERSION=0.19.1 TARGET_NODE_VERSION=node
 before_install:
-- |
-  export PATH=$HOME/.cpus/bin:$PATH;
-  if ! hash sysconfcpus 2>/dev/null; then
-    git clone --depth=1 https://github.com/obmarg/libsysconfcpus.git "$HOME/libsysconfcpus";
-    cd "$HOME/libsysconfcpus";
-    ./configure --prefix="$HOME/.cpus";
-    make -j2 install;
-  fi
-- cd "$TRAVIS_BUILD_DIR"
-- export PATH=./node_modules/.bin:$PATH
+  - |
+    export PATH=$HOME/.cpus/bin:$PATH;
+    if ! hash sysconfcpus 2>/dev/null; then
+      git clone --depth=1 https://github.com/obmarg/libsysconfcpus.git "$HOME/libsysconfcpus";
+      cd "$HOME/libsysconfcpus";
+      ./configure --prefix="$HOME/.cpus";
+      make -j2 install;
+    fi
+  - cd "$TRAVIS_BUILD_DIR"
+  - export PATH=./node_modules/.bin:$PATH
 install:
-- nvm install $TARGET_NODE_VERSION
-- nvm use $TARGET_NODE_VERSION
-- node --version
-- npm --version
-- npm install -g elm@$ELM_VERSION
-- npm install
+  - nvm install $TARGET_NODE_VERSION
+  - nvm use $TARGET_NODE_VERSION
+  - node --version
+  - npm --version
+  - npm install -g elm@$ELM_VERSION
+  - npm install
 script:
-- sysconfcpus -n 2 npm run build
+  - sysconfcpus -n 2 npm run build
 deploy:
-- provider: script
-  # deploy the generated site to gh-pages
-  skip_cleanup: true
-  script: ./scripts/deploy-to-gh-pages.sh
-  on:
-    tags: true
-    branch: master
-- provider: releases
-  # make a release (and upload it to github)
-  skip_cleanup: true
-  api_key: $GH_TOKEN
-  file: ./dist/playground-elm-site.zip
-  on:
-    tags: true
-    repo: ccamel/playground-elm
+  - provider: script
+    # deploy the generated site to gh-pages
+    skip_cleanup: true
+    script: ./scripts/deploy-to-gh-pages.sh
+    on:
+      tags: true
+      branch: master
+  - provider: releases
+    # make a release (and upload it to github)
+    skip_cleanup: true
+    api_key: $GH_TOKEN
+    file: ./dist/playground-elm-site.zip
+    on:
+      tags: true
+      repo: ccamel/playground-elm
