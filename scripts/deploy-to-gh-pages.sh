@@ -25,7 +25,7 @@ cp -R ../dist/* .
 
 # deploy
 echo "deploy"
-if [[ `git status --porcelain` ]]; then
+if [[ $(git status --porcelain) ]]; then
   git add --all .
   git commit -m "update playground-elm site"
 
