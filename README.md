@@ -36,7 +36,7 @@ Calc is a very simple and basic calculator.
 
 <p align="center">
   <b>Links:</b><br>
-  <a href="https://ccamel.github.io/playground-elm/#calc">Play</a>  | 
+  <a href="https://ccamel.github.io/playground-elm/#calc">Play</a>  |
   <a href="https://github.com/ccamel/playground-elm/blob/master/src/Page/Calc.elm">Code</a>
   <br><br>
   <kbd><img src="doc/assets/showcase-calc.png"></kbd>
@@ -165,7 +165,6 @@ The site is accessible through the `http://localhost:1234/` endpoint.
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fccamel%2Fplayground-elm.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fccamel%2Fplayground-elm?ref=badge_large)
 
 [elm]: http://elm-lang.org/
-[elm-logo]: doc/assets/logo-elm.png
 [parceljs]: https://parceljs.org/
 [spa]: https://en.wikipedia.org/wiki/Single-page_application
 [svg]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
