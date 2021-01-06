@@ -6,17 +6,23 @@ import App.Pages exposing (pageSubscriptions)
 import App.Routing exposing (Route(..))
 import Platform.Sub
 
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch [
-        mainSubscriptions model,
+    Sub.batch
+        [ mainSubscriptions model
+        , case model.route of
+            NotFoundRoute ->
+                Sub.none
 
-        case model.route of
-            NotFoundRoute -> Sub.none
-            Home -> Sub.none
-            Page page -> pageSubscriptions page model
-    ]
+            Home ->
+                Sub.none
+
+            Page page ->
+                pageSubscriptions page model
+        ]
+
 
 mainSubscriptions : Model -> Sub Msg
-mainSubscriptions _ = Sub.none
-
+mainSubscriptions _ =
+    Sub.none
