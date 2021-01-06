@@ -49,6 +49,7 @@
   },
   "devDependencies": {
     "elm": "^0.19.1-no-dep",
+    "elm-format": "^0.8.4",
     "elm-hot": "^1.1.0",
     "node-elm-compiler": "^5.0.1",
     "parcel-bundler": "^1.10.0",
