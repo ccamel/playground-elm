@@ -1,11 +1,10 @@
 module App.Update exposing (..)
 
-import App.Pages exposing (pageHash)
-import App.Routing exposing (Route(..), toRoute)
 import App.Messages exposing (Msg(..), Page(..))
 import App.Models exposing (Model)
+import App.Pages exposing (pageHash)
+import App.Routing exposing (Route(..), toRoute)
 import Browser
-import Browser.Navigation as Route
 import Browser.Navigation as Nav
 import Maybe exposing (withDefault)
 import Page.About
@@ -17,123 +16,154 @@ import Page.Physics
 import String exposing (cons)
 import Tuple exposing (first, second)
 
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         LinkClicked urlRequest ->
             case urlRequest of
                 Browser.External href ->
-                    (model, Nav.load href )
+                    ( model, Nav.load href )
+
                 _ ->
-                    (model, Cmd.none)
+                    ( model, Cmd.none )
+
         UrlChanged location ->
             let
                 newRoute =
                     toRoute model.flags.basePath location
 
-                clearedModel = { model | aboutPage = Nothing }
+                clearedModel =
+                    { model | aboutPage = Nothing }
 
-                ( aboutModel, aboutCmd ) = Page.About.init
-                ( calcModel, calcCmd ) = Page.Calc.init
-                ( lissajousModel, lissajousCmd ) = Page.Lissajous.init
-                ( digitalClockModel, digitalClockCmd ) = Page.DigitalClock.init
-                ( mazeModel, mazeCmd ) = Page.Maze.init
-                ( ropeModel, ropeCmd ) = Page.Physics.init
+                ( aboutModel, aboutCmd ) =
+                    Page.About.init
+
+                ( calcModel, calcCmd ) =
+                    Page.Calc.init
+
+                ( lissajousModel, lissajousCmd ) =
+                    Page.Lissajous.init
+
+                ( digitalClockModel, digitalClockCmd ) =
+                    Page.DigitalClock.init
+
+                ( mazeModel, mazeCmd ) =
+                    Page.Maze.init
+
+                ( physicsModel, physicsCmd ) =
+                    Page.Physics.init
             in
-                case newRoute of
-                     NotFoundRoute ->
-                        ( { clearedModel | route = newRoute }, Cmd.none )
+            case newRoute of
+                NotFoundRoute ->
+                    ( { clearedModel | route = newRoute }, Cmd.none )
 
-                     Home ->
-                        ( { clearedModel | route = newRoute }, Cmd.none )
+                Home ->
+                    ( { clearedModel | route = newRoute }, Cmd.none )
 
-                     Page About ->
-                        ( { clearedModel | route = newRoute, aboutPage = Just aboutModel  }, Cmd.map AboutPageMsg aboutCmd )
+                Page About ->
+                    ( { clearedModel | route = newRoute, aboutPage = Just aboutModel }, Cmd.map AboutPageMsg aboutCmd )
 
-                     Page Calc ->
-                        ( { clearedModel | route = newRoute, calcPage = Just calcModel  }, Cmd.map CalcPageMsg calcCmd )
+                Page Calc ->
+                    ( { clearedModel | route = newRoute, calcPage = Just calcModel }, Cmd.map CalcPageMsg calcCmd )
 
-                     Page Lissajous ->
-                        ( { clearedModel | route = newRoute, lissajousPage = Just lissajousModel  }, Cmd.map LissajousPageMsg lissajousCmd )
+                Page Lissajous ->
+                    ( { clearedModel | route = newRoute, lissajousPage = Just lissajousModel }, Cmd.map LissajousPageMsg lissajousCmd )
 
-                     Page DigitalClock ->
-                        ( { clearedModel | route = newRoute, digitalClockPage = Just digitalClockModel  }, Cmd.map DigitalClockPageMsg digitalClockCmd )
+                Page DigitalClock ->
+                    ( { clearedModel | route = newRoute, digitalClockPage = Just digitalClockModel }, Cmd.map DigitalClockPageMsg digitalClockCmd )
 
-                     Page Maze ->
-                        ( { clearedModel | route = newRoute, mazePage = Just mazeModel  }, Cmd.map MazePageMsg mazeCmd )
+                Page Maze ->
+                    ( { clearedModel | route = newRoute, mazePage = Just mazeModel }, Cmd.map MazePageMsg mazeCmd )
 
-                     Page Physics ->
-                        ( { clearedModel | route = newRoute, ropePage = Just ropeModel  }, Cmd.map PhysicsPageMsg ropeCmd )
-
-
+                Page Physics ->
+                    ( { clearedModel | route = newRoute, physicsPage = Just physicsModel }, Cmd.map PhysicsPageMsg physicsCmd )
 
         GoToPage p ->
-            ( model, pageHash p
-                      |> cons '#'
-                      |> Route.pushUrl model.navKey )
+            ( model
+            , pageHash p
+                |> cons '#'
+                |> Nav.pushUrl model.navKey
+            )
 
         GoToHome ->
-            ( model, Route.replaceUrl model.navKey "#" )
+            ( model, Nav.replaceUrl model.navKey "#" )
 
         -- messages from pages
         AboutPageMsg m ->
             model
-              |> .aboutPage
-              |> Maybe.map (Page.About.update m)
-              |> Maybe.map ( adapt
-                              (\mdl -> {model | aboutPage = Just mdl})
-                              (Cmd.map AboutPageMsg))
-              |> withDefault (model, Cmd.none)
+                |> .aboutPage
+                |> Maybe.map (Page.About.update m)
+                |> Maybe.map
+                    (adapt
+                        (\mdl -> { model | aboutPage = Just mdl })
+                        (Cmd.map AboutPageMsg)
+                    )
+                |> withDefault ( model, Cmd.none )
 
         CalcPageMsg m ->
             model
-              |> .calcPage
-              |> Maybe.map (Page.Calc.update m)
-              |> Maybe.map ( adapt
-                              (\mdl -> {model | calcPage = Just mdl})
-                              (Cmd.map CalcPageMsg))
-              |> withDefault (model, Cmd.none)
+                |> .calcPage
+                |> Maybe.map (Page.Calc.update m)
+                |> Maybe.map
+                    (adapt
+                        (\mdl -> { model | calcPage = Just mdl })
+                        (Cmd.map CalcPageMsg)
+                    )
+                |> withDefault ( model, Cmd.none )
 
         LissajousPageMsg m ->
             model
-              |> .lissajousPage
-              |> Maybe.map (Page.Lissajous.update m)
-              |> Maybe.map ( adapt
-                              (\mdl -> {model | lissajousPage = Just mdl})
-                              (Cmd.map LissajousPageMsg))
-              |> withDefault (model, Cmd.none)
+                |> .lissajousPage
+                |> Maybe.map (Page.Lissajous.update m)
+                |> Maybe.map
+                    (adapt
+                        (\mdl -> { model | lissajousPage = Just mdl })
+                        (Cmd.map LissajousPageMsg)
+                    )
+                |> withDefault ( model, Cmd.none )
 
         DigitalClockPageMsg m ->
             model
-              |> .digitalClockPage
-              |> Maybe.map (Page.DigitalClock.update m)
-              |> Maybe.map ( adapt
-                            (\mdl -> {model | digitalClockPage = Just mdl})
-                            (Cmd.map DigitalClockPageMsg))
-              |> withDefault (model, Cmd.none)
+                |> .digitalClockPage
+                |> Maybe.map (Page.DigitalClock.update m)
+                |> Maybe.map
+                    (adapt
+                        (\mdl -> { model | digitalClockPage = Just mdl })
+                        (Cmd.map DigitalClockPageMsg)
+                    )
+                |> withDefault ( model, Cmd.none )
 
         MazePageMsg m ->
             model
-              |> .mazePage
-              |> Maybe.map (Page.Maze.update m)
-              |> Maybe.map ( adapt
-                              (\mdl -> {model | mazePage = Just mdl})
-                              (Cmd.map MazePageMsg))
-              |> withDefault (model, Cmd.none)
+                |> .mazePage
+                |> Maybe.map (Page.Maze.update m)
+                |> Maybe.map
+                    (adapt
+                        (\mdl -> { model | mazePage = Just mdl })
+                        (Cmd.map MazePageMsg)
+                    )
+                |> withDefault ( model, Cmd.none )
 
         PhysicsPageMsg m ->
             model
-              |> .ropePage
-              |> Maybe.map (Page.Physics.update m)
-              |> Maybe.map ( adapt
-                              (\mdl -> {model | ropePage = Just mdl})
-                              (Cmd.map PhysicsPageMsg))
-              |> withDefault (model, Cmd.none)
+                |> .physicsPage
+                |> Maybe.map (Page.Physics.update m)
+                |> Maybe.map
+                    (adapt
+                        (\mdl -> { model | physicsPage = Just mdl })
+                        (Cmd.map PhysicsPageMsg)
+                    )
+                |> withDefault ( model, Cmd.none )
 
-adapt : (m -> Model) -> (Cmd a -> Cmd Msg) -> (m, Cmd a) -> (Model, Cmd Msg)
+
+adapt : (m -> Model) -> (Cmd a -> Cmd Msg) -> ( m, Cmd a ) -> ( Model, Cmd Msg )
 adapt toModel toCmd modelCmd =
     let
-        model = modelCmd |> first |> toModel
-        cmd = modelCmd |> second |> toCmd
+        model =
+            modelCmd |> first |> toModel
+
+        cmd =
+            modelCmd |> second |> toCmd
     in
-        (model, cmd)
+    ( model, cmd )

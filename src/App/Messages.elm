@@ -1,13 +1,14 @@
 module App.Messages exposing (..)
 
+import Browser exposing (Document)
 import Page.About
 import Page.Calc
+import Page.DigitalClock
+import Page.Lissajous
 import Page.Maze
 import Page.Physics
 import Url exposing (Url)
-import Browser exposing (Document)
-import Page.DigitalClock
-import Page.Lissajous
+
 
 type Page
     = About
@@ -23,7 +24,7 @@ type Msg
     | LinkClicked Browser.UrlRequest
     | GoToHome
     | GoToPage Page
-    -- messages for pages
+      -- messages for pages
     | AboutPageMsg Page.About.Msg
     | CalcPageMsg Page.Calc.Msg
     | LissajousPageMsg Page.Lissajous.Msg
