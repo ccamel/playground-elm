@@ -101,7 +101,7 @@ pageSpec page =
             toSpec Page.Maze.info Page.Maze.view Page.Maze.subscriptions MazePageMsg (\model -> model.mazePage)
 
         Physics ->
-            toSpec Page.Physics.info Page.Physics.view Page.Physics.subscriptions PhysicsPageMsg (\model -> model.ropePage)
+            toSpec Page.Physics.info Page.Physics.view Page.Physics.subscriptions PhysicsPageMsg (\model -> model.physicsPage)
 
 
 pageName : Page -> String

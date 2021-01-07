@@ -29,7 +29,7 @@ type alias Model =
     , lissajousPage : Maybe Page.Lissajous.Model
     , digitalClockPage : Maybe Page.DigitalClock.Model
     , mazePage : Maybe Page.Maze.Model
-    , ropePage : Maybe Page.Physics.Model
+    , physicsPage : Maybe Page.Physics.Model
     }
 
 
@@ -51,7 +51,7 @@ initialModel flags navKey route =
         ( digitalClockModel, digitalClockCmd ) =
             Page.DigitalClock.init
 
-        ( ropeModel, ropeCmd ) =
+        ( physicsModel, physicsCmd ) =
             Page.Physics.init
     in
     ( { flags = flags
@@ -64,7 +64,7 @@ initialModel flags navKey route =
       , lissajousPage = Just lissajousModel
       , digitalClockPage = Just digitalClockModel
       , mazePage = Just mazeModel
-      , ropePage = Just ropeModel
+      , physicsPage = Just physicsModel
       }
     , batch
         [ -- commands for pages
@@ -73,6 +73,6 @@ initialModel flags navKey route =
         , Cmd.map LissajousPageMsg lissajousCmd
         , Cmd.map DigitalClockPageMsg digitalClockCmd
         , Cmd.map MazePageMsg mazeCmd
-        , Cmd.map PhysicsPageMsg ropeCmd
+        , Cmd.map PhysicsPageMsg physicsCmd
         ]
     )

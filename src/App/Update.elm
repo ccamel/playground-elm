@@ -51,7 +51,7 @@ update msg model =
                 ( mazeModel, mazeCmd ) =
                     Page.Maze.init
 
-                ( ropeModel, ropeCmd ) =
+                ( physicsModel, physicsCmd ) =
                     Page.Physics.init
             in
             case newRoute of
@@ -77,7 +77,7 @@ update msg model =
                     ( { clearedModel | route = newRoute, mazePage = Just mazeModel }, Cmd.map MazePageMsg mazeCmd )
 
                 Page Physics ->
-                    ( { clearedModel | route = newRoute, ropePage = Just ropeModel }, Cmd.map PhysicsPageMsg ropeCmd )
+                    ( { clearedModel | route = newRoute, physicsPage = Just physicsModel }, Cmd.map PhysicsPageMsg physicsCmd )
 
         GoToPage p ->
             ( model
@@ -147,11 +147,11 @@ update msg model =
 
         PhysicsPageMsg m ->
             model
-                |> .ropePage
+                |> .physicsPage
                 |> Maybe.map (Page.Physics.update m)
                 |> Maybe.map
                     (adapt
-                        (\mdl -> { model | ropePage = Just mdl })
+                        (\mdl -> { model | physicsPage = Just mdl })
                         (Cmd.map PhysicsPageMsg)
                     )
                 |> withDefault ( model, Cmd.none )
