@@ -163,10 +163,8 @@ view model =
     }
 
 
-
--- the html elements for the content part of the view
-
-
+{-| the html elements for the content part of the view
+-}
 content : Model -> Html Msg
 content model =
     case model.route of
@@ -180,10 +178,8 @@ content model =
             notFoundView
 
 
-
--- the home page displaying all available pages as "album" entries
-
-
+{-| the home page displaying all available pages as "album" entries
+-}
 homePage : Model -> Html Msg
 homePage model =
     div [ class "text-muted" ]
@@ -214,9 +210,8 @@ pageCard _ page =
 
 
 
--- the special not found view displayed when routing has found no matching
-
-
+{-| the special not found view displayed when routing has found no matching
+-}
 notFoundView : Html msg
 notFoundView =
     div [ class "container" ]
@@ -236,9 +231,8 @@ notFoundView =
 
 
 
--- returns the html anchor ('a') that denotes a link to the code source of the given page.
-
-
+{-| returns the html anchor ('a') that denotes a link to the code source of the given page.
+-}
 linkToGitHub : Page -> Html a
 linkToGitHub page =
     let

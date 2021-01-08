@@ -175,11 +175,9 @@ maxDimensionsMaze =
     { minW = 1, maxW = 50, minH = 1, maxH = 50 }
 
 
-
--- performs one step in the generation of the maze according to the current building context.
--- algorithm is a depth-first search algorithm (with backtracking)
-
-
+{-| performs one step in the generation of the maze according to the current building context.
+Algorithm is a depth-first search algorithm (with backtracking)
+-}
 stepMaze : Maze -> Maze
 stepMaze maze =
     case maze.state of
@@ -685,10 +683,8 @@ controlView model =
         ]
 
 
-
--- tells if the cell at given position is currently being explored (i.e. is a new discovered cell)
-
-
+{-| tells if the cell at given position is currently being explored (i.e. is a new discovered cell)
+-}
 isExploring : Int -> Int -> Maze -> Bool
 isExploring x y maze =
     case maze.state of
@@ -727,10 +723,8 @@ exploredCell maze =
             Nothing
 
 
-
--- return the explored side if any
-
-
+{-| return the explored side if any
+-}
 exploredSide : Int -> Int -> Maze -> Maybe Side
 exploredSide x y maze =
     exploredCell maze
@@ -769,10 +763,8 @@ isBacktracked x y maze =
             False
 
 
-
--- tells if the cell at given position is a wall, i.e. there's no path to it
-
-
+{-| tells if the cell at given position is a wall, i.e. there's no path to it
+-}
 isWall : Int -> Int -> Maze -> Bool
 isWall x y maze =
     maze
@@ -808,17 +800,11 @@ isEnclosureWall x y side maze =
             x == 0
 
 
-
--- return the total number of steps needed for generating the maze
-
-
+{-| return the total number of steps needed for generating the maze
+-}
 totalSteps : Maze -> Int
 totalSteps maze =
     maze.width * maze.height * (List.length sides + 1)
-
-
-
--- one for backtracking
 
 
 stateString : Maze -> String

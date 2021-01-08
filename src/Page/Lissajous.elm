@@ -492,10 +492,11 @@ backgroundForm color =
 
 
 -- Functions
--- returns a function that compute the path for the lissajous given the desired resolution.
--- the curve is computed according to the given parameters a, b and phase
 
 
+{-| returns a function that compute the path for the lissajous given the desired resolution.
+The curve is computed according to the given parameters a, b and phase
+-}
 lissajous : Int -> Int -> Float -> (Int -> Stencil)
 lissajous a b phase =
     let

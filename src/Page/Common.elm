@@ -23,28 +23,22 @@ type alias PageInfo a =
     }
 
 
-
--- convert the string to float preserving the bounds [min, max]
-
-
+{-| convert the string to float preserving the bounds [min, max]
+-}
 strToIntWithMinMax : String -> Int -> Int -> Maybe Int
 strToIntWithMinMax s minv maxv =
     strToNumberWithMinMax s String.toInt minv maxv
 
 
-
--- convert the string to float preserving the bounds [min, max]
-
-
+{-| convert the string to float preserving the bounds [min, max]
+-}
 strToFloatWithMinMax : String -> Float -> Float -> Maybe Float
 strToFloatWithMinMax s minv maxv =
     strToNumberWithMinMax s String.toFloat minv maxv
 
 
-
--- convert the string to a number preserving the bounds [min, max]
-
-
+{-| convert the string to a number preserving the bounds [min, max]
+-}
 strToNumberWithMinMax : String -> (String -> Maybe comparable) -> comparable -> comparable -> Maybe comparable
 strToNumberWithMinMax s converter minv maxv =
     case s of
@@ -100,11 +94,9 @@ indexOf array elem =
     indexOfHelper array elem 0
 
 
-
--- frames holds a sequence of times.
--- the list is bounded to accept a max number of elements -> inserting a new only discards the oldest one
-
-
+{-| frames holds a sequence of times.
+the list is bounded to accept a max number of elements -> inserting a new only discards the oldest one
+-}
 type alias Frames =
     { times : Array Float
     , length : Int
@@ -141,10 +133,8 @@ resetFrames { capacity } =
     createFrames capacity
 
 
-
--- compute the FPS from the given fps set (if possible)
-
-
+{-| compute the FPS from the given fps set (if possible)
+-}
 fps : Frames -> Maybe Float
 fps frames =
     if frames.length > 1 then

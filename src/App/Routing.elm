@@ -54,10 +54,8 @@ parseFragment fragment =
                 NotFoundRoute
 
 
-
--- returns the route parsed given the provided Url
-
-
+{-| returns the route parsed given the provided Url
+-}
 toRoute : String -> Url -> Route
 toRoute basePath url =
     { url | path = String.replace basePath "" url.path }
@@ -65,10 +63,8 @@ toRoute basePath url =
         |> Maybe.withDefault NotFoundRoute
 
 
-
--- returns the next page for the given route, if any
-
-
+{-| returns the next page for the given route, if any
+-}
 nextPage : Route -> List Page -> Maybe Page
 nextPage aroute pages =
     case aroute of
@@ -88,10 +84,8 @@ nextPage aroute pages =
             Nothing
 
 
-
--- returns the previous page for the given route, if any
-
-
+{-| returns the previous page for the given route, if any
+-}
 prevPage : Route -> List Page -> Maybe Page
 prevPage aroute pages =
     case aroute of

@@ -17,12 +17,10 @@ emptyNode =
     Html.text ""
 
 
-
--- PageSpec holds the whole specification about a page, including basic information (name, description, source) and a function
--- to the view and the subscriptions.
--- This way, it becomes easy to add new pages without changing the code everywhere.
-
-
+{-| PageSpec holds the whole specification about a page, including basic information (name, description, source) and a function
+to the view and the subscriptions.
+This way, it becomes easy to add new pages without changing the code everywhere.
+-}
 type alias PageSpec =
     { info : Page.Common.PageInfo Msg
     , view : Model -> Html Msg
@@ -57,10 +55,6 @@ toSubscriptions aPageSubscriptions pageMsg modelExtractor model =
         |> Maybe.map aPageSubscriptions
         |> Maybe.map (Sub.map pageMsg)
         |> Maybe.withDefault Sub.none
-
-
-
--- toSpec: (Record {}) -> (Msg) -> (Model -> Html Msg) -> (Model -> Sub Msg) -> c -> (x -> y)
 
 
 toSpec info aPageView aPageSubscriptions pageMsg modelExtractor =

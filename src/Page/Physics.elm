@@ -41,9 +41,10 @@ integration and rendered using HTML5 canvas.
 
 
 -- MODEL
--- constants
 
 
+{-| constants
+-}
 constants : { height : number, width : number, physics_iteration : Int, mouse_influence : Float, stickPalette : Float -> Color }
 constants =
     { -- width of the canvas
@@ -482,19 +483,15 @@ emptyEntityMaker () =
     }
 
 
-
--- Factory witch produces a brand new cloth (with default values).
-
-
+{-| Factory witch produces a brand new cloth (with default values).
+-}
 clothEntityMaker : EntityMaker
 clothEntityMaker () =
     makeCloth 25 20 15.0
 
 
-
--- Creates a "cloth" entity with the given width, height and spacing.
-
-
+{-| Creates a "cloth" entity with the given width, height and spacing.
+-}
 makeCloth : Int -> Int -> Float -> Entity
 makeCloth w h spacing =
     let
@@ -555,10 +552,8 @@ makeCloth w h spacing =
         cloth.dots
 
 
-
--- Factory witch produces a pendulum, i.e. a body suspended from a fixed support.
-
-
+{-| Factory witch produces a pendulum, i.e. a body suspended from a fixed support.
+-}
 pendulumEntityMaker : EntityMaker
 pendulumEntityMaker () =
     let
@@ -576,10 +571,8 @@ pendulumEntityMaker () =
     }
 
 
-
--- Factory which produces 2 pendulums linked by a stick.
-
-
+{-| Factory which produces 2 pendulums linked by a stick.
+-}
 doublePendulumEntityMaker : EntityMaker
 doublePendulumEntityMaker () =
     let
@@ -615,10 +608,8 @@ doublePendulumEntityMaker () =
     }
 
 
-
--- Factory which produces a rope.
-
-
+{-| Factory which produces a rope.
+-}
 ropeEntityMaker : EntityMaker
 ropeEntityMaker () =
     let
@@ -666,10 +657,8 @@ ropeEntityMaker () =
         entity.dots
 
 
-
--- Factory which produces a necklace.
-
-
+{-| Factory which produces a necklace.
+-}
 necklaceEntityMaker : EntityMaker
 necklaceEntityMaker () =
     let
@@ -724,10 +713,8 @@ necklaceEntityMaker () =
         entity.dots
 
 
-
--- List of available simulations (entities, with associated factory function)
-
-
+{-| List of available simulations (entities, with associated factory function)
+-}
 simulations : List ( String, EntityMaker )
 simulations =
     [ ( "pendulum", pendulumEntityMaker )
