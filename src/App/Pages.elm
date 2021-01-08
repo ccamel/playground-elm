@@ -17,12 +17,10 @@ emptyNode =
     Html.text ""
 
 
-
--- PageSpec holds the whole specification about a page, including basic information (name, description, source) and a function
--- to the view and the subscriptions.
--- This way, it becomes easy to add new pages without changing the code everywhere.
-
-
+{-| PageSpec holds the whole specification about a page, including basic information (name, description, source) and a function
+to the view and the subscriptions.
+This way, it becomes easy to add new pages without changing the code everywhere.
+-}
 type alias PageSpec =
     { info : Page.Common.PageInfo Msg
     , view : Model -> Html Msg
@@ -59,10 +57,6 @@ toSubscriptions aPageSubscriptions pageMsg modelExtractor model =
         |> Maybe.withDefault Sub.none
 
 
-
--- toSpec: (Record {}) -> (Msg) -> (Model -> Html Msg) -> (Model -> Sub Msg) -> c -> (x -> y)
-
-
 toSpec info aPageView aPageSubscriptions pageMsg modelExtractor =
     let
         desc =
@@ -86,22 +80,22 @@ pageSpec page =
     case page of
         -- add new pages here (the code is a little bit tricky but does the job fine)
         About ->
-            toSpec Page.About.info Page.About.view Page.About.subscriptions (\x -> AboutPageMsg x) (\model -> model.aboutPage)
+            toSpec Page.About.info Page.About.view Page.About.subscriptions (\x -> AboutPageMsg x) (\model -> model.pages.aboutPage)
 
         Calc ->
-            toSpec Page.Calc.info Page.Calc.view Page.Calc.subscriptions (\x -> CalcPageMsg x) (\model -> model.calcPage)
+            toSpec Page.Calc.info Page.Calc.view Page.Calc.subscriptions (\x -> CalcPageMsg x) (\model -> model.pages.calcPage)
 
         Lissajous ->
-            toSpec Page.Lissajous.info Page.Lissajous.view Page.Lissajous.subscriptions LissajousPageMsg (\model -> model.lissajousPage)
+            toSpec Page.Lissajous.info Page.Lissajous.view Page.Lissajous.subscriptions LissajousPageMsg (\model -> model.pages.lissajousPage)
 
         DigitalClock ->
-            toSpec Page.DigitalClock.info Page.DigitalClock.view Page.DigitalClock.subscriptions DigitalClockPageMsg (\model -> model.digitalClockPage)
+            toSpec Page.DigitalClock.info Page.DigitalClock.view Page.DigitalClock.subscriptions DigitalClockPageMsg (\model -> model.pages.digitalClockPage)
 
         Maze ->
-            toSpec Page.Maze.info Page.Maze.view Page.Maze.subscriptions MazePageMsg (\model -> model.mazePage)
+            toSpec Page.Maze.info Page.Maze.view Page.Maze.subscriptions MazePageMsg (\model -> model.pages.mazePage)
 
         Physics ->
-            toSpec Page.Physics.info Page.Physics.view Page.Physics.subscriptions PhysicsPageMsg (\model -> model.physicsPage)
+            toSpec Page.Physics.info Page.Physics.view Page.Physics.subscriptions PhysicsPageMsg (\model -> model.pages.physicsPage)
 
 
 pageName : Page -> String

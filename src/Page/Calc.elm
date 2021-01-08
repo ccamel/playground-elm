@@ -163,10 +163,8 @@ update msg model =
                 |> Maybe.withDefault ( model, Cmd.none )
 
 
-
--- apply the given token to the model, computing a new state
-
-
+{-| apply the given token to the model, computing a new state
+-}
 apply : Token -> Model -> ( Model, Cmd Msg )
 apply token model =
     case model.state of
@@ -505,11 +503,9 @@ view model =
         ]
 
 
-
--- accept tells if the given token can be accepted regarding the current state (model)
--- used to find if a button should be enabled or disabled depending on the calc context.
-
-
+{-| accept tells if the given token can be accepted regarding the current state (model)
+used to find if a button should be enabled or disabled depending on the calc context.
+-}
 accept : Model -> Token -> Bool
 accept model token =
     case token of
@@ -585,10 +581,8 @@ display model =
             v
 
 
-
--- returns an html representation of the given token regarding the current state (model)
-
-
+{-| returns an html representation of the given token regarding the current state (model)
+-}
 button : Token -> Model -> Html Msg
 button token model =
     let

@@ -1,7 +1,7 @@
 module App.Update exposing (..)
 
 import App.Messages exposing (Msg(..), Page(..))
-import App.Models exposing (Model)
+import App.Models exposing (Model, emptyPagesModel)
 import App.Pages exposing (pageHash)
 import App.Routing exposing (Route(..), toRoute)
 import Browser
@@ -19,6 +19,10 @@ import Tuple exposing (first, second)
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    let
+        pages =
+            model.pages
+    in
     case msg of
         LinkClicked urlRequest ->
             case urlRequest of
@@ -34,7 +38,7 @@ update msg model =
                     toRoute model.flags.basePath location
 
                 clearedModel =
-                    { model | aboutPage = Nothing }
+                    { model | pages = emptyPagesModel }
 
                 ( aboutModel, aboutCmd ) =
                     Page.About.init
@@ -62,22 +66,22 @@ update msg model =
                     ( { clearedModel | route = newRoute }, Cmd.none )
 
                 Page About ->
-                    ( { clearedModel | route = newRoute, aboutPage = Just aboutModel }, Cmd.map AboutPageMsg aboutCmd )
+                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | aboutPage = Just aboutModel } }, Cmd.map AboutPageMsg aboutCmd )
 
                 Page Calc ->
-                    ( { clearedModel | route = newRoute, calcPage = Just calcModel }, Cmd.map CalcPageMsg calcCmd )
+                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | calcPage = Just calcModel } }, Cmd.map CalcPageMsg calcCmd )
 
                 Page Lissajous ->
-                    ( { clearedModel | route = newRoute, lissajousPage = Just lissajousModel }, Cmd.map LissajousPageMsg lissajousCmd )
+                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | lissajousPage = Just lissajousModel } }, Cmd.map LissajousPageMsg lissajousCmd )
 
                 Page DigitalClock ->
-                    ( { clearedModel | route = newRoute, digitalClockPage = Just digitalClockModel }, Cmd.map DigitalClockPageMsg digitalClockCmd )
+                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | digitalClockPage = Just digitalClockModel } }, Cmd.map DigitalClockPageMsg digitalClockCmd )
 
                 Page Maze ->
-                    ( { clearedModel | route = newRoute, mazePage = Just mazeModel }, Cmd.map MazePageMsg mazeCmd )
+                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | mazePage = Just mazeModel } }, Cmd.map MazePageMsg mazeCmd )
 
                 Page Physics ->
-                    ( { clearedModel | route = newRoute, physicsPage = Just physicsModel }, Cmd.map PhysicsPageMsg physicsCmd )
+                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | physicsPage = Just physicsModel } }, Cmd.map PhysicsPageMsg physicsCmd )
 
         GoToPage p ->
             ( model
@@ -92,66 +96,72 @@ update msg model =
         -- messages from pages
         AboutPageMsg m ->
             model
+                |> .pages
                 |> .aboutPage
                 |> Maybe.map (Page.About.update m)
                 |> Maybe.map
                     (adapt
-                        (\mdl -> { model | aboutPage = Just mdl })
+                        (\mdl -> { model | pages = { pages | aboutPage = Just mdl } })
                         (Cmd.map AboutPageMsg)
                     )
                 |> withDefault ( model, Cmd.none )
 
         CalcPageMsg m ->
             model
+                |> .pages
                 |> .calcPage
                 |> Maybe.map (Page.Calc.update m)
                 |> Maybe.map
                     (adapt
-                        (\mdl -> { model | calcPage = Just mdl })
+                        (\mdl -> { model | pages = { pages | calcPage = Just mdl } })
                         (Cmd.map CalcPageMsg)
                     )
                 |> withDefault ( model, Cmd.none )
 
         LissajousPageMsg m ->
             model
+                |> .pages
                 |> .lissajousPage
                 |> Maybe.map (Page.Lissajous.update m)
                 |> Maybe.map
                     (adapt
-                        (\mdl -> { model | lissajousPage = Just mdl })
+                        (\mdl -> { model | pages = { pages | lissajousPage = Just mdl } })
                         (Cmd.map LissajousPageMsg)
                     )
                 |> withDefault ( model, Cmd.none )
 
         DigitalClockPageMsg m ->
             model
+                |> .pages
                 |> .digitalClockPage
                 |> Maybe.map (Page.DigitalClock.update m)
                 |> Maybe.map
                     (adapt
-                        (\mdl -> { model | digitalClockPage = Just mdl })
+                        (\mdl -> { model | pages = { pages | digitalClockPage = Just mdl } })
                         (Cmd.map DigitalClockPageMsg)
                     )
                 |> withDefault ( model, Cmd.none )
 
         MazePageMsg m ->
             model
+                |> .pages
                 |> .mazePage
                 |> Maybe.map (Page.Maze.update m)
                 |> Maybe.map
                     (adapt
-                        (\mdl -> { model | mazePage = Just mdl })
+                        (\mdl -> { model | pages = { pages | mazePage = Just mdl } })
                         (Cmd.map MazePageMsg)
                     )
                 |> withDefault ( model, Cmd.none )
 
         PhysicsPageMsg m ->
             model
+                |> .pages
                 |> .physicsPage
                 |> Maybe.map (Page.Physics.update m)
                 |> Maybe.map
                     (adapt
-                        (\mdl -> { model | physicsPage = Just mdl })
+                        (\mdl -> { model | pages = { pages | physicsPage = Just mdl } })
                         (Cmd.map PhysicsPageMsg)
                     )
                 |> withDefault ( model, Cmd.none )

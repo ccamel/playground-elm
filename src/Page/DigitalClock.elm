@@ -217,19 +217,16 @@ view model =
         ]
 
 
-
--- segments code (7 segments display)
-{-
+{-| segments code (7 segments display)
       A
       -
    F |.| B   . H
    G  -
    E |.| C   . I
-      -
-      D
+
+
+D
 -}
-
-
 type Segment
     = A
     | B
@@ -259,10 +256,8 @@ type Figure
     | All
 
 
-
--- returns the segments that compose a given figure
-
-
+{-| returns the segments that compose a given figure
+-}
 figureToSegments : Figure -> List Segment
 figureToSegments fig =
     case fig of
@@ -426,10 +421,8 @@ timeToString zone date =
     interpolate pattern params
 
 
-
--- returns an SVG representation for the given segment decorated with the given svg attributes.
-
-
+{-| returns an SVG representation for the given segment decorated with the given svg attributes.
+-}
 segmentSvgView : List (Svg.Attribute msg) -> Segment -> Svg msg
 segmentSvgView attr segment =
     case segment of

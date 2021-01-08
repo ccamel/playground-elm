@@ -24,55 +24,44 @@ type alias Model =
     , navKey : Nav.Key
 
     -- models for pages
-    , aboutPage : Maybe Page.About.Model
-    , calcPage : Maybe Page.Calc.Model
-    , lissajousPage : Maybe Page.Lissajous.Model
-    , digitalClockPage : Maybe Page.DigitalClock.Model
-    , mazePage : Maybe Page.Maze.Model
-    , physicsPage : Maybe Page.Physics.Model
+    , pages :
+        { aboutPage : Maybe Page.About.Model
+        , calcPage : Maybe Page.Calc.Model
+        , lissajousPage : Maybe Page.Lissajous.Model
+        , digitalClockPage : Maybe Page.DigitalClock.Model
+        , mazePage : Maybe Page.Maze.Model
+        , physicsPage : Maybe Page.Physics.Model
+        }
     }
 
 
 initialModel : Flags -> Nav.Key -> Route -> ( Model, Cmd App.Messages.Msg )
 initialModel flags navKey route =
-    let
-        ( aboutModel, aboutCmd ) =
-            Page.About.init
-
-        ( calcModel, calcCmd ) =
-            Page.Calc.init
-
-        ( lissajousModel, lissajousCmd ) =
-            Page.Lissajous.init
-
-        ( mazeModel, mazeCmd ) =
-            Page.Maze.init
-
-        ( digitalClockModel, digitalClockCmd ) =
-            Page.DigitalClock.init
-
-        ( physicsModel, physicsCmd ) =
-            Page.Physics.init
-    in
     ( { flags = flags
       , route = route
       , navKey = navKey
 
       -- models for pages
-      , aboutPage = Just aboutModel
-      , calcPage = Just calcModel
-      , lissajousPage = Just lissajousModel
-      , digitalClockPage = Just digitalClockModel
-      , mazePage = Just mazeModel
-      , physicsPage = Just physicsModel
+      , pages = emptyPagesModel
       }
-    , batch
-        [ -- commands for pages
-          Cmd.map AboutPageMsg aboutCmd
-        , Cmd.map CalcPageMsg calcCmd
-        , Cmd.map LissajousPageMsg lissajousCmd
-        , Cmd.map DigitalClockPageMsg digitalClockCmd
-        , Cmd.map MazePageMsg mazeCmd
-        , Cmd.map PhysicsPageMsg physicsCmd
-        ]
+    , Cmd.none
+      --batch
+      --    [ -- commands for pages
+      --      Cmd.map AboutPageMsg aboutCmd
+      --    , Cmd.map CalcPageMsg calcCmd
+      --    , Cmd.map LissajousPageMsg lissajousCmd
+      --    , Cmd.map DigitalClockPageMsg digitalClockCmd
+      --    , Cmd.map MazePageMsg mazeCmd
+      --    , Cmd.map PhysicsPageMsg physicsCmd
+      --    ]
     )
+
+
+emptyPagesModel =
+    { aboutPage = Nothing
+    , calcPage = Nothing
+    , lissajousPage = Nothing
+    , digitalClockPage = Nothing
+    , mazePage = Nothing
+    , physicsPage = Nothing
+    }
