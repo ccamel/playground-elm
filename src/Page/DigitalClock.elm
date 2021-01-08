@@ -223,8 +223,9 @@ view model =
    F |.| B   . H
    G  -
    E |.| C   . I
-      -
-      D
+
+
+D
 -}
 type Segment
     = A
