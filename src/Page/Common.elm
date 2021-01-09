@@ -141,6 +141,11 @@ resetBoundedArray { capacity, default } =
     createBoundedArray capacity default
 
 
+resizeBoundedArray : Int -> BoundedArray a -> BoundedArray a
+resizeBoundedArray capacity { default } =
+    createBoundedArray capacity default
+
+
 {-| frames holds a sequence of times.
 the list is bounded to accept a max number of elements -> inserting a new only discards the oldest one
 -}
