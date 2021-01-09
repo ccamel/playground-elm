@@ -29,7 +29,7 @@ info =
     { name = "lissajous"
     , hash = "lissajous"
     , description = Markdown.toHtml [ class "info" ] """
-Animated [Lissajous figures](https://en.wikipedia.org/wiki/Lissajouss_curve).
+Animated [Lissajous figures](https://en.wikipedia.org/wiki/Lissajous_curve).
 
 This demo allows to visualize Lissajous curves in motion and adjust some parameters in real-time.
 
@@ -281,7 +281,7 @@ view model =
     div [ class "container animated flipInX" ]
         [ hr [] []
         , Markdown.toHtml [ class "info" ] """
-##### Animated [Lissajouss figures](https://en.wikipedia.org/wiki/Lissajouss_curve) using [Scalable Vector Graphics](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) (SVG).
+##### Animated [Lissajous figures](https://en.wikipedia.org/wiki/Lissajous_curve) using [Scalable Vector Graphics](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) (SVG).
                     """
         , br [] []
         , div [ class "row display" ]
