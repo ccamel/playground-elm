@@ -1,7 +1,7 @@
 module App.Update exposing (..)
 
 import App.Messages exposing (Msg(..), Page(..))
-import App.Models exposing (Model, emptyPagesModel)
+import App.Models exposing (Flags, Model, emptyPagesModel)
 import App.Pages exposing (pageHash)
 import App.Routing exposing (Route(..), toRoute)
 import Browser
@@ -165,6 +165,29 @@ update msg model =
                         (Cmd.map PhysicsPageMsg)
                     )
                 |> withDefault ( model, Cmd.none )
+
+
+initialModel : Flags -> Nav.Key -> Route -> ( Model, Cmd App.Messages.Msg )
+initialModel flags navKey route =
+    let
+        model =
+            { flags = flags
+            , route = route
+            , navKey = navKey
+
+            -- models for pages
+            , pages = emptyPagesModel
+            }
+    in
+    case route of
+        NotFoundRoute ->
+            update GoToHome model
+
+        Home ->
+            update GoToHome model
+
+        Page p ->
+            update (GoToPage p) model
 
 
 adapt : (m -> Model) -> (Cmd a -> Cmd Msg) -> ( m, Cmd a ) -> ( Model, Cmd Msg )
