@@ -1,6 +1,7 @@
 module Page.Common exposing (..)
 
 import Array exposing (Array, foldl, get, indexedMap)
+import Basics.Extra exposing (flip)
 import Color exposing (Color, fromRgba, toRgba)
 import FormatNumber exposing (format)
 import FormatNumber.Locales exposing (Locale, usLocale)
@@ -94,43 +95,72 @@ indexOf array elem =
     indexOfHelper array elem 0
 
 
+type alias BoundedArray a =
+    { values : Array a
+    , length : Int
+    , capacity : Int
+    , default : () -> a
+    }
+
+
+{-| append a value to the end of the bounded array.
+if length of the array has reached the capacity, the elements are shifted to the left to make
+a new place for the inserted value.
+-}
+appendToBoundedArray : a -> BoundedArray a -> BoundedArray a
+appendToBoundedArray value ({ values, length, capacity, default } as array) =
+    let
+        withDefaultValue =
+            withDefault (default ())
+
+        shiftLeft i _ =
+            get (i + 1) values |> withDefaultValue
+
+        ( shiftedValues, newLength ) =
+            if length == capacity then
+                ( indexedMap shiftLeft values
+                , capacity - 1
+                )
+
+            else
+                ( values, length )
+    in
+    { array
+        | values = Array.set newLength value shiftedValues
+        , length = newLength + 1
+    }
+
+
+createBoundedArray : Int -> (() -> a) -> BoundedArray a
+createBoundedArray capacity default =
+    { values = Array.initialize capacity (always <| default ()), length = 0, capacity = capacity, default = default }
+
+
+resetBoundedArray : BoundedArray a -> BoundedArray a
+resetBoundedArray { capacity, default } =
+    createBoundedArray capacity default
+
+
 {-| frames holds a sequence of times.
 the list is bounded to accept a max number of elements -> inserting a new only discards the oldest one
 -}
 type alias Frames =
-    { times : Array Float
-    , length : Int
-    , capacity : Int
-    }
+    BoundedArray Float
 
 
 createFrames : Int -> Frames
-createFrames capacity =
-    { times = Array.initialize capacity (always 0), length = 0, capacity = capacity }
+createFrames =
+    flip createBoundedArray (\_ -> 0.0)
 
 
 addFrame : Frames -> Float -> Frames
-addFrame frames time =
-    let
-        ( times, length ) =
-            if frames.length == frames.capacity then
-                ( frames.times
-                    |> indexedMap (\i _ -> get (i + 1) frames.times |> withDefault 0.0)
-                , frames.capacity - 1
-                )
-
-            else
-                ( frames.times, frames.length )
-    in
-    { frames
-        | times = Array.set length time times
-        , length = length + 1
-    }
+addFrame =
+    flip appendToBoundedArray
 
 
 resetFrames : Frames -> Frames
-resetFrames { capacity } =
-    createFrames capacity
+resetFrames =
+    resetBoundedArray
 
 
 {-| compute the FPS from the given fps set (if possible)
@@ -138,7 +168,7 @@ resetFrames { capacity } =
 fps : Frames -> Maybe Float
 fps frames =
     if frames.length > 1 then
-        frames.times
+        frames.values
             |> foldl (+) 0
             |> (/) (toFloat frames.length)
             |> (*) 1000.0
