@@ -1,5 +1,6 @@
 module Page.Lissajous exposing (..)
 
+import Array
 import Basics.Extra exposing (flip)
 import Browser.Events exposing (onAnimationFrameDelta)
 import Color exposing (green, red, rgb255, toCssString)
@@ -9,10 +10,10 @@ import GraphicSVG.Widget as Widget
 import Html exposing (Html, a, br, button, div, hr, input, p, span, text)
 import Html.Attributes exposing (attribute, class, href, id, name, size, step, style, type_, value)
 import Html.Events exposing (onInput)
-import List exposing (concatMap, map, range)
+import List exposing (concat, concatMap, filterMap, indexedMap, map, range)
 import Markdown
 import Maybe
-import Page.Common exposing (Frames, addFrame, createFrames, fpsText, onClickNotPropagate, resetFrames, strToFloatWithMinMax, strToIntWithMinMax)
+import Page.Common exposing (BoundedArray, Frames, addFrame, appendToBoundedArray, createBoundedArray, createFrames, fpsText, onClickNotPropagate, resetBoundedArray, resetFrames, resizeBoundedArray, strToFloatWithMinMax, strToIntWithMinMax)
 import Platform.Cmd exposing (batch)
 import Round
 import String exposing (fromFloat, fromInt)
@@ -29,7 +30,7 @@ info =
     { name = "lissajous"
     , hash = "lissajous"
     , description = Markdown.toHtml [ class "info" ] """
-Animated [Lissajous figures](https://en.wikipedia.org/wiki/Lissajouss_curve).
+Animated [Lissajous figures](https://en.wikipedia.org/wiki/Lissajous_curve).
 
 This demo allows to visualize Lissajous curves in motion and adjust some parameters in real-time.
 
@@ -65,8 +66,16 @@ type alias Model =
     -- resolution of the line - i.e. total number of points to draw the curve (1 period), more is best
     , resolution : Int
 
+    -- the afterglow effect (0: none)
+    , afterglow : Int
+
+    -- the list of stencils that represents the shapes of the lissajous figures, during time
+    , lissajousStencils : BoundedArray (Maybe Stencil)
+
     -- a list containing n last ticks, used to compute the fps (frame per seconds)
     , ticks : Frames
+
+    -- the foreground color picker
     , foregroundColorPicker : ColorPicker.State
 
     -- widget underlying model
@@ -83,6 +92,9 @@ type alias LineStyle =
 init : ( Model, Cmd Msg )
 init =
     let
+        initialAfterGlow =
+            0
+
         ( widgetModel, widgetCmd ) =
             Widget.init (toFloat constants.width) (toFloat constants.height) "lissajous"
     in
@@ -92,7 +104,9 @@ init =
       , vp = 1
       , started = True
       , curveStyle = { color = Color.rgb255 31 122 31, lineType = solid 2 }
-      , resolution = 500
+      , resolution = 400
+      , afterglow = initialAfterGlow
+      , lissajousStencils = createBoundedArray (initialAfterGlow + 1) (\_ -> Nothing)
       , ticks = createFrames 20 -- initial capacity
       , foregroundColorPicker = ColorPicker.empty
       , widgetState = widgetModel
@@ -117,6 +131,7 @@ type Msg
     | SetBParameter String
     | SetResolution String
     | SetPhase String
+    | SetAfterglow String
     | ForegroundColorPickerMsg ColorPicker.Msg
     | WidgetMessage Widget.Msg
     | Batch (List Msg)
@@ -136,10 +151,14 @@ update msg model =
                     model.p
                         + (diff * model.vp * 2 * 360 / 60000)
                         |> modulo 180
+
+                lissajousStencils =
+                    appendToBoundedArray (Just <| lissajous model.a model.b (toRadian model.p) model.resolution) model.lissajousStencils
             in
             ( { model
                 | p = v
                 , ticks = addFrame model.ticks diff
+                , lissajousStencils = lissajousStencils
               }
             , Cmd.none
             )
@@ -206,6 +225,19 @@ update msg model =
 
             else
                 ( model, Cmd.none )
+
+        SetAfterglow s ->
+            ( case strToIntWithMinMax s 0 10 of
+                Just v ->
+                    { model
+                        | afterglow = v
+                        , lissajousStencils = resizeBoundedArray (v + 1) model.lissajousStencils
+                    }
+
+                Nothing ->
+                    model
+            , Cmd.none
+            )
 
         ForegroundColorPickerMsg msgf ->
             let
@@ -281,24 +313,57 @@ view model =
     div [ class "container animated flipInX" ]
         [ hr [] []
         , Markdown.toHtml [ class "info" ] """
-##### Animated [Lissajouss figures](https://en.wikipedia.org/wiki/Lissajouss_curve) using [Scalable Vector Graphics](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) (SVG).
+##### Animated [Lissajous figures](https://en.wikipedia.org/wiki/Lissajous_curve) using [Scalable Vector Graphics](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) (SVG).
                     """
         , br [] []
         , div [ class "row display" ]
             [ -- canvas for the lissajous
               div [ id "lissajous-scope col-sm-6", style "width" (toPixels constants.width), style "height" (toPixels constants.height) ]
                 [ Widget.view model.widgetState
-                    [ backgroundForm (rgb255 0 0 0)
-                    , xAxisForm
-                    , yAxisForm
-                    , lissajous model.a model.b (toRadian model.p) model.resolution
-                        |> outlined model.curveStyle.lineType (toSvgColor model.curveStyle.color)
-                    , fpsText model.ticks
-                        |> GraphicSVG.text
-                        |> fixedwidth
-                        |> filled (Color.rgb255 217 217 217 |> toSvgColor)
-                        |> move ( (constants.height // 2) - (constants.margin + 20) |> toFloat, (constants.width - 20) // 2 |> toFloat )
-                    ]
+                    (concat
+                        [ [ backgroundForm (rgb255 0 0 0)
+                          , xAxisForm
+                          , yAxisForm
+                          ]
+                        , model.lissajousStencils.values
+                            |> Array.toList
+                            |> filterMap identity
+                            |> indexedMap
+                                (\i s ->
+                                    let
+                                        length =
+                                            model.lissajousStencils.length
+
+                                        f =
+                                            if length == 0 then
+                                                0.0
+
+                                            else if length == i + 1 then
+                                                1.0
+
+                                            else
+                                                toFloat (i + 1) / toFloat length / 1.5
+
+                                        color =
+                                            model.curveStyle.color |> fadeColor f |> toSvgColor
+
+                                        lineType =
+                                            if length == i + 1 then
+                                                model.curveStyle.lineType
+
+                                            else
+                                                solid 3
+                                    in
+                                    outlined lineType color s
+                                )
+                        , [ fpsText model.ticks
+                                |> GraphicSVG.text
+                                |> fixedwidth
+                                |> filled (Color.rgb255 217 217 217 |> toSvgColor)
+                                |> move ( (constants.height // 2) - (constants.margin + 20) |> toFloat, (constants.width - 20) // 2 |> toFloat )
+                          ]
+                        ]
+                    )
                 ]
             , div [ class "description col-sm-6" ]
                 [ p []
@@ -406,6 +471,19 @@ view model =
                             [ ColorPicker.view model.curveStyle.color model.foregroundColorPicker |> Html.map ForegroundColorPickerMsg ]
                         ]
                     , text " (click to change)."
+                    ]
+                , p [ class "form-inline" ]
+                    [ text "The afterglow effect is "
+                    , input
+                        [ class "input-number"
+                        , name "afterglow"
+                        , type_ "number"
+                        , size 3
+                        , value (fromInt model.afterglow)
+                        , onInput SetAfterglow
+                        ]
+                        []
+                    , text " (0 means no after glow)."
                     ]
                 , p []
                     [ text "The animation consists in shifting the phase by "
@@ -565,7 +643,19 @@ toSvgColor c =
         { red, green, blue, alpha } =
             Color.toRgba c
     in
-    GraphicSVG.rgb (255.0 * red) (255.0 * green) (255.0 * blue)
+    GraphicSVG.rgba (255.0 * red) (255.0 * green) (255.0 * blue) alpha
+
+
+fadeColor : Float -> Color.Color -> Color.Color
+fadeColor f c =
+    let
+        hsla =
+            Color.toHsla c
+    in
+    Color.fromHsla
+        { hsla
+            | lightness = hsla.lightness * f
+        }
 
 
 sendMsg : msg -> Cmd msg
