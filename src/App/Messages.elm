@@ -7,6 +7,7 @@ import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
 import Page.Physics
+import Page.Term
 import Url exposing (Url)
 
 
@@ -17,6 +18,7 @@ type Page
     | DigitalClock
     | Maze
     | Physics
+    | Term
 
 
 type Msg
@@ -31,3 +33,4 @@ type Msg
     | DigitalClockPageMsg Page.DigitalClock.Msg
     | MazePageMsg Page.Maze.Msg
     | PhysicsPageMsg Page.Physics.Msg
+    | TermPageMsg Page.Term.Msg

@@ -209,7 +209,6 @@ pageCard _ page =
         ]
 
 
-
 {-| the special not found view displayed when routing has found no matching
 -}
 notFoundView : Html msg
@@ -228,7 +227,6 @@ notFoundView =
                 ]
             ]
         ]
-
 
 
 {-| returns the html anchor ('a') that denotes a link to the code source of the given page.

@@ -8,6 +8,7 @@ import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
 import Page.Physics
+import Page.Term
 
 
 type alias Flags =
@@ -29,6 +30,7 @@ type alias Model =
         , digitalClockPage : Maybe Page.DigitalClock.Model
         , mazePage : Maybe Page.Maze.Model
         , physicsPage : Maybe Page.Physics.Model
+        , termPage : Maybe Page.Term.Model
         }
     }
 
@@ -40,4 +42,5 @@ emptyPagesModel =
     , digitalClockPage = Nothing
     , mazePage = Nothing
     , physicsPage = Nothing
+    , termPage = Nothing
     }

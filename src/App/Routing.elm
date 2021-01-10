@@ -7,6 +7,7 @@ import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
 import Page.Physics
+import Page.Term
 import Url exposing (Url)
 import Url.Parser exposing (..)
 
@@ -49,6 +50,9 @@ parseFragment fragment =
 
             else if p == Page.Physics.info.name then
                 Page Physics
+
+            else if p == Page.Term.info.name then
+                Page Term
 
             else
                 NotFoundRoute

@@ -13,6 +13,7 @@ import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
 import Page.Physics
+import Page.Term
 import String exposing (cons)
 import Tuple exposing (first, second)
 
@@ -57,6 +58,9 @@ update msg model =
 
                 ( physicsModel, physicsCmd ) =
                     Page.Physics.init
+
+                ( termModel, termCmd ) =
+                    Page.Term.init
             in
             case newRoute of
                 NotFoundRoute ->
@@ -82,6 +86,9 @@ update msg model =
 
                 Page Physics ->
                     ( { clearedModel | route = newRoute, pages = { emptyPagesModel | physicsPage = Just physicsModel } }, Cmd.map PhysicsPageMsg physicsCmd )
+
+                Page Term ->
+                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | termPage = Just termModel } }, Cmd.map TermPageMsg termCmd )
 
         GoToPage p ->
             ( model
@@ -163,6 +170,18 @@ update msg model =
                     (adapt
                         (\mdl -> { model | pages = { pages | physicsPage = Just mdl } })
                         (Cmd.map PhysicsPageMsg)
+                    )
+                |> withDefault ( model, Cmd.none )
+
+        TermPageMsg m ->
+            model
+                |> .pages
+                |> .termPage
+                |> Maybe.map (Page.Term.update m)
+                |> Maybe.map
+                    (adapt
+                        (\mdl -> { model | pages = { pages | termPage = Just mdl } })
+                        (Cmd.map TermPageMsg)
                     )
                 |> withDefault ( model, Cmd.none )
 
