@@ -17,21 +17,24 @@ type alias Flags =
     }
 
 
+type alias PagesModel =
+    { aboutPage : Maybe Page.About.Model
+    , calcPage : Maybe Page.Calc.Model
+    , lissajousPage : Maybe Page.Lissajous.Model
+    , digitalClockPage : Maybe Page.DigitalClock.Model
+    , mazePage : Maybe Page.Maze.Model
+    , physicsPage : Maybe Page.Physics.Model
+    , termPage : Maybe Page.Term.Model
+    }
+
+
 type alias Model =
     { flags : Flags
     , route : Route
     , navKey : Nav.Key
 
     -- models for pages
-    , pages :
-        { aboutPage : Maybe Page.About.Model
-        , calcPage : Maybe Page.Calc.Model
-        , lissajousPage : Maybe Page.Lissajous.Model
-        , digitalClockPage : Maybe Page.DigitalClock.Model
-        , mazePage : Maybe Page.Maze.Model
-        , physicsPage : Maybe Page.Physics.Model
-        , termPage : Maybe Page.Term.Model
-        }
+    , pages : PagesModel
     }
 
 
