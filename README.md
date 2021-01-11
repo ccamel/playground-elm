@@ -105,6 +105,20 @@ using elementary functions from the fantastic [joakin/elm-canvas](https://packag
   <img src="doc/assets/showcase-physics-necklace.png" width="300">
 </p>
 
+### Term
+
+A basic terminal ([wsowens/term](https://github.com/wsowens/term)) which simply executes Javascript commands.
+
+💡 Shows interoperability between [elm][] environment and JavaScript through [ports](https://guide.elm-lang.org/interop/ports.html).
+
+<p align="center">
+  <b>Links:</b><br>
+  <a href="https://ccamel.github.io/playground-elm/#term">Play</a> |
+  <a href="https://github.com/ccamel/playground-elm/blob/master/src/Page/Term.elm">Code</a>
+  <br><br>
+  <kbd><img src="doc/assets/showcase-term.png"></kbd>
+</p>
+
 ## 🛠 Building and Running
 
 ### Elm 0.19
