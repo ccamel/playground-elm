@@ -10,6 +10,7 @@ import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
 import Page.Physics
+import Page.Term
 
 
 emptyNode : Html msg
@@ -38,6 +39,7 @@ pages =
     , DigitalClock
     , Maze
     , Physics
+    , Term
     ]
 
 
@@ -96,6 +98,9 @@ pageSpec page =
 
         Physics ->
             toSpec Page.Physics.info Page.Physics.view Page.Physics.subscriptions PhysicsPageMsg (\model -> model.pages.physicsPage)
+
+        Term ->
+            toSpec Page.Term.info Page.Term.view Page.Term.subscriptions TermPageMsg (\model -> model.pages.termPage)
 
 
 pageName : Page -> String

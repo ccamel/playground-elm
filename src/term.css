@@ -1,0 +1,208 @@
+/*
+see: https://raw.githubusercontent.com/wsowens/term/master/examples/example.css
+*/
+#term-url-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  background-color: #2472c8;
+  color: #e5e5e5;
+  padding: 0 1%;
+  font-family: monospace;
+  font-size: medium;
+}
+
+#term-url-input {
+  background-color: inherit;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  border: none;
+  width: 60%;
+}
+
+.term {
+  /* for centering the term elements */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  text-align: left;
+
+  /* allow the user to resize the terminal at will */
+  resize: both;
+  overflow: hidden;
+
+  /* establish the font for measurement purposes */
+  font-size: x-large;
+  font-family: monospace;
+
+  padding-left: 0.01em; /* fix characters getting cut off */
+
+  min-width: 82ch;
+  width: 82ch;
+  height: 30ch;
+}
+
+.term-element {
+  /* establish the font */
+  font-family: inherit;
+  font-size: inherit;
+  width: 100%;
+  /* outline: 5px solid red; /* for debugging */
+}
+
+#term-input,
+#term-output {
+  /* nice dark theme colors */
+  color: #e5e5e5;
+  background-color: #1e1e1e;
+  white-space: pre-wrap; /*wrap-lines, but preserve lines and spaces/tabs */
+}
+
+/* establishing height and dimensions */
+#term-input {
+  resize: none;
+  /* term-input is kept at about 1 line */
+  min-height: 2em;
+  max-height: 2em;
+  overflow-y: auto; /* no scrollbar */
+}
+
+#term-output {
+  overflow: hidden scroll;
+  overflow-wrap: break-word;
+  flex-grow: 1;
+}
+
+/* CLASSES FOR ANSI-ESCAPE CODE FORMATTING */
+/* text decoration classes */
+.term-bold {
+  font-weight: bold;
+}
+.term-italic {
+  font-style: italic;
+}
+.term-underline {
+  text-decoration: underline;
+}
+.term-blink {
+  animation: blinking 1s steps(1, end) infinite;
+}
+@keyframes blinking {
+  50% {
+    opacity: 0;
+  }
+}
+/* in case default is selected, we need to swap these colors */
+.term-reverse {
+  background-color: #e5e5e5;
+  color: #1e1e1e;
+}
+.term-strike {
+  text-decoration: line-through;
+}
+/* extra class since term-underline and term-strike cannot stack */
+.term-underline-strike {
+  text-decoration: underline line-through;
+}
+
+/* foreground colors */
+.term-black {
+  color: #1e1e1e;
+}
+.term-red {
+  color: #cd3131;
+}
+.term-green {
+  color: #0dbc79;
+}
+.term-yellow {
+  color: #e5e510;
+}
+.term-blue {
+  color: #2472c8;
+}
+.term-magenta {
+  color: #bc3fbc;
+}
+.term-cyan {
+  color: #11a8cd;
+}
+.term-white {
+  color: #e5e5e5;
+}
+.term-bright-black {
+  color: #666666;
+}
+.term-bright-red {
+  color: #f14c4c;
+}
+.term-bright-green {
+  color: #23d18b;
+}
+.term-bright-yellow {
+  color: #f5f543;
+}
+.term-bright-blue {
+  color: #3b8eea;
+}
+.term-bright-magenta {
+  color: #d670d6;
+}
+.term-bright-cyan {
+  color: #29b8db;
+}
+.term-bright-white {
+  color: #e5e5e5;
+}
+
+/* background colors */
+.term-black-bg {
+  background-color: #1e1e1e;
+}
+.term-red-bg {
+  background-color: #cd3131;
+}
+.term-green-bg {
+  background-color: #0dbc79;
+}
+.term-yellow-bg {
+  background-color: #e5e510;
+}
+.term-blue-bg {
+  background-color: #2472c8;
+}
+.term-magenta-bg {
+  background-color: #bc3fbc;
+}
+.term-cyan-bg {
+  background-color: #11a8cd;
+}
+.term-white-bg {
+  background-color: #e5e5e5;
+}
+.term-bright-black-bg {
+  background-color: #666666;
+}
+.term-bright-red-bg {
+  background-color: #f14c4c;
+}
+.term-bright-green-bg {
+  background-color: #23d18b;
+}
+.term-bright-yellow-bg {
+  background-color: #f5f543;
+}
+.term-bright-blue-bg {
+  background-color: #3b8eea;
+}
+.term-bright-magenta-bg {
+  background-color: #d670d6;
+}
+.term-bright-cyan-bg {
+  background-color: #29b8db;
+}
+.term-bright-white-bg {
+  background-color: #e5e5e5;
+}

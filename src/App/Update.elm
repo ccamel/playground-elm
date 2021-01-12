@@ -1,7 +1,7 @@
 module App.Update exposing (..)
 
 import App.Messages exposing (Msg(..), Page(..))
-import App.Models exposing (Flags, Model, emptyPagesModel)
+import App.Models exposing (Flags, Model, PagesModel, emptyPagesModel)
 import App.Pages exposing (pageHash)
 import App.Routing exposing (Route(..), toRoute)
 import Browser
@@ -13,6 +13,7 @@ import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
 import Page.Physics
+import Page.Term
 import String exposing (cons)
 import Tuple exposing (first, second)
 
@@ -57,6 +58,9 @@ update msg model =
 
                 ( physicsModel, physicsCmd ) =
                     Page.Physics.init
+
+                ( termModel, termCmd ) =
+                    Page.Term.init
             in
             case newRoute of
                 NotFoundRoute ->
@@ -83,6 +87,9 @@ update msg model =
                 Page Physics ->
                     ( { clearedModel | route = newRoute, pages = { emptyPagesModel | physicsPage = Just physicsModel } }, Cmd.map PhysicsPageMsg physicsCmd )
 
+                Page Term ->
+                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | termPage = Just termModel } }, Cmd.map TermPageMsg termCmd )
+
         GoToPage p ->
             ( model
             , pageHash p
@@ -95,76 +102,25 @@ update msg model =
 
         -- messages from pages
         AboutPageMsg m ->
-            model
-                |> .pages
-                |> .aboutPage
-                |> Maybe.map (Page.About.update m)
-                |> Maybe.map
-                    (adapt
-                        (\mdl -> { model | pages = { pages | aboutPage = Just mdl } })
-                        (Cmd.map AboutPageMsg)
-                    )
-                |> withDefault ( model, Cmd.none )
+            convert model m .aboutPage Page.About.update (\mdl -> { model | pages = { pages | aboutPage = Just mdl } }) AboutPageMsg
 
         CalcPageMsg m ->
-            model
-                |> .pages
-                |> .calcPage
-                |> Maybe.map (Page.Calc.update m)
-                |> Maybe.map
-                    (adapt
-                        (\mdl -> { model | pages = { pages | calcPage = Just mdl } })
-                        (Cmd.map CalcPageMsg)
-                    )
-                |> withDefault ( model, Cmd.none )
+            convert model m .calcPage Page.Calc.update (\mdl -> { model | pages = { pages | calcPage = Just mdl } }) CalcPageMsg
 
         LissajousPageMsg m ->
-            model
-                |> .pages
-                |> .lissajousPage
-                |> Maybe.map (Page.Lissajous.update m)
-                |> Maybe.map
-                    (adapt
-                        (\mdl -> { model | pages = { pages | lissajousPage = Just mdl } })
-                        (Cmd.map LissajousPageMsg)
-                    )
-                |> withDefault ( model, Cmd.none )
+            convert model m .lissajousPage Page.Lissajous.update (\mdl -> { model | pages = { pages | lissajousPage = Just mdl } }) LissajousPageMsg
 
         DigitalClockPageMsg m ->
-            model
-                |> .pages
-                |> .digitalClockPage
-                |> Maybe.map (Page.DigitalClock.update m)
-                |> Maybe.map
-                    (adapt
-                        (\mdl -> { model | pages = { pages | digitalClockPage = Just mdl } })
-                        (Cmd.map DigitalClockPageMsg)
-                    )
-                |> withDefault ( model, Cmd.none )
+            convert model m .digitalClockPage Page.DigitalClock.update (\mdl -> { model | pages = { pages | digitalClockPage = Just mdl } }) DigitalClockPageMsg
 
         MazePageMsg m ->
-            model
-                |> .pages
-                |> .mazePage
-                |> Maybe.map (Page.Maze.update m)
-                |> Maybe.map
-                    (adapt
-                        (\mdl -> { model | pages = { pages | mazePage = Just mdl } })
-                        (Cmd.map MazePageMsg)
-                    )
-                |> withDefault ( model, Cmd.none )
+            convert model m .mazePage Page.Maze.update (\mdl -> { model | pages = { pages | mazePage = Just mdl } }) MazePageMsg
 
         PhysicsPageMsg m ->
-            model
-                |> .pages
-                |> .physicsPage
-                |> Maybe.map (Page.Physics.update m)
-                |> Maybe.map
-                    (adapt
-                        (\mdl -> { model | pages = { pages | physicsPage = Just mdl } })
-                        (Cmd.map PhysicsPageMsg)
-                    )
-                |> withDefault ( model, Cmd.none )
+            convert model m .physicsPage Page.Physics.update (\mdl -> { model | pages = { pages | physicsPage = Just mdl } }) PhysicsPageMsg
+
+        TermPageMsg m ->
+            convert model m .termPage Page.Term.update (\mdl -> { model | pages = { pages | termPage = Just mdl } }) TermPageMsg
 
 
 initialModel : Flags -> Nav.Key -> Route -> ( Model, Cmd App.Messages.Msg )
@@ -188,6 +144,20 @@ initialModel flags navKey route =
 
         Page p ->
             update (GoToPage p) model
+
+
+convert : Model -> b -> (PagesModel -> Maybe.Maybe a) -> (b -> a -> ( m, Cmd c )) -> (m -> Model) -> (c -> Msg) -> ( Model, Cmd Msg )
+convert model m selector2 updater applier msg =
+    model
+        |> .pages
+        |> selector2
+        |> Maybe.map (updater m)
+        |> Maybe.map
+            (adapt
+                applier
+                (Cmd.map msg)
+            )
+        |> withDefault ( model, Cmd.none )
 
 
 adapt : (m -> Model) -> (Cmd a -> Cmd Msg) -> ( m, Cmd a ) -> ( Model, Cmd Msg )

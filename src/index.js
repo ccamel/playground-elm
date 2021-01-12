@@ -12,12 +12,18 @@ require("./calc.css");
 require("./lissajous.css");
 require("./digital-clock.css");
 require("./maze.css");
+require("./term.css");
 
 const { Elm } = require("./Main.elm");
 const basePath = new URL(document.baseURI).pathname;
 const version = (document.querySelector('meta[name="version"]') || {}).content ?? "?";
 
-Elm.Main.init({
+const app = Elm.Main.init({
   node: document.querySelector("main"),
   flags: { basePath, version },
 });
+
+// -- for Elm ports
+
+const { registerPorts } = require("./term.js");
+registerPorts(app);

@@ -8,11 +8,23 @@ import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
 import Page.Physics
+import Page.Term
 
 
 type alias Flags =
     { basePath : String
     , version : String
+    }
+
+
+type alias PagesModel =
+    { aboutPage : Maybe Page.About.Model
+    , calcPage : Maybe Page.Calc.Model
+    , lissajousPage : Maybe Page.Lissajous.Model
+    , digitalClockPage : Maybe Page.DigitalClock.Model
+    , mazePage : Maybe Page.Maze.Model
+    , physicsPage : Maybe Page.Physics.Model
+    , termPage : Maybe Page.Term.Model
     }
 
 
@@ -22,14 +34,7 @@ type alias Model =
     , navKey : Nav.Key
 
     -- models for pages
-    , pages :
-        { aboutPage : Maybe Page.About.Model
-        , calcPage : Maybe Page.Calc.Model
-        , lissajousPage : Maybe Page.Lissajous.Model
-        , digitalClockPage : Maybe Page.DigitalClock.Model
-        , mazePage : Maybe Page.Maze.Model
-        , physicsPage : Maybe Page.Physics.Model
-        }
+    , pages : PagesModel
     }
 
 
@@ -40,4 +45,5 @@ emptyPagesModel =
     , digitalClockPage = Nothing
     , mazePage = Nothing
     , physicsPage = Nothing
+    , termPage = Nothing
     }
