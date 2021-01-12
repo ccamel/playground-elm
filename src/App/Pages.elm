@@ -4,6 +4,7 @@ import App.Messages exposing (Msg(..), Page(..))
 import App.Models exposing (Model)
 import Html exposing (Html)
 import Page.About
+import Page.Asteroids
 import Page.Calc
 import Page.Common
 import Page.DigitalClock
@@ -40,6 +41,7 @@ pages =
     , Maze
     , Physics
     , Term
+    , Asteroids
     ]
 
 
@@ -101,6 +103,9 @@ pageSpec page =
 
         Term ->
             toSpec Page.Term.info Page.Term.view Page.Term.subscriptions TermPageMsg (\model -> model.pages.termPage)
+
+        Asteroids ->
+            toSpec Page.Asteroids.info Page.Asteroids.view Page.Asteroids.subscriptions AsteroidsPageMsg (\model -> model.pages.asteroidsPage)
 
 
 pageName : Page -> String

@@ -3,6 +3,7 @@ module App.Models exposing (..)
 import App.Routing exposing (..)
 import Browser.Navigation as Nav
 import Page.About
+import Page.Asteroids
 import Page.Calc
 import Page.DigitalClock
 import Page.Lissajous
@@ -25,6 +26,7 @@ type alias PagesModel =
     , mazePage : Maybe Page.Maze.Model
     , physicsPage : Maybe Page.Physics.Model
     , termPage : Maybe Page.Term.Model
+    , asteroidsPage : Maybe Page.Asteroids.Model
     }
 
 
@@ -46,4 +48,5 @@ emptyPagesModel =
     , mazePage = Nothing
     , physicsPage = Nothing
     , termPage = Nothing
+    , asteroidsPage = Nothing
     }

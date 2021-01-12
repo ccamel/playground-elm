@@ -8,6 +8,7 @@ import Browser
 import Browser.Navigation as Nav
 import Maybe exposing (withDefault)
 import Page.About
+import Page.Asteroids
 import Page.Calc
 import Page.DigitalClock
 import Page.Lissajous
@@ -61,6 +62,9 @@ update msg model =
 
                 ( termModel, termCmd ) =
                     Page.Term.init
+
+                ( asteroidsModel, asteroidsCmd ) =
+                    Page.Asteroids.init
             in
             case newRoute of
                 NotFoundRoute ->
@@ -89,6 +93,9 @@ update msg model =
 
                 Page Term ->
                     ( { clearedModel | route = newRoute, pages = { emptyPagesModel | termPage = Just termModel } }, Cmd.map TermPageMsg termCmd )
+
+                Page Asteroids ->
+                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | asteroidsPage = Just asteroidsModel } }, Cmd.map AsteroidsPageMsg asteroidsCmd )
 
         GoToPage p ->
             ( model
@@ -121,6 +128,9 @@ update msg model =
 
         TermPageMsg m ->
             convert model m .termPage Page.Term.update (\mdl -> { model | pages = { pages | termPage = Just mdl } }) TermPageMsg
+
+        AsteroidsPageMsg m ->
+            convert model m .asteroidsPage Page.Asteroids.update (\mdl -> { model | pages = { pages | asteroidsPage = Just mdl } }) AsteroidsPageMsg
 
 
 initialModel : Flags -> Nav.Key -> Route -> ( Model, Cmd App.Messages.Msg )
