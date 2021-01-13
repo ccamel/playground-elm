@@ -31,6 +31,7 @@
             "mpizenberg/elm-pointer-events": "4.0.2",
             "myrho/elm-round": "1.0.4",
             "noahzgordon/elm-color-extra": "1.0.2",
+            "ohanhi/keyboard": "2.0.1",
             "simonh1000/elm-colorpicker": "2.0.2",
             "wsowens/term": "2.0.6"
         },
