@@ -10,7 +10,7 @@ import Html.Events exposing (..)
 import Json.Decode as Decode
 import List exposing (length)
 import Maybe exposing (andThen, withDefault)
-import String exposing (padLeft)
+import String exposing (fromInt, padLeft)
 import String.Interpolate exposing (interpolate)
 import Svg
 import Svg.Attributes exposing (class)
@@ -210,3 +210,9 @@ withAlpha alpha color =
             toRgba color
     in
     { rgba | alpha = alpha } |> fromRgba
+
+toPixels : Int -> String
+toPixels size =
+    size
+        |> fromInt
+        |> flip String.append "px"
