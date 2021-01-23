@@ -2,17 +2,17 @@ module Page.Asteroids exposing (..)
 
 import Browser.Events exposing (onAnimationFrameDelta)
 import Ecs
-import Ecs.Components2
-import Ecs.Components3
-import Ecs.EntityComponents exposing (foldFromRight2)
-import GraphicSVG exposing (Shape, blue, group, move, outlined, polygon, red, solid, triangle)
+import Ecs.Components5
+import Ecs.EntityComponents exposing (foldFromRight3)
+import GraphicSVG exposing (Shape, blue, group, isosceles, move, outlined, rotate, solid, triangle)
 import GraphicSVG.Widget as Widget
 import Html exposing (Html, div, hr, p)
 import Html.Attributes exposing (class)
+import Keyboard exposing (Key)
+import Keyboard.Arrows as Keyboard exposing (Direction(..))
+import List exposing (foldl)
 import Markdown
 import Page.Common
-import Svg exposing (Svg)
-import Svg.Attributes as Attributes exposing (height, viewBox, width)
 
 
 
@@ -49,12 +49,26 @@ type alias Position =
     }
 
 
+type alias Velocity =
+    { dx : Float
+    , dy : Float
+    }
+
+type alias Rotation = Float -- in degrees
+
 type alias Sprite =
     Shape Msg
 
 
+type alias PilotControl = List ShipCommand
+
+type ShipCommand =
+    TURN_RIGHT
+  | TURN_LEFT
+  | ACCELERATE
+
 type alias Components =
-    Ecs.Components2.Components2 EntityId Position Sprite
+    Ecs.Components5.Components5 EntityId Position Velocity Rotation Sprite PilotControl
 
 
 
@@ -65,7 +79,10 @@ type alias Components =
 type alias Specs =
     { all : AllComponentsSpec
     , position : ComponentSpec Position
+    , velocity : ComponentSpec Velocity
+    , rotation : ComponentSpec Rotation
     , sprite : ComponentSpec Sprite
+    , pilotControl : ComponentSpec PilotControl
     }
 
 
@@ -79,11 +96,66 @@ type alias ComponentSpec a =
 
 specs : Specs
 specs =
-    Ecs.Components2.specs Specs
+    Ecs.Components5.specs Specs
 
 
 
 -- SYSTEMS
+
+
+updateWorld : Float -> World -> World
+updateWorld deltaSeconds world =
+    world
+        |> managePilotControls deltaSeconds
+        |> applyVelocities deltaSeconds
+
+
+managePilotControls : Float -> World -> World
+managePilotControls deltaSeconds world =
+    Ecs.EntityComponents.processFromLeft
+        specs.pilotControl
+        (managePilotControl deltaSeconds)
+        world
+
+
+managePilotControl : Float -> EntityId -> PilotControl  -> World -> World
+managePilotControl deltaSeconds entityId pilotControl world =
+    let
+      rotate by old =
+        case old of
+          Just r -> Just (r + by)
+          _ -> old
+    in
+    List.foldl
+      (\e w ->
+        case e of
+            TURN_RIGHT -> Ecs.updateComponent specs.rotation (rotate -1.0) w
+            TURN_LEFT -> Ecs.updateComponent specs.rotation (rotate 1.0) w
+            ACCELERATE -> w
+      )
+      world
+      pilotControl
+
+
+applyVelocities : Float -> World -> World
+applyVelocities deltaSeconds world =
+    Ecs.EntityComponents.processFromLeft2
+        specs.velocity
+        specs.position
+        (applyVelocity deltaSeconds)
+        world
+
+
+applyVelocity : Float -> EntityId -> Velocity -> Position -> World -> World
+applyVelocity deltaSeconds _ velocity position world =
+    Ecs.insertComponent specs.position
+        { x = position.x + velocity.dx * deltaSeconds
+        , y = position.y + velocity.dy * deltaSeconds
+        }
+        world
+
+
+
 -- MODEL
 
 
@@ -94,6 +166,7 @@ type alias World =
 type alias Model =
     { world : World
     , playground : Widget.Model
+    , keys : List Key
     }
 
 
@@ -119,6 +192,7 @@ init =
     in
     ( { world = initEntities emptyWorld
       , playground = playgroundModel
+      , keys = []
       }
     , Cmd.batch
         [ Cmd.map PlaygroundMessage playgroundCmd
@@ -134,18 +208,17 @@ emptyWorld =
 initEntities : World -> World
 initEntities world =
     world
-        -- entity id 0, the ship
+        -- entity id 0, the ship with a position and a sprite
         |> Ecs.insertEntity 0
         |> Ecs.insertComponent specs.position
             { x = constants.width / 2
             , y = constants.height / 2
             }
+        |> Ecs.insertComponent specs.rotation 0.0
         |> Ecs.insertComponent specs.sprite
-            (Debug.log "triangle: " (triangle 1.0)
+            (isosceles 1.0 1.5
                 |> outlined (solid 5) blue
             )
-
-
 
 -- UPDATE
 
@@ -153,22 +226,54 @@ initEntities world =
 type Msg
     = GotAnimationFrameDeltaMilliseconds Float
     | PlaygroundMessage Widget.Msg
+    | KeyboardMsg Keyboard.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg ({ world } as model) =
     case msg of
         GotAnimationFrameDeltaMilliseconds deltaMilliseconds ->
-            ( model
+            ( { model | world = updateWorld (deltaMilliseconds / 1000) world }
             , Cmd.none
             )
 
-        PlaygroundMessage msgw ->
+        PlaygroundMessage svgMsg ->
             let
                 ( playgroundModel, playgroundCmd ) =
-                    Widget.update msgw model.playground
+                    Widget.update svgMsg model.playground
             in
             ( { model | playground = playgroundModel }, Cmd.map PlaygroundMessage playgroundCmd )
+
+        KeyboardMsg keyMsg ->
+            let
+                keys =
+                    Keyboard.update keyMsg model.keys
+
+                direction =
+                    Keyboard.arrowsDirection keys
+
+                components : List ShipCommand
+                components =
+                  case direction of
+                     North -> [ACCELERATE]
+                     NorthEast -> [ACCELERATE, TURN_RIGHT]
+                     East -> [TURN_RIGHT]
+                     SouthEast -> [TURN_RIGHT]
+                     South -> []
+                     SouthWest -> [TURN_LEFT]
+                     West -> [TURN_LEFT]
+                     NorthWest -> [ACCELERATE, TURN_LEFT]
+                     NoDirection -> []
+            in
+            ( { model
+                | keys = keys
+                , world =
+                    -- add/update a component pilotControl for the ship
+                    Ecs.onEntity 0 world
+                        |> Ecs.insertComponent specs.pilotControl components
+              }
+            , Cmd.none
+            )
 
 
 
@@ -178,8 +283,10 @@ update msg ({ world } as model) =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
-        [ onAnimationFrameDelta GotAnimationFrameDeltaMilliseconds
+        [
+         onAnimationFrameDelta GotAnimationFrameDeltaMilliseconds
         , Sub.map PlaygroundMessage Widget.subscriptions
+        ,Sub.map KeyboardMsg Keyboard.subscriptions
         ]
 
 
@@ -197,9 +304,10 @@ Simple Asteroids clone in [Elm](https://elm-lang.org/) .
 """
             ]
         , Widget.view playground
-            [ foldFromRight2
+            [ foldFromRight3
                 specs.sprite
                 specs.position
+                specs.rotation
                 renderSprite
                 []
                 world
@@ -209,9 +317,10 @@ Simple Asteroids clone in [Elm](https://elm-lang.org/) .
         ]
 
 
-renderSprite : EntityId -> Sprite -> Position -> List (Shape Msg) -> List (Shape Msg)
-renderSprite entityId sprite position elements =
+renderSprite : EntityId -> Sprite -> Position -> Rotation -> List (Shape Msg) -> List (Shape Msg)
+renderSprite entityId sprite position rotation elements =
     (sprite
+        |> rotate (degrees rotation)
         |> move ( position.x, position.y )
     )
         :: elements
