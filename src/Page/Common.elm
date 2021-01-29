@@ -9,7 +9,7 @@ import Html exposing (Html)
 import Html.Events exposing (..)
 import Json.Decode as Decode
 import List exposing (length)
-import Maybe exposing (andThen, withDefault)
+import Maybe exposing (andThen, map, withDefault)
 import String exposing (fromInt, padLeft)
 import String.Interpolate exposing (interpolate)
 import Svg
@@ -49,9 +49,24 @@ strToNumberWithMinMax s converter minv maxv =
         x ->
             x
                 |> converter
-                |> andThen (Just << Basics.min maxv)
-                |> andThen (Just << Basics.max minv)
+                |> map (limitRange (minv, maxv))
 
+{-| ensures that the given comparable is limited to the given range [min, max]
+-}
+limitRange: (comparable, comparable) -> comparable -> comparable
+limitRange (minv, maxv) v =
+  v
+  |> Basics.min maxv
+  |> Basics.max minv
+
+{-| returns zero value if the given comparable is lower (in absolute value) than the given epsilon.
+-}
+zero: number -> number -> number
+zero epsilon v =
+  if (abs v) < epsilon then
+    0
+  else
+    v
 
 {-| This function makes it easier to build a space-separated class attribute with SVG
 TODO: To replace with equivalent function in core modules when available
