@@ -3,7 +3,7 @@ module Page.Maze exposing (..)
 import Array exposing (Array, get, initialize, set)
 import File.Download as Download
 import FormatNumber exposing (format)
-import FormatNumber.Locales exposing (Locale, usLocale)
+import FormatNumber.Locales exposing (Decimals(..), Locale, usLocale)
 import Html exposing (Html, a, button, div, hr, i, input, span, text)
 import Html.Attributes exposing (attribute, class, classList, href, id, name, style, title, type_, value)
 import Html.Events exposing (onInput)
@@ -949,7 +949,7 @@ asJsonValue maze =
 locale2digits : Locale
 locale2digits =
     { usLocale
-        | decimals = 2
+        | decimals = Exact 2
         , thousandSeparator = ","
         , decimalSeparator = "."
         , negativePrefix = "−"
