@@ -22,7 +22,7 @@
             "elm/time": "1.0.0",
             "elm/url": "1.0.0",
             "elm-community/basics-extra": "4.1.0",
-            "elm-community/list-extra": "8.1.0",
+            "elm-community/list-extra": "8.3.0",
             "elm-community/random-extra": "3.0.0",
             "elm-explorations/markdown": "1.0.0",
             "joakin/elm-canvas": "4.3.0",
