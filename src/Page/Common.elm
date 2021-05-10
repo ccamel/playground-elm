@@ -4,7 +4,7 @@ import Array exposing (Array, foldl, get, indexedMap)
 import Basics.Extra exposing (flip)
 import Color exposing (Color, fromRgba, toRgba)
 import FormatNumber exposing (format)
-import FormatNumber.Locales exposing (Locale, usLocale)
+import FormatNumber.Locales exposing (Decimals(..), Locale, usLocale)
 import Html exposing (Html)
 import Html.Events exposing (..)
 import Json.Decode as Decode
@@ -186,7 +186,7 @@ fps frames =
 locale1digit : Locale
 locale1digit =
     { usLocale
-        | decimals = 1
+        | decimals = Exact 1
         , thousandSeparator = ","
         , decimalSeparator = "."
         , negativePrefix = "−"
