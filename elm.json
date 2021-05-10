@@ -21,7 +21,7 @@
             "elm/svg": "1.0.1",
             "elm/time": "1.0.0",
             "elm/url": "1.0.0",
-            "elm-community/basics-extra": "4.0.0",
+            "elm-community/basics-extra": "4.1.0",
             "elm-community/list-extra": "8.1.0",
             "elm-community/random-extra": "3.0.0",
             "elm-explorations/markdown": "1.0.0",
