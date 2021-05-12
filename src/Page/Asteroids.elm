@@ -152,6 +152,7 @@ updateWorld deltaMillis world =
         |> managePilotControls
         |> applyPositionVelocities
         |> applyRotationVelocities
+        |> manageWorldBounds
 
 
 updateFrame : Float -> World -> World
@@ -282,6 +283,50 @@ applyPositionVelocity _ velocity world =
                         , dy = withFriction v.dy
                     }
             )
+
+
+manageWorldBounds : World -> World
+manageWorldBounds world =
+    let
+        applyWorldBounds _ _ w =
+            w
+                |> Ecs.updateComponent
+                    specs.position
+                    (Maybe.map <|
+                        \p ->
+                            { p
+                                | x =
+                                    if p.x < 0 then
+                                        constants.width + p.x
+
+                                    else if p.x > constants.width then
+                                        p.x - constants.width
+
+                                    else
+                                        p.x
+                            }
+                    )
+                |> Ecs.updateComponent
+                    specs.position
+                    (Maybe.map <|
+                        \p ->
+                            { p
+                                | y =
+                                    if p.y < 0 then
+                                        constants.height + p.y
+
+                                    else if p.y > constants.height then
+                                        p.y - constants.height
+
+                                    else
+                                        p.y
+                            }
+                    )
+    in
+    Ecs.EntityComponents.processFromLeft
+        specs.positionVelocity
+        applyWorldBounds
+        world
 
 
 
@@ -484,7 +529,7 @@ renderSprite _ sprite position rotation elements =
 
 
 
--- UTILS
+-- HELPERS
 
 
 withFriction : Float -> Float
