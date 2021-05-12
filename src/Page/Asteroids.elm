@@ -8,12 +8,12 @@ import Ecs.Singletons1
 import GraphicSVG exposing (Shape, blue, group, isosceles, move, outlined, rotate, solid)
 import GraphicSVG.Widget as Widget
 import Html exposing (Html, div, hr, p)
-import Html.Attributes exposing (class)
+import Html.Attributes as Attributes exposing (class)
 import Keyboard exposing (Key)
 import Keyboard.Arrows as Keyboard exposing (Direction(..))
 import List
 import Markdown
-import Page.Common exposing (limitRange, zero)
+import Page.Common exposing (Frames, addFrame, createFrames, fpsText, limitRange, zero)
 
 
 
@@ -334,6 +334,9 @@ type alias Model =
     { world : World
     , playground : Widget.Model
     , keys : List Key
+
+    -- a list containing n last frames, used to compute the fps (frame per seconds)
+    , frames : Frames
     }
 
 
@@ -360,6 +363,7 @@ init =
     ( { world = initEntities emptyWorld
       , playground = playgroundModel
       , keys = []
+      , frames = createFrames 10 -- initial capacity
       }
     , Cmd.batch
         [ Cmd.map PlaygroundMessage playgroundCmd
@@ -412,7 +416,10 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg ({ world } as model) =
     case msg of
         GotAnimationFrameDeltaMilliseconds deltaMilliseconds ->
-            ( { model | world = updateWorld deltaMilliseconds world }
+            ( { model
+                | world = updateWorld deltaMilliseconds world
+                , frames = addFrame model.frames deltaMilliseconds
+              }
             , Cmd.none
             )
 
@@ -490,7 +497,7 @@ subscriptions _ =
 
 
 view : Model -> Html Msg
-view { world, playground } =
+view { world, playground, frames } =
     div [ class "container" ]
         [ hr [] []
         , p [ class "text-muted" ]
@@ -499,7 +506,16 @@ Simple Asteroids clone in [Elm](https://elm-lang.org/) .
 """
             ]
         , div [ class "asteroids" ]
-            [ div [ class "world" ]
+            [ div
+                [ Attributes.style "font-family" "monospace"
+                ]
+                [ Html.text ("entities: " ++ (Ecs.worldEntityCount world |> String.fromInt))
+                , Html.text " - "
+                , Html.text ("components: " ++ (Ecs.worldComponentCount specs.all world |> String.fromInt))
+                , Html.text " - "
+                , Html.text <| fpsText frames
+                ]
+            , div [ class "world" ]
                 [ Widget.view
                     playground
                     [ foldFromRight3
