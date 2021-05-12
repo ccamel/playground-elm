@@ -304,14 +304,7 @@ manageWorldBounds world =
 
                                     else
                                         p.x
-                            }
-                    )
-                |> Ecs.updateComponent
-                    specs.position
-                    (Maybe.map <|
-                        \p ->
-                            { p
-                                | y =
+                                , y =
                                     if p.y < 0 then
                                         constants.height + p.y
 
@@ -362,7 +355,7 @@ init : ( Model, Cmd Msg )
 init =
     let
         ( playgroundModel, playgroundCmd ) =
-            Widget.init constants.width constants.height "asteroids"
+            Widget.init constants.width constants.height "asteroids-game"
     in
     ( { world = initEntities emptyWorld
       , playground = playgroundModel
@@ -505,16 +498,21 @@ view { world, playground } =
 Simple Asteroids clone in [Elm](https://elm-lang.org/) .
 """
             ]
-        , Widget.view playground
-            [ foldFromRight3
-                specs.sprite
-                specs.position
-                specs.orientation
-                renderSprite
-                []
-                world
-                |> group
-                |> move ( -constants.width / 2.0, -constants.height / 2.0 )
+        , div [ class "asteroids" ]
+            [ div [ class "world" ]
+                [ Widget.view
+                    playground
+                    [ foldFromRight3
+                        specs.sprite
+                        specs.position
+                        specs.orientation
+                        renderSprite
+                        []
+                        world
+                        |> group
+                        |> move ( -constants.width / 2.0, -constants.height / 2.0 )
+                    ]
+                ]
             ]
         ]
 
