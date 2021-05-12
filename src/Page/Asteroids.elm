@@ -4,6 +4,7 @@ import Browser.Events exposing (onAnimationFrameDelta)
 import Ecs
 import Ecs.Components6
 import Ecs.EntityComponents exposing (foldFromRight3)
+import Ecs.Singletons1
 import GraphicSVG exposing (Shape, blue, group, isosceles, move, outlined, rotate, solid)
 import GraphicSVG.Widget as Widget
 import Html exposing (Html, div, hr, p)
@@ -60,12 +61,12 @@ type alias RotationVelocity =
     }
 
 
-
--- in degrees
-
-
 type alias Orientation =
     Float
+
+
+
+-- in degrees
 
 
 type alias Sprite =
@@ -95,6 +96,19 @@ type alias Components =
 
 
 -- SINGLETONS
+
+
+type alias Singletons =
+    Ecs.Singletons1.Singletons1 Frame
+
+
+type alias Frame =
+    { deltaTime : Float
+    , totalTime : Float
+    }
+
+
+
 -- SPECS
 
 
@@ -106,6 +120,7 @@ type alias Specs =
     , rotationVelocity : ComponentSpec RotationVelocity
     , sprite : ComponentSpec Sprite
     , pilotControl : ComponentSpec PilotControl
+    , frame : SingletonSpec Frame
     }
 
 
@@ -117,9 +132,13 @@ type alias ComponentSpec a =
     Ecs.ComponentSpec EntityId a Components
 
 
+type alias SingletonSpec a =
+    Ecs.SingletonSpec a Singletons
+
+
 specs : Specs
 specs =
-    Ecs.Components6.specs Specs
+    Specs |> Ecs.Components6.specs |> Ecs.Singletons1.specs
 
 
 
@@ -127,80 +146,100 @@ specs =
 
 
 updateWorld : Float -> World -> World
-updateWorld deltaSeconds world =
+updateWorld deltaMillis world =
     world
-        |> managePilotControls deltaSeconds
-        |> applyPositionVelocities deltaSeconds
-        |> applyRotationVelocities deltaSeconds
+        |> updateFrame deltaMillis
+        |> managePilotControls
+        |> applyPositionVelocities
+        |> applyRotationVelocities
 
 
-managePilotControls : Float -> World -> World
-managePilotControls deltaSeconds world =
-    Ecs.EntityComponents.processFromLeft
-        specs.pilotControl
-        (managePilotControl deltaSeconds)
+updateFrame : Float -> World -> World
+updateFrame deltaTime world =
+    Ecs.updateSingleton specs.frame
+        (\frame ->
+            { totalTime = frame.totalTime + deltaTime
+            , deltaTime = deltaTime
+            }
+        )
         world
 
 
-managePilotControl : Float -> EntityId -> PilotControl -> World -> World
-managePilotControl deltaSeconds entityId pilotControl world =
+managePilotControls : World -> World
+managePilotControls world =
+    Ecs.EntityComponents.processFromLeft
+        specs.pilotControl
+        managePilotControl
+        world
+
+
+managePilotControl : EntityId -> PilotControl -> World -> World
+managePilotControl _ pilotControl world =
     List.foldl
         (\e w ->
             case e of
                 TURN_RIGHT ->
                     Ecs.EntityComponents.processFromLeft
                         specs.rotationVelocity
-                        (managePilotControlRotation -0.05 deltaSeconds)
+                        (managePilotControlRotation -5)
                         w
 
                 TURN_LEFT ->
                     Ecs.EntityComponents.processFromLeft
                         specs.rotationVelocity
-                        (managePilotControlRotation 0.05 deltaSeconds)
+                        (managePilotControlRotation 5)
                         w
 
                 ACCELERATE ->
                     Ecs.EntityComponents.processFromLeft2
                         specs.orientation
                         specs.positionVelocity
-                        (managePilotControlPosition 0.5 deltaSeconds)
+                        (managePilotControlPosition 5)
                         w
         )
         world
         pilotControl
 
 
-managePilotControlRotation : Float -> Float -> EntityId -> RotationVelocity -> World -> World
-managePilotControlRotation by deltaSeconds entityId rotationVelocity world =
+managePilotControlRotation : Float -> EntityId -> RotationVelocity -> World -> World
+managePilotControlRotation by _ rotationVelocity world =
     Ecs.insertComponent specs.rotationVelocity
-        { dr = limitRange ( -10, 10 ) (rotationVelocity.dr + by)
+        { dr = limitRange ( -100, 100 ) (rotationVelocity.dr + by)
         }
         world
 
 
-managePilotControlPosition : Float -> Float -> EntityId -> Orientation -> PositionVelocity -> World -> World
-managePilotControlPosition by deltaSeconds entityId orientation positionVelocity world =
+managePilotControlPosition : Float -> EntityId -> Orientation -> PositionVelocity -> World -> World
+managePilotControlPosition by _ orientation positionVelocity world =
+    let
+        bounds =
+            ( -100, 100 )
+    in
     Ecs.insertComponent specs.positionVelocity
-        { dx = limitRange ( -10, 10 ) (positionVelocity.dx + by * -(sin <| degrees orientation))
-        , dy = limitRange ( -10, 10 ) (positionVelocity.dy + by * (cos <| degrees orientation))
+        { dx = limitRange bounds (positionVelocity.dx + by * -(sin <| degrees orientation))
+        , dy = limitRange bounds (positionVelocity.dy + by * (cos <| degrees orientation))
         }
         world
 
 
-applyRotationVelocities : Float -> World -> World
-applyRotationVelocities deltaSeconds world =
+applyRotationVelocities : World -> World
+applyRotationVelocities world =
     Ecs.EntityComponents.processFromLeft
         specs.rotationVelocity
-        (applyRotationVelocity deltaSeconds)
+        applyRotationVelocity
         world
 
 
-applyRotationVelocity : Float -> EntityId -> RotationVelocity -> World -> World
-applyRotationVelocity deltaSeconds _ velocity world =
+applyRotationVelocity : EntityId -> RotationVelocity -> World -> World
+applyRotationVelocity _ velocity world =
+    let
+        deltaTime =
+            (Ecs.getSingleton specs.frame world |> .deltaTime) / 1000.0
+    in
     world
         |> Ecs.updateComponent
             specs.orientation
-            (Maybe.map <| \r -> r + velocity.dr)
+            (Maybe.map <| \r -> r + Debug.log "velocity" (velocity.dr * deltaTime))
         |> Ecs.updateComponent
             specs.rotationVelocity
             (Maybe.map <|
@@ -211,23 +250,27 @@ applyRotationVelocity deltaSeconds _ velocity world =
             )
 
 
-applyPositionVelocities : Float -> World -> World
-applyPositionVelocities deltaSeconds world =
+applyPositionVelocities : World -> World
+applyPositionVelocities world =
     Ecs.EntityComponents.processFromLeft
         specs.positionVelocity
-        (applyPositionVelocity deltaSeconds)
+        applyPositionVelocity
         world
 
 
-applyPositionVelocity : Float -> EntityId -> PositionVelocity -> World -> World
-applyPositionVelocity deltaSeconds _ velocity world =
+applyPositionVelocity : EntityId -> PositionVelocity -> World -> World
+applyPositionVelocity _ velocity world =
+    let
+        deltaTime =
+            (Ecs.getSingleton specs.frame world |> .deltaTime) / 1000.0
+    in
     world
         |> Ecs.updateComponent
             specs.position
             (Maybe.map <|
                 \p ->
-                    { x = p.x + velocity.dx * deltaSeconds
-                    , y = p.y + velocity.dy * deltaSeconds
+                    { x = p.x + velocity.dx * deltaTime
+                    , y = p.y + velocity.dy * deltaTime
                     }
             )
         |> Ecs.updateComponent
@@ -246,7 +289,7 @@ applyPositionVelocity deltaSeconds _ velocity world =
 
 
 type alias World =
-    Ecs.World EntityId Components ()
+    Ecs.World EntityId Components Singletons
 
 
 type alias Model =
@@ -263,10 +306,10 @@ type alias Model =
 constants : { width : Float, height : Float }
 constants =
     { -- width of the canvas
-      width = 384.0
+      width = 640.0
 
     -- height of the canvas
-    , height = 60.0
+    , height = 480.0
     }
 
 
@@ -288,7 +331,15 @@ init =
 
 emptyWorld : World
 emptyWorld =
-    Ecs.emptyWorld specs.all ()
+    Ecs.emptyWorld specs.all initSingletons
+
+
+initSingletons : Singletons
+initSingletons =
+    Ecs.Singletons1.init
+        { deltaTime = 0
+        , totalTime = 0
+        }
 
 
 initEntities : World -> World
@@ -323,7 +374,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg ({ world } as model) =
     case msg of
         GotAnimationFrameDeltaMilliseconds deltaMilliseconds ->
-            ( { model | world = updateWorld (deltaMilliseconds / 1000) world }
+            ( { model | world = updateWorld deltaMilliseconds world }
             , Cmd.none
             )
 
@@ -424,7 +475,7 @@ Simple Asteroids clone in [Elm](https://elm-lang.org/) .
 
 
 renderSprite : EntityId -> Sprite -> Position -> Orientation -> List (Shape Msg) -> List (Shape Msg)
-renderSprite entityId sprite position rotation elements =
+renderSprite _ sprite position rotation elements =
     (sprite
         |> rotate (degrees rotation)
         |> move ( position.x, position.y )
@@ -436,8 +487,8 @@ renderSprite entityId sprite position rotation elements =
 -- UTILS
 
 
-withFriction : Float -> Float -> Float
-withFriction deltaSeconds v =
+withFriction : Float -> Float
+withFriction v =
     let
         friction =
             0.99
