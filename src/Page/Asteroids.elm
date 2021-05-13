@@ -3,6 +3,7 @@ module Page.Asteroids exposing (..)
 import Browser.Events exposing (onAnimationFrameDelta)
 import Ecs
 import Ecs.Components6
+import Ecs.Components7
 import Ecs.EntityComponents exposing (foldFromRight3)
 import Ecs.Singletons2
 import GraphicSVG exposing (Shape, blue, group, isosceles, move, outlined, rotate, solid, square)
@@ -66,6 +67,11 @@ type alias Orientation =
     Float
 
 
+type alias Friction =
+    { f : Float
+    }
+
+
 
 -- in degrees
 
@@ -86,7 +92,7 @@ type ShipCommand
 
 
 type alias Components =
-    Ecs.Components6.Components6
+    Ecs.Components7.Components7
         EntityId
         Position
         PositionVelocity
@@ -94,6 +100,7 @@ type alias Components =
         RotationVelocity
         Sprite
         PilotControl
+        Friction
 
 
 
@@ -122,6 +129,7 @@ type alias Specs =
     , rotationVelocity : ComponentSpec RotationVelocity
     , sprite : ComponentSpec Sprite
     , pilotControl : ComponentSpec PilotControl
+    , friction : ComponentSpec Friction
     , frame : SingletonSpec Frame
     , nextEntityId : SingletonSpec EntityId
     }
@@ -141,7 +149,7 @@ type alias SingletonSpec a =
 
 specs : Specs
 specs =
-    Specs |> Ecs.Components6.specs |> Ecs.Singletons2.specs
+    Specs |> Ecs.Components7.specs |> Ecs.Singletons2.specs
 
 
 
@@ -155,6 +163,7 @@ updateWorld deltaMillis world =
         |> managePilotControls
         |> applyPositionVelocities
         |> applyRotationVelocities
+        |> applyFrictions
         |> manageWorldBounds
 
 
@@ -283,14 +292,6 @@ applyRotationVelocity _ velocity world =
         |> Ecs.updateComponent
             specs.orientation
             (Maybe.map <| \r -> r + velocity.dr * deltaTime)
-        |> Ecs.updateComponent
-            specs.rotationVelocity
-            (Maybe.map <|
-                \v ->
-                    { v
-                        | dr = withFriction v.dr
-                    }
-            )
 
 
 applyPositionVelocities : World -> World
@@ -302,7 +303,7 @@ applyPositionVelocities world =
 
 
 applyPositionVelocity : EntityId -> PositionVelocity -> World -> World
-applyPositionVelocity entityId velocity world =
+applyPositionVelocity _ velocity world =
     let
         deltaTime =
             (Ecs.getSingleton specs.frame world |> .deltaTime) / 1000.0
@@ -318,16 +319,44 @@ applyPositionVelocity entityId velocity world =
             )
 
 
+applyFrictions : World -> World
+applyFrictions world =
+    Ecs.EntityComponents.processFromLeft
+        specs.friction
+        applyFriction
+        world
 
---         |> Ecs.updateComponent
---            specs.positionVelocity
---            (Maybe.map <|
---                \v ->
---                    { v
---                        | dx = withFriction v.dx
---                        , dy = withFriction v.dy
---                    }
---            )
+
+applyFriction : EntityId -> Friction -> World -> World
+applyFriction _ { f } world =
+    world
+        |> Ecs.updateComponent
+            specs.positionVelocity
+            (Maybe.map <|
+                \v ->
+                    let
+                        ( dx, dy ) =
+                            ( v.dx, v.dy )
+                                |> vApply ((*) f)
+                                |> vApply (zero 0.001)
+                    in
+                    { v
+                        | dx = dx
+                        , dy = dy
+                    }
+            )
+        |> Ecs.updateComponent
+            specs.rotationVelocity
+            (Maybe.map <|
+                \v ->
+                    let
+                        dr =
+                            zero 0.001 (v.dr * f)
+                    in
+                    { v
+                        | dr = dr
+                    }
+            )
 
 
 manageWorldBounds : World -> World
@@ -459,6 +488,7 @@ newShipEntity world =
         |> Ecs.insertComponent specs.orientation 0.0
         |> Ecs.insertComponent specs.rotationVelocity { dr = 0 }
         |> Ecs.insertComponent specs.positionVelocity { dx = 0, dy = 0 }
+        |> Ecs.insertComponent specs.friction { f = 0.99 }
         |> Ecs.insertComponent specs.sprite
             (isosceles 1.0 1.5
                 |> outlined (solid 5) blue
@@ -634,18 +664,6 @@ renderSprite _ sprite position rotation elements =
 -- HELPERS
 
 
-withFriction : Float -> Float
-withFriction v =
-    let
-        friction =
-            0.99
-
-        ndr =
-            zero 0.001 (v * friction)
-    in
-    ndr
-
-
 vFromOrientation : Orientation -> ( Float, Float )
 vFromOrientation orientation =
     ( sin <| (*) -1 <| degrees orientation, cos <| degrees orientation )
@@ -656,9 +674,14 @@ vMagSq ( a, b ) =
     a * a + b * b
 
 
+vApply : (Float -> Float) -> ( Float, Float ) -> ( Float, Float )
+vApply f ( a, b ) =
+    ( f a, f b )
+
+
 vMult : Float -> ( Float, Float ) -> ( Float, Float )
-vMult by ( a, b ) =
-    ( a * by, b * by )
+vMult by =
+    vApply <| (*) by
 
 
 vMag : ( Float, Float ) -> Float
