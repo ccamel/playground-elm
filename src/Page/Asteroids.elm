@@ -4,14 +4,15 @@ import Browser.Events exposing (onAnimationFrameDelta)
 import Ecs
 import Ecs.Components6
 import Ecs.EntityComponents exposing (foldFromRight3)
-import Ecs.Singletons1
-import GraphicSVG exposing (Shape, blue, group, isosceles, move, outlined, rotate, solid)
+import Ecs.Singletons2
+import GraphicSVG exposing (Shape, blue, group, isosceles, move, outlined, rotate, solid, square)
 import GraphicSVG.Widget as Widget
 import Html exposing (Html, div, hr, p)
 import Html.Attributes as Attributes exposing (class)
-import Keyboard exposing (Key)
+import Keyboard exposing (Key(..), KeyChange(..))
 import Keyboard.Arrows as Keyboard exposing (Direction(..))
 import List
+import List.Extra exposing (remove)
 import Markdown
 import Page.Common exposing (Frames, addFrame, createFrames, fpsText, limitRange, zero)
 
@@ -81,6 +82,7 @@ type ShipCommand
     = TURN_RIGHT
     | TURN_LEFT
     | ACCELERATE
+    | FIRE
 
 
 type alias Components =
@@ -99,7 +101,7 @@ type alias Components =
 
 
 type alias Singletons =
-    Ecs.Singletons1.Singletons1 Frame
+    Ecs.Singletons2.Singletons2 Frame EntityId
 
 
 type alias Frame =
@@ -121,6 +123,7 @@ type alias Specs =
     , sprite : ComponentSpec Sprite
     , pilotControl : ComponentSpec PilotControl
     , frame : SingletonSpec Frame
+    , nextEntityId : SingletonSpec EntityId
     }
 
 
@@ -138,7 +141,7 @@ type alias SingletonSpec a =
 
 specs : Specs
 specs =
-    Specs |> Ecs.Components6.specs |> Ecs.Singletons1.specs
+    Specs |> Ecs.Components6.specs |> Ecs.Singletons2.specs
 
 
 
@@ -175,50 +178,89 @@ managePilotControls world =
 
 
 managePilotControl : EntityId -> PilotControl -> World -> World
-managePilotControl _ pilotControl world =
+managePilotControl entityId pilotControl world =
+    let
+        maybeRotationVelocity =
+            Ecs.getComponent specs.rotationVelocity world
+
+        maybeOrientation =
+            Ecs.getComponent specs.orientation world
+
+        maybePositionVelocity =
+            Ecs.getComponent specs.positionVelocity world
+
+        maybePosition =
+            Ecs.getComponent specs.position world
+    in
     List.foldl
         (\e w ->
             case e of
                 TURN_RIGHT ->
-                    Ecs.EntityComponents.processFromLeft
-                        specs.rotationVelocity
-                        (managePilotControlRotation -5)
-                        w
+                    w
+                        |> (case maybeRotationVelocity of
+                                Just rotationVelocity ->
+                                    managePilotControlRotation -5 rotationVelocity
+
+                                _ ->
+                                    identity
+                           )
 
                 TURN_LEFT ->
-                    Ecs.EntityComponents.processFromLeft
-                        specs.rotationVelocity
-                        (managePilotControlRotation 5)
-                        w
+                    w
+                        |> (case maybeRotationVelocity of
+                                Just rotationVelocity ->
+                                    managePilotControlRotation 5 rotationVelocity
+
+                                _ ->
+                                    identity
+                           )
 
                 ACCELERATE ->
-                    Ecs.EntityComponents.processFromLeft2
-                        specs.orientation
-                        specs.positionVelocity
-                        (managePilotControlPosition 5)
-                        w
+                    w
+                        |> (case ( maybeOrientation, maybePositionVelocity ) of
+                                ( Just orientation, Just positionVelocity ) ->
+                                    managePilotControlPosition 5 orientation positionVelocity
+
+                                _ ->
+                                    identity
+                           )
+
+                FIRE ->
+                    w
+                        |> Ecs.insertComponent specs.pilotControl (remove FIRE pilotControl)
+                        |> (case ( maybeOrientation, maybePosition ) of
+                                ( Just orientation, Just position ) ->
+                                    newBulletEntity orientation position
+
+                                _ ->
+                                    identity
+                           )
+                        |> Ecs.onEntity entityId
         )
         world
         pilotControl
 
 
-managePilotControlRotation : Float -> EntityId -> RotationVelocity -> World -> World
-managePilotControlRotation by _ rotationVelocity world =
+managePilotControlRotation : Float -> RotationVelocity -> World -> World
+managePilotControlRotation by rotationVelocity world =
     Ecs.insertComponent specs.rotationVelocity
         { dr = limitRange ( -100, 100 ) (rotationVelocity.dr + by)
         }
         world
 
 
-managePilotControlPosition : Float -> EntityId -> Orientation -> PositionVelocity -> World -> World
-managePilotControlPosition by _ orientation positionVelocity world =
+managePilotControlPosition : Float -> Orientation -> PositionVelocity -> World -> World
+managePilotControlPosition by orientation positionVelocity world =
     let
         bounds =
             ( -100, 100 )
+
+        ( dx, dy ) =
+            vFromOrientation orientation |> vMult by
     in
     Ecs.insertComponent specs.positionVelocity
-        { dx = limitRange bounds (positionVelocity.dx + by * -(sin <| degrees orientation))
-        , dy = limitRange bounds (positionVelocity.dy + by * (cos <| degrees orientation))
+        { dx = limitRange bounds (positionVelocity.dx + dx)
+        , dy = limitRange bounds (positionVelocity.dy + dy)
         }
         world
 
@@ -240,7 +282,7 @@ applyRotationVelocity _ velocity world =
     world
         |> Ecs.updateComponent
             specs.orientation
-            (Maybe.map <| \r -> r + Debug.log "velocity" (velocity.dr * deltaTime))
+            (Maybe.map <| \r -> r + velocity.dr * deltaTime)
         |> Ecs.updateComponent
             specs.rotationVelocity
             (Maybe.map <|
@@ -260,7 +302,7 @@ applyPositionVelocities world =
 
 
 applyPositionVelocity : EntityId -> PositionVelocity -> World -> World
-applyPositionVelocity _ velocity world =
+applyPositionVelocity entityId velocity world =
     let
         deltaTime =
             (Ecs.getSingleton specs.frame world |> .deltaTime) / 1000.0
@@ -274,15 +316,18 @@ applyPositionVelocity _ velocity world =
                     , y = p.y + velocity.dy * deltaTime
                     }
             )
-        |> Ecs.updateComponent
-            specs.positionVelocity
-            (Maybe.map <|
-                \v ->
-                    { v
-                        | dx = withFriction v.dx
-                        , dy = withFriction v.dy
-                    }
-            )
+
+
+
+--         |> Ecs.updateComponent
+--            specs.positionVelocity
+--            (Maybe.map <|
+--                \v ->
+--                    { v
+--                        | dx = withFriction v.dx
+--                        , dy = withFriction v.dy
+--                    }
+--            )
 
 
 manageWorldBounds : World -> World
@@ -347,10 +392,10 @@ type alias Model =
 constants : { width : Float, height : Float }
 constants =
     { -- width of the canvas
-      width = 640.0
+      width = 320.0
 
     -- height of the canvas
-    , height = 480.0
+    , height = 240.0
     }
 
 
@@ -378,17 +423,35 @@ emptyWorld =
 
 initSingletons : Singletons
 initSingletons =
-    Ecs.Singletons1.init
+    Ecs.Singletons2.init
         { deltaTime = 0
         , totalTime = 0
         }
+        1
 
 
 initEntities : World -> World
 initEntities world =
     world
-        -- entity id 0, the ship with a position and a sprite
-        |> Ecs.insertEntity 0
+        |> newShipEntity
+
+
+newEntity : World -> World
+newEntity world =
+    world
+        |> Ecs.insertEntity (Ecs.getSingleton specs.nextEntityId world)
+        |> Ecs.updateSingleton specs.nextEntityId (\id -> id + 1)
+
+
+shipEntityId : Int
+shipEntityId =
+    0
+
+
+newShipEntity : World -> World
+newShipEntity world =
+    world
+        |> Ecs.insertEntity shipEntityId
         |> Ecs.insertComponent specs.position
             { x = constants.width / 2
             , y = constants.height / 2
@@ -398,6 +461,23 @@ initEntities world =
         |> Ecs.insertComponent specs.positionVelocity { dx = 0, dy = 0 }
         |> Ecs.insertComponent specs.sprite
             (isosceles 1.0 1.5
+                |> outlined (solid 5) blue
+            )
+
+
+newBulletEntity : Orientation -> Position -> World -> World
+newBulletEntity orientation position world =
+    let
+        ( vx, vy ) =
+            orientation |> vFromOrientation |> vMult 150.0
+    in
+    world
+        |> newEntity
+        |> Ecs.insertComponent specs.position position
+        |> Ecs.insertComponent specs.orientation orientation
+        |> Ecs.insertComponent specs.positionVelocity { dx = vx, dy = vy }
+        |> Ecs.insertComponent specs.sprite
+            (square 1.0
                 |> outlined (solid 5) blue
             )
 
@@ -432,15 +512,15 @@ update msg ({ world } as model) =
 
         KeyboardMsg keyMsg ->
             let
-                keys =
-                    Keyboard.update keyMsg model.keys
+                ( keys, maybeKeyChange ) =
+                    Keyboard.updateWithKeyChange Keyboard.anyKeyUpper keyMsg model.keys
 
                 direction =
-                    Keyboard.wasdDirection keys
+                    Debug.log "//" (Keyboard.wasdDirection keys)
 
                 components : List ShipCommand
                 components =
-                    case direction of
+                    (case direction of
                         North ->
                             [ ACCELERATE ]
 
@@ -467,12 +547,20 @@ update msg ({ world } as model) =
 
                         NoDirection ->
                             []
+                    )
+                        ++ (case maybeKeyChange of
+                                Just (KeyDown Spacebar) ->
+                                    [ FIRE ]
+
+                                _ ->
+                                    []
+                           )
             in
             ( { model
                 | keys = keys
                 , world =
                     -- add/update a component pilotControl for the ship
-                    Ecs.onEntity 0 world
+                    Ecs.onEntity shipEntityId world
                         |> Ecs.insertComponent specs.pilotControl components
               }
             , Cmd.none
@@ -556,3 +644,23 @@ withFriction v =
             zero 0.001 (v * friction)
     in
     ndr
+
+
+vFromOrientation : Orientation -> ( Float, Float )
+vFromOrientation orientation =
+    ( sin <| (*) -1 <| degrees orientation, cos <| degrees orientation )
+
+
+vMagSq : ( Float, Float ) -> Float
+vMagSq ( a, b ) =
+    a * a + b * b
+
+
+vMult : Float -> ( Float, Float ) -> ( Float, Float )
+vMult by ( a, b ) =
+    ( a * by, b * by )
+
+
+vMag : ( Float, Float ) -> Float
+vMag v =
+    sqrt (vMagSq v)
