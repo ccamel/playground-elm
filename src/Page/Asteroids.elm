@@ -2,7 +2,7 @@ module Page.Asteroids exposing (..)
 
 import Browser.Events exposing (onAnimationFrameDelta)
 import Ecs
-import Ecs.Components9
+import Ecs.Components10
 import Ecs.EntityComponents exposing (foldFromRight3)
 import Ecs.Singletons3
 import GraphicSVG exposing (Shape, blue, group, isosceles, line, move, outlined, red, rotate, solid)
@@ -67,12 +67,8 @@ type alias Orientation =
 
 
 type alias Friction =
-    { f : Float
+    { f : Float -- in degrees
     }
-
-
-
--- in degrees
 
 
 type alias Sprite =
@@ -91,8 +87,19 @@ type alias FireCommand =
     ()
 
 
+type alias Ttl =
+    { durationTime : Float -- in ms
+    , remainingTime : Float -- in ms
+    }
+
+
+newTtl : Float -> Ttl
+newTtl durationTime =
+    { durationTime = 0, remainingTime = durationTime }
+
+
 type alias Components =
-    Ecs.Components9.Components9
+    Ecs.Components10.Components10
         EntityId
         Position
         PositionVelocity
@@ -103,6 +110,7 @@ type alias Components =
         SideThrustCommand
         FireCommand
         Friction
+        Ttl
 
 
 
@@ -114,8 +122,8 @@ type alias Singletons =
 
 
 type alias Frame =
-    { deltaTime : Float
-    , totalTime : Float
+    { deltaTime : Float -- in ms
+    , totalTime : Float -- in ms
     }
 
 
@@ -138,6 +146,7 @@ type alias Specs =
     , sideThrustCommand : ComponentSpec SideThrustCommand
     , fireCommand : ComponentSpec FireCommand
     , friction : ComponentSpec Friction
+    , ttl : ComponentSpec Ttl
     , frame : SingletonSpec Frame
     , nextEntityId : SingletonSpec EntityId
     , keys : SingletonSpec Keys
@@ -158,7 +167,7 @@ type alias SingletonSpec a =
 
 specs : Specs
 specs =
-    Specs |> Ecs.Components9.specs |> Ecs.Singletons3.specs
+    Specs |> Ecs.Components10.specs |> Ecs.Singletons3.specs
 
 
 
@@ -168,6 +177,7 @@ specs =
 systems : Float -> ( List Key, Maybe KeyChange ) -> List (World -> World)
 systems deltaMillis keys =
     [ frameSystem deltaMillis
+    , ttlSystem
     , keyboardInputSystem keys
     , controlCommandSystem
     , firingCommandSystem
@@ -179,6 +189,11 @@ systems deltaMillis keys =
     , applyFrictions
     , worldBoundsSystem
     ]
+
+
+theSystem : Float -> ( List Key, Maybe KeyChange ) -> World -> World
+theSystem deltaMillis keys =
+    foldl (>>) identity (systems deltaMillis keys)
 
 
 keyboardInputSystem : ( List Key, Maybe KeyChange ) -> World -> World
@@ -241,11 +256,11 @@ firingCommandSystem world =
 
 
 frameSystem : Float -> World -> World
-frameSystem deltaTime world =
+frameSystem dt world =
     Ecs.updateSingleton specs.frame
         (\frame ->
-            { totalTime = frame.totalTime + deltaTime
-            , deltaTime = deltaTime
+            { totalTime = frame.totalTime + dt
+            , deltaTime = dt
             }
         )
         world
@@ -303,8 +318,8 @@ firingSystem world =
 rotationVelocitySystem : World -> World
 rotationVelocitySystem world =
     let
-        deltaTime =
-            (Ecs.getSingleton specs.frame world |> .deltaTime) / 1000.0
+        dt =
+            deltaTime world / 1000
     in
     Ecs.EntityComponents.processFromLeft
         specs.rotationVelocity
@@ -312,7 +327,7 @@ rotationVelocitySystem world =
             w
                 |> Ecs.updateComponent
                     specs.orientation
-                    (Maybe.map <| \r -> r + velocity.dr * deltaTime)
+                    (Maybe.map <| \r -> r + velocity.dr * dt)
         )
         world
 
@@ -320,8 +335,8 @@ rotationVelocitySystem world =
 positionVelocitySystem : World -> World
 positionVelocitySystem world =
     let
-        deltaTime =
-            (Ecs.getSingleton specs.frame world |> .deltaTime) / 1000.0
+        dt =
+            deltaTime world / 1000
     in
     Ecs.EntityComponents.processFromLeft
         specs.positionVelocity
@@ -331,8 +346,8 @@ positionVelocitySystem world =
                     specs.position
                     (Maybe.map <|
                         \p ->
-                            { x = p.x + velocity.dx * deltaTime
-                            , y = p.y + velocity.dy * deltaTime
+                            { x = p.x + velocity.dx * dt
+                            , y = p.y + velocity.dy * dt
                             }
                     )
         )
@@ -412,6 +427,34 @@ worldBoundsSystem world =
                     )
         )
         world
+
+
+ttlSystem : World -> World
+ttlSystem world =
+    let
+        dt =
+            deltaTime world
+    in
+    world
+        |> Ecs.EntityComponents.processFromLeft
+            specs.ttl
+            (\_ ttl w ->
+                Ecs.insertComponent specs.ttl
+                    { ttl
+                        | durationTime = ttl.durationTime + dt
+                        , remainingTime = ttl.remainingTime - dt
+                    }
+                    w
+            )
+        |> Ecs.EntityComponents.processFromLeft
+            specs.ttl
+            (\_ { remainingTime } w ->
+                if remainingTime < 0 then
+                    Ecs.removeEntity specs.all w
+
+                else
+                    w
+            )
 
 
 
@@ -525,6 +568,7 @@ newBulletEntity orientation position world =
         |> Ecs.insertComponent specs.position position
         |> Ecs.insertComponent specs.orientation orientation
         |> Ecs.insertComponent specs.positionVelocity { dx = vx, dy = vy }
+        |> Ecs.insertComponent specs.ttl (newTtl 5000)
         |> Ecs.insertComponent specs.sprite
             (line ( 0, 0 ) ( -0.7, 0 )
                 |> outlined (solid 5) red
@@ -571,8 +615,7 @@ update msg ({ world, keys } as model) =
 
 updateWorld : Float -> ( List Key, Maybe KeyChange ) -> World -> World
 updateWorld deltaMillis keys world =
-    systems deltaMillis keys
-        |> foldl (\system w -> system w) world
+    theSystem deltaMillis keys world
 
 
 
@@ -636,6 +679,15 @@ renderSprite _ sprite position rotation elements =
         |> move ( position.x, position.y )
     )
         :: elements
+
+
+
+-- CONVENIENT FUNS
+
+
+deltaTime : World -> Float
+deltaTime world =
+    Ecs.getSingleton specs.frame world |> .deltaTime
 
 
 
