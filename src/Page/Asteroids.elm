@@ -1,19 +1,24 @@
 module Page.Asteroids exposing (..)
 
+import Basics as Math
 import Browser.Events exposing (onAnimationFrameDelta)
 import Ecs
 import Ecs.Components10
-import Ecs.EntityComponents exposing (foldFromRight3)
-import Ecs.Singletons3
-import GraphicSVG exposing (Shape, blue, group, isosceles, line, move, outlined, red, rotate, solid)
+import Ecs.EntityComponents exposing (foldFromRight2)
+import Ecs.Singletons4
+import GraphicSVG exposing (Shape, blue, brown, group, isosceles, line, move, outlined, polygon, red, rotate, solid)
 import GraphicSVG.Widget as Widget
 import Html exposing (Html, div, hr, p)
 import Html.Attributes as Attributes exposing (class)
 import Keyboard exposing (Key(..), KeyChange(..))
 import Keyboard.Arrows as Keyboard exposing (Direction(..))
-import List exposing (foldl)
+import List exposing (concat, foldl)
 import Markdown
+import Maybe exposing (withDefault)
 import Page.Common exposing (Frames, addFrame, createFrames, fpsText, limitRange, zero)
+import Random exposing (Generator, Seed)
+import Task
+import Time
 import Tuple exposing (first)
 
 
@@ -118,7 +123,7 @@ type alias Components =
 
 
 type alias Singletons =
-    Ecs.Singletons3.Singletons3 Frame EntityId Keys
+    Ecs.Singletons4.Singletons4 Frame EntityId Keys Random.Seed
 
 
 type alias Frame =
@@ -129,10 +134,6 @@ type alias Frame =
 
 type alias Keys =
     ( List Key, Maybe KeyChange )
-
-
-
--- SPECS
 
 
 type alias Specs =
@@ -150,6 +151,7 @@ type alias Specs =
     , frame : SingletonSpec Frame
     , nextEntityId : SingletonSpec EntityId
     , keys : SingletonSpec Keys
+    , randomSeed : SingletonSpec Random.Seed
     }
 
 
@@ -167,7 +169,7 @@ type alias SingletonSpec a =
 
 specs : Specs
 specs =
-    Specs |> Ecs.Components10.specs |> Ecs.Singletons3.specs
+    Specs |> Ecs.Components10.specs |> Ecs.Singletons4.specs
 
 
 
@@ -310,7 +312,7 @@ firingSystem world =
         specs.orientation
         specs.position
         (\_ _ o p ->
-            newBulletEntity o p >> Ecs.removeComponent specs.fireCommand
+            spawnBulletEntity o p >> Ecs.removeComponent specs.fireCommand
         )
         world
 
@@ -323,11 +325,11 @@ rotationVelocitySystem world =
     in
     Ecs.EntityComponents.processFromLeft
         specs.rotationVelocity
-        (\_ velocity w ->
+        (\_ rv w ->
             w
                 |> Ecs.updateComponent
                     specs.orientation
-                    (Maybe.map <| \r -> r + velocity.dr * dt)
+                    (Maybe.map <| \r -> r + rv.dr * dt)
         )
         world
 
@@ -466,7 +468,7 @@ type alias World =
 
 
 type alias Model =
-    { world : World
+    { world : Maybe World
     , playground : Widget.Model
     , keys : ( List Key, Maybe KeyChange )
 
@@ -495,36 +497,42 @@ init =
         ( playgroundModel, playgroundCmd ) =
             Widget.init constants.width constants.height "asteroids-game"
     in
-    ( { world = initEntities emptyWorld
+    ( { world = Nothing
       , playground = playgroundModel
       , keys = ( [], Nothing )
       , frames = createFrames 10 -- initial capacity
       }
     , Cmd.batch
         [ Cmd.map PlaygroundMessage playgroundCmd
+        , Task.perform GotTime Time.now
         ]
     )
 
 
-emptyWorld : World
-emptyWorld =
-    Ecs.emptyWorld specs.all initSingletons
+initWorld : Time.Posix -> World
+initWorld time =
+    Ecs.emptyWorld specs.all (initSingletons <| Time.posixToMillis time)
 
 
-initSingletons : Singletons
-initSingletons =
-    Ecs.Singletons3.init
+initSingletons : Int -> Singletons
+initSingletons seed =
+    Ecs.Singletons4.init
         { deltaTime = 0
         , totalTime = 0
         }
         1
         ( [], Nothing )
+        (Random.initialSeed seed)
 
 
 initEntities : World -> World
 initEntities world =
     world
-        |> newShipEntity
+        |> spawnShipEntity
+        |> spawnAsteroidEntity (Position 10 10)
+        |> spawnAsteroidEntity (Position (constants.width - 10) (constants.height - 10))
+        |> spawnAsteroidEntity (Position 10 (constants.height - 10))
+        |> spawnAsteroidEntity (Position (constants.width - 10) 10)
 
 
 newEntity : World -> World
@@ -539,8 +547,8 @@ shipEntityId =
     0
 
 
-newShipEntity : World -> World
-newShipEntity world =
+spawnShipEntity : World -> World
+spawnShipEntity world =
     world
         |> Ecs.insertEntity shipEntityId
         |> Ecs.insertComponent specs.position
@@ -551,14 +559,17 @@ newShipEntity world =
         |> Ecs.insertComponent specs.rotationVelocity { dr = 0 }
         |> Ecs.insertComponent specs.positionVelocity { dx = 0, dy = 0 }
         |> Ecs.insertComponent specs.friction { f = 0.99 }
-        |> Ecs.insertComponent specs.sprite
-            (isosceles 1.0 1.5
-                |> outlined (solid 5) blue
-            )
+        |> Ecs.insertComponent specs.sprite shipSprite
 
 
-newBulletEntity : Orientation -> Position -> World -> World
-newBulletEntity orientation position world =
+shipSprite : Sprite
+shipSprite =
+    isosceles 1.0 1.5
+        |> outlined (solid 5) blue
+
+
+spawnBulletEntity : Orientation -> Position -> World -> World
+spawnBulletEntity orientation position world =
     let
         ( vx, vy ) =
             orientation |> vFromOrientation |> vMult 150.0
@@ -569,10 +580,59 @@ newBulletEntity orientation position world =
         |> Ecs.insertComponent specs.orientation orientation
         |> Ecs.insertComponent specs.positionVelocity { dx = vx, dy = vy }
         |> Ecs.insertComponent specs.ttl (newTtl 5000)
-        |> Ecs.insertComponent specs.sprite
-            (line ( 0, 0 ) ( -0.7, 0 )
-                |> outlined (solid 5) red
-            )
+        |> Ecs.insertComponent specs.sprite bulletSprite
+
+
+bulletSprite : Sprite
+bulletSprite =
+    line ( 0, 0 ) ( -0.7, 0 ) |> outlined (solid 5) red
+
+
+spawnAsteroidEntity : Position -> World -> World
+spawnAsteroidEntity position world =
+    let
+        mapper positionVelocity orientation rotationVelocity =
+            { positionVelocity = positionVelocity
+            , orientation = orientation
+            , rotationVelocity = rotationVelocity
+            }
+
+        ( w, randoms ) =
+            randomStep
+                (Random.map3 mapper
+                    asteroidsPositionVelocityGenerator
+                    asteroidsOrientationGenerator
+                    asteroidsRotationVelocityGenerator
+                )
+                world
+    in
+    w
+        |> newEntity
+        |> Ecs.insertComponent specs.position position
+        |> Ecs.insertComponent specs.positionVelocity randoms.positionVelocity
+        |> Ecs.insertComponent specs.orientation randoms.orientation
+        |> Ecs.insertComponent specs.rotationVelocity randoms.rotationVelocity
+        |> asteroidSprite
+        |> uncurry3 (Ecs.insertComponent specs.sprite)
+
+
+asteroidSprite : World -> ( Sprite, World )
+asteroidSprite world =
+    let
+        ( minRadius, maxRadius ) =
+            ( 10, 15 )
+
+        seed =
+            Ecs.getSingleton specs.randomSeed world
+
+        ( seed2, shape ) =
+            randomPolyline seed minRadius maxRadius 10
+    in
+    ( shape
+        |> polygon
+        |> outlined (solid 0.5) brown
+    , world |> Ecs.setSingleton specs.randomSeed seed2
+    )
 
 
 
@@ -581,36 +641,50 @@ newBulletEntity orientation position world =
 
 type Msg
     = GotAnimationFrameDeltaMilliseconds Float
+    | GotTime Time.Posix
     | PlaygroundMessage Widget.Msg
     | KeyboardMsg Keyboard.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg ({ world, keys } as model) =
-    case msg of
-        GotAnimationFrameDeltaMilliseconds deltaMilliseconds ->
+    case ( msg, world ) of
+        ( GotTime time, Nothing ) ->
             ( { model
-                | world = updateWorld deltaMilliseconds model.keys world
+                | world =
+                    initWorld time
+                        |> initEntities
+                        |> Just
+              }
+            , Cmd.none
+            )
+
+        ( GotAnimationFrameDeltaMilliseconds deltaMilliseconds, Just w ) ->
+            ( { model
+                | world = Just <| updateWorld deltaMilliseconds model.keys w
                 , frames = addFrame model.frames deltaMilliseconds
                 , keys = ( first model.keys, Nothing )
               }
             , Cmd.none
             )
 
-        PlaygroundMessage svgMsg ->
+        ( PlaygroundMessage svgMsg, _ ) ->
             let
                 ( playgroundModel, playgroundCmd ) =
                     Widget.update svgMsg model.playground
             in
             ( { model | playground = playgroundModel }, Cmd.map PlaygroundMessage playgroundCmd )
 
-        KeyboardMsg keyMsg ->
+        ( KeyboardMsg keyMsg, _ ) ->
             ( { model
                 | keys = Keyboard.updateWithKeyChange Keyboard.anyKeyUpper keyMsg (first model.keys)
                 , world = world
               }
             , Cmd.none
             )
+
+        _ ->
+            ( model, Cmd.none )
 
 
 updateWorld : Float -> ( List Key, Maybe KeyChange ) -> World -> World
@@ -638,51 +712,74 @@ subscriptions _ =
 view : Model -> Html Msg
 view { world, playground, frames } =
     div [ class "container" ]
-        [ hr [] []
-        , p [ class "text-muted" ]
-            [ Markdown.toHtml [ class "info" ] """
-Simple Asteroids clone in [Elm](https://elm-lang.org/) .
-"""
-            ]
-        , div [ class "asteroids" ]
-            [ div
-                [ Attributes.style "font-family" "monospace"
-                ]
-                [ Html.text ("entities: " ++ (Ecs.worldEntityCount world |> String.fromInt))
-                , Html.text " - "
-                , Html.text ("components: " ++ (Ecs.worldComponentCount specs.all world |> String.fromInt))
-                , Html.text " - "
-                , Html.text <| fpsText frames
-                ]
-            , div [ class "world" ]
-                [ Widget.view
-                    playground
-                    [ foldFromRight3
-                        specs.sprite
-                        specs.position
-                        specs.orientation
-                        renderSprite
-                        []
-                        world
-                        |> group
-                        |> move ( -constants.width / 2.0, -constants.height / 2.0 )
+        (concat
+            [ [ hr [] []
+              , p [ class "text-muted" ]
+                    [ Markdown.toHtml [ class "info" ] """
+  Simple Asteroids clone in [Elm](https://elm-lang.org/) .
+  """
                     ]
-                ]
+              ]
+            , case world of
+                Just w ->
+                    [ div [ class "asteroids" ]
+                        [ div
+                            [ Attributes.style "font-family" "monospace"
+                            ]
+                            [ Html.text ("entities: " ++ (Ecs.worldEntityCount w |> String.fromInt))
+                            , Html.text " - "
+                            , Html.text ("components: " ++ (Ecs.worldComponentCount specs.all w |> String.fromInt))
+                            , Html.text " - "
+                            , Html.text <| fpsText frames
+                            ]
+                        , div [ class "world" ]
+                            [ Widget.view
+                                playground
+                                [ renderWorld w ]
+                            ]
+                        ]
+                    ]
+
+                _ ->
+                    []
             ]
-        ]
+        )
 
 
-renderSprite : EntityId -> Sprite -> Position -> Orientation -> List (Shape Msg) -> List (Shape Msg)
-renderSprite _ sprite position rotation elements =
-    (sprite
-        |> rotate (degrees rotation)
-        |> move ( position.x, position.y )
-    )
-        :: elements
+renderWorld : World -> Shape Msg
+renderWorld world =
+    let
+        spriteCollector entityId sprite position acc =
+            let
+                maybeRotate =
+                    world
+                        |> Ecs.onEntity entityId
+                        |> Ecs.getComponent specs.orientation
+                        |> Maybe.map (rotate << degrees)
+            in
+            (sprite
+                |> withDefault identity maybeRotate
+                |> move ( position.x, position.y )
+            )
+                :: acc
+    in
+    foldFromRight2
+        specs.sprite
+        specs.position
+        spriteCollector
+        []
+        world
+        |> group
+        |> move ( -constants.width / 2.0, -constants.height / 2.0 )
 
 
 
 -- CONVENIENT FUNS
+
+
+tau : Float
+tau =
+    2 * Math.pi
 
 
 deltaTime : World -> Float
@@ -690,8 +787,68 @@ deltaTime world =
     Ecs.getSingleton specs.frame world |> .deltaTime
 
 
+randomStep : Random.Generator a -> World -> ( World, a )
+randomStep generator world =
+    let
+        seed =
+            Ecs.getSingleton specs.randomSeed world
+
+        ( r, seed2 ) =
+            Random.step generator seed
+    in
+    ( Ecs.setSingleton specs.randomSeed seed2 world, r )
+
+
+asteroidsPositionVelocityGenerator : Random.Generator PositionVelocity
+asteroidsPositionVelocityGenerator =
+    Random.map2 PositionVelocity
+        (Random.float -20 20)
+        (Random.float -20 20)
+
+
+asteroidsRotationVelocityGenerator : Random.Generator RotationVelocity
+asteroidsRotationVelocityGenerator =
+    Random.map RotationVelocity (Random.float -100 100)
+
+
+asteroidsOrientationGenerator : Random.Generator Orientation
+asteroidsOrientationGenerator =
+    Random.float 0 360
+
+
+randomPolyline : Seed -> Float -> Float -> Float -> ( Seed, List ( Float, Float ) )
+randomPolyline seed minRadius maxRadius granularity =
+    let
+        increment =
+            tau / granularity
+
+        rnd =
+            Random.float minRadius maxRadius
+
+        randomPolylineRec seed2 ang points =
+            if ang < tau then
+                let
+                    ( radius, seed3 ) =
+                        Random.step rnd seed2
+
+                    p =
+                        ( cos ang, sin ang ) |> vMult radius
+                in
+                randomPolylineRec seed3 (ang + increment) (p :: points)
+
+            else
+                ( seed2, points )
+    in
+    randomPolylineRec seed 0 []
+
+
 
 -- HELPERS
+
+
+uncurry3 : (a -> b -> c) -> ( a, b ) -> c
+uncurry3 f ( a, b ) =
+    f a b
 
 
 vFromOrientation : Orientation -> ( Float, Float )
@@ -722,6 +879,11 @@ vApply2 fa fb ( a, b ) =
 vMult : Float -> ( Float, Float ) -> ( Float, Float )
 vMult by =
     vApply <| (*) by
+
+
+vAdd : Float -> ( Float, Float ) -> ( Float, Float )
+vAdd by =
+    vApply <| (+) by
 
 
 vMag : ( Float, Float ) -> Float
