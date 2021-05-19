@@ -591,18 +591,22 @@ bulletSprite =
 spawnAsteroidEntity : Position -> World -> World
 spawnAsteroidEntity position world =
     let
-        mapper positionVelocity orientation rotationVelocity =
+        mapper positionVelocity orientation rotationVelocity ( minSize, width ) =
             { positionVelocity = positionVelocity
             , orientation = orientation
             , rotationVelocity = rotationVelocity
+            , minRadius = minSize
+            , maxRadius = minSize + width
+            , granularity = width
             }
 
         ( w, randoms ) =
             randomStep
-                (Random.map3 mapper
+                (Random.map4 mapper
                     asteroidsPositionVelocityGenerator
                     asteroidsOrientationGenerator
                     asteroidsRotationVelocityGenerator
+                    asteroidsSizeGenerator
                 )
                 world
     in
@@ -612,21 +616,18 @@ spawnAsteroidEntity position world =
         |> Ecs.insertComponent specs.positionVelocity randoms.positionVelocity
         |> Ecs.insertComponent specs.orientation randoms.orientation
         |> Ecs.insertComponent specs.rotationVelocity randoms.rotationVelocity
-        |> asteroidSprite
+        |> asteroidSprite randoms.minRadius randoms.maxRadius randoms.granularity
         |> uncurry3 (Ecs.insertComponent specs.sprite)
 
 
-asteroidSprite : World -> ( Sprite, World )
-asteroidSprite world =
+asteroidSprite : Float -> Float -> Float -> World -> ( Sprite, World )
+asteroidSprite minRadius maxRadius granularity world =
     let
-        ( minRadius, maxRadius ) =
-            ( 10, 15 )
-
         seed =
             Ecs.getSingleton specs.randomSeed world
 
         ( seed2, shape ) =
-            randomPolyline seed minRadius maxRadius 10
+            randomPolyline seed minRadius maxRadius granularity
     in
     ( shape
         |> polygon
@@ -814,6 +815,13 @@ asteroidsRotationVelocityGenerator =
 asteroidsOrientationGenerator : Random.Generator Orientation
 asteroidsOrientationGenerator =
     Random.float 0 360
+
+
+asteroidsSizeGenerator : Random.Generator ( Float, Float )
+asteroidsSizeGenerator =
+    Random.map2 Tuple.pair
+        (Random.float 5 10)
+        (Random.float 4 10)
 
 
 randomPolyline : Seed -> Float -> Float -> Float -> ( Seed, List ( Float, Float ) )
