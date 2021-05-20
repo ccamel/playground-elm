@@ -49,24 +49,28 @@ strToNumberWithMinMax s converter minv maxv =
         x ->
             x
                 |> converter
-                |> map (limitRange (minv, maxv))
+                |> map (limitRange ( minv, maxv ))
+
 
 {-| ensures that the given comparable is limited to the given range [min, max]
 -}
-limitRange: (comparable, comparable) -> comparable -> comparable
-limitRange (minv, maxv) v =
-  v
-  |> Basics.min maxv
-  |> Basics.max minv
+limitRange : ( comparable, comparable ) -> comparable -> comparable
+limitRange ( minv, maxv ) v =
+    v
+        |> Basics.min maxv
+        |> Basics.max minv
+
 
 {-| returns zero value if the given comparable is lower (in absolute value) than the given epsilon.
 -}
-zero: number -> number -> number
+zero : number -> number -> number
 zero epsilon v =
-  if (abs v) < epsilon then
-    0
-  else
-    v
+    if abs v < epsilon then
+        0
+
+    else
+        v
+
 
 {-| This function makes it easier to build a space-separated class attribute with SVG
 TODO: To replace with equivalent function in core modules when available
@@ -225,6 +229,7 @@ withAlpha alpha color =
             toRgba color
     in
     { rgba | alpha = alpha } |> fromRgba
+
 
 toPixels : Int -> String
 toPixels size =

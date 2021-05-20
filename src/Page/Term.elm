@@ -92,10 +92,12 @@ subscriptions _ =
 
 -- PORTS
 
+
 {-| Port which evaluates the given string as Javascript code (expression or statements) using the eval() function
 from the Javascript world.
 -}
 port evalJS : String -> Cmd msg
+
 
 {-| Port subscription which emits results of evaluation performed by evalJS port.
 -}

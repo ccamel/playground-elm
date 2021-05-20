@@ -218,14 +218,15 @@ view model =
 
 
 {-| segments code (7 segments display)
-      A
-      -
-   F |.| B   . H
-   G  -
-   E |.| C   . I
+A
 
+
+F |.| B . H
+G -
+E |.| C . I
 
 D
+
 -}
 type Segment
     = A

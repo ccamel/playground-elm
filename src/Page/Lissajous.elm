@@ -660,5 +660,3 @@ fadeColor f c =
 sendMsg : msg -> Cmd msg
 sendMsg msg =
     Task.succeed msg |> Task.perform identity
-
-

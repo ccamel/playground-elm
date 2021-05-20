@@ -171,6 +171,7 @@ The site is accessible through the `http://localhost:1234/` endpoint.
 - [`elm`](http://elm-lang.org/): ELM
 
   With the following (main and non exhaustive) packages:
+
   - [Chadtech/elm-vector](https://package.elm-lang.org/packages/Chadtech/elm-vector/latest/)
   - [avh4/elm-color](https://package.elm-lang.org/packages/avh4/elm-color/latest/)
   - [cuducos/elm-format-number](https://package.elm-lang.org/packages/cuducos/elm-format-number/latest/)
