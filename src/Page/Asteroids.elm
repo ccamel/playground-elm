@@ -1,12 +1,17 @@
 module Page.Asteroids exposing (..)
 
+import Angle exposing (inRadians)
+import AngularAcceleration exposing (AngularAcceleration, radiansPerSecondSquared)
+import AngularSpeed exposing (AngularSpeed, degreesPerSecond, radiansPerSecond)
 import Basics as Math
 import Browser.Events exposing (onAnimationFrameDelta)
+import Direction2d exposing (Direction2d, rotateBy, toAngle)
+import Duration exposing (Duration, Seconds, milliseconds)
 import Ecs
-import Ecs.Components10
+import Ecs.Components11
 import Ecs.EntityComponents exposing (foldFromRight2)
 import Ecs.Singletons4
-import GraphicSVG exposing (Shape, blue, brown, group, isosceles, line, move, outlined, polygon, red, rotate, solid)
+import GraphicSVG exposing (Shape, blue, brown, group, ident, isosceles, line, move, moveT, outlined, polygon, red, rotate, scaleT, solid, transform)
 import GraphicSVG.Widget as Widget
 import Html exposing (Html, div, hr, p)
 import Html.Attributes as Attributes exposing (class)
@@ -15,11 +20,15 @@ import Keyboard.Arrows as Keyboard exposing (Direction(..))
 import List exposing (concat, foldl)
 import Markdown
 import Maybe exposing (withDefault)
-import Page.Common exposing (Frames, addFrame, createFrames, fpsText, limitRange, zero)
+import Page.Common exposing (Frames, addFrame, createFrames, fpsText)
+import Pixels exposing (Pixels, PixelsPerSecond, PixelsPerSecondSquared, inPixels, pixels, pixelsPerSecond, pixelsPerSecondSquared)
+import Point2d exposing (Point2d, translateBy, xCoordinate, yCoordinate)
+import Quantity exposing (Product, Quantity, Rate, lessThanOrEqualToZero, plus, zero)
 import Random exposing (Generator, Seed)
 import Task
 import Time
 import Tuple exposing (first)
+import Vector2d exposing (Vector2d, scaleTo)
 
 
 
@@ -47,33 +56,31 @@ type alias EntityId =
 
 
 
+-- UNITS
+
+
+type CanvasCoordinates
+    = CanvasCoordinates
+
+
+
 -- COMPONENTS
 
 
 type alias Position =
-    { x : Float
-    , y : Float
-    }
+    Point2d Pixels CanvasCoordinates
 
 
 type alias PositionVelocity =
-    { dx : Float
-    , dy : Float
-    }
+    Vector2d PixelsPerSecond CanvasCoordinates
 
 
 type alias RotationVelocity =
-    { dr : Float
-    }
+    AngularSpeed
 
 
 type alias Orientation =
-    Float
-
-
-type alias Friction =
-    { f : Float -- in degrees
-    }
+    Direction2d CanvasCoordinates
 
 
 type alias Sprite =
@@ -81,30 +88,38 @@ type alias Sprite =
 
 
 type alias ThrustCommand =
-    Float
+    Quantity Float PixelsPerSecondSquared
 
 
 type alias SideThrustCommand =
-    Float
+    AngularAcceleration
 
 
-type alias FireCommand =
-    ()
+type alias VelocityFriction =
+    Quantity Float PixelsPerSecondSquared
+
+
+type alias AngularFriction =
+    AngularAcceleration
+
+
+type FireCommand
+    = FireCommand
 
 
 type alias Ttl =
-    { durationTime : Float -- in ms
-    , remainingTime : Float -- in ms
+    { durationTime : Duration
+    , remainingTime : Duration
     }
 
 
-newTtl : Float -> Ttl
+newTtl : Duration -> Ttl
 newTtl durationTime =
-    { durationTime = 0, remainingTime = durationTime }
+    { durationTime = zero, remainingTime = durationTime }
 
 
 type alias Components =
-    Ecs.Components10.Components10
+    Ecs.Components11.Components11
         EntityId
         Position
         PositionVelocity
@@ -114,7 +129,8 @@ type alias Components =
         ThrustCommand
         SideThrustCommand
         FireCommand
-        Friction
+        VelocityFriction
+        AngularFriction
         Ttl
 
 
@@ -127,8 +143,8 @@ type alias Singletons =
 
 
 type alias Frame =
-    { deltaTime : Float -- in ms
-    , totalTime : Float -- in ms
+    { deltaTime : Duration
+    , totalTime : Duration
     }
 
 
@@ -146,7 +162,8 @@ type alias Specs =
     , thrustCommand : ComponentSpec ThrustCommand
     , sideThrustCommand : ComponentSpec SideThrustCommand
     , fireCommand : ComponentSpec FireCommand
-    , friction : ComponentSpec Friction
+    , velocityFriction : ComponentSpec VelocityFriction
+    , angularFriction : ComponentSpec AngularFriction
     , ttl : ComponentSpec Ttl
     , frame : SingletonSpec Frame
     , nextEntityId : SingletonSpec EntityId
@@ -169,16 +186,16 @@ type alias SingletonSpec a =
 
 specs : Specs
 specs =
-    Specs |> Ecs.Components10.specs |> Ecs.Singletons4.specs
+    Specs |> Ecs.Components11.specs |> Ecs.Singletons4.specs
 
 
 
 -- SYSTEMS
 
 
-systems : Float -> ( List Key, Maybe KeyChange ) -> List (World -> World)
-systems deltaMillis keys =
-    [ frameSystem deltaMillis
+systems : Duration -> ( List Key, Maybe KeyChange ) -> List (World -> World)
+systems delta keys =
+    [ frameSystem delta
     , ttlSystem
     , keyboardInputSystem keys
     , controlCommandSystem
@@ -188,14 +205,15 @@ systems deltaMillis keys =
     , firingSystem
     , positionVelocitySystem
     , rotationVelocitySystem
-    , applyFrictions
+    , velocityFrictionSystem
+    , angularFrictionSystem
     , worldBoundsSystem
     ]
 
 
-theSystem : Float -> ( List Key, Maybe KeyChange ) -> World -> World
-theSystem deltaMillis keys =
-    foldl (>>) identity (systems deltaMillis keys)
+theSystem : Duration -> ( List Key, Maybe KeyChange ) -> World -> World
+theSystem delta keys =
+    foldl (>>) identity (systems delta keys)
 
 
 keyboardInputSystem : ( List Key, Maybe KeyChange ) -> World -> World
@@ -209,31 +227,31 @@ controlCommandSystem : World -> World
 controlCommandSystem world =
     let
         keys =
-            Ecs.getSingleton specs.keys world |> Tuple.first |> Keyboard.wasdDirection
+            Ecs.getSingleton specs.keys world |> Tuple.first |> Keyboard.arrowsDirection
     in
     world
         |> Ecs.onEntity shipEntityId
         |> (case keys of
                 North ->
-                    Ecs.insertComponent specs.thrustCommand 5.0
+                    Ecs.insertComponent specs.thrustCommand (pixelsPerSecondSquared 100.0)
 
                 NorthEast ->
-                    Ecs.insertComponent specs.thrustCommand 5.0 >> Ecs.insertComponent specs.sideThrustCommand -5.0
+                    Ecs.insertComponent specs.thrustCommand (pixelsPerSecondSquared 100.0) >> Ecs.insertComponent specs.sideThrustCommand (radiansPerSecondSquared -5.0)
 
                 East ->
-                    Ecs.insertComponent specs.sideThrustCommand -5.0
+                    Ecs.insertComponent specs.sideThrustCommand (radiansPerSecondSquared -5.0)
 
                 SouthEast ->
-                    Ecs.insertComponent specs.sideThrustCommand -5.0
+                    Ecs.insertComponent specs.sideThrustCommand (radiansPerSecondSquared -5.0)
 
                 SouthWest ->
-                    Ecs.insertComponent specs.sideThrustCommand 5.0
+                    Ecs.insertComponent specs.sideThrustCommand (radiansPerSecondSquared 5.0)
 
                 West ->
-                    Ecs.insertComponent specs.sideThrustCommand 5.0
+                    Ecs.insertComponent specs.sideThrustCommand (radiansPerSecondSquared 5.0)
 
                 NorthWest ->
-                    Ecs.insertComponent specs.thrustCommand 5.0 >> Ecs.insertComponent specs.sideThrustCommand 5.0
+                    Ecs.insertComponent specs.thrustCommand (pixelsPerSecondSquared 100.0) >> Ecs.insertComponent specs.sideThrustCommand (radiansPerSecondSquared 5.0)
 
                 _ ->
                     Ecs.removeComponent specs.thrustCommand >> Ecs.removeComponent specs.sideThrustCommand
@@ -250,19 +268,19 @@ firingCommandSystem world =
         |> Ecs.onEntity shipEntityId
         |> (case maybeKeyChange of
                 Just (KeyDown Spacebar) ->
-                    Ecs.insertComponent specs.fireCommand () >> Ecs.setSingleton specs.keys ( keys, Nothing )
+                    Ecs.insertComponent specs.fireCommand FireCommand >> Ecs.setSingleton specs.keys ( keys, Nothing )
 
                 _ ->
                     Ecs.removeComponent specs.fireCommand
            )
 
 
-frameSystem : Float -> World -> World
-frameSystem dt world =
+frameSystem : Duration -> World -> World
+frameSystem delta world =
     Ecs.updateSingleton specs.frame
         (\frame ->
-            { totalTime = frame.totalTime + dt
-            , deltaTime = dt
+            { totalTime = frame.totalTime |> plus delta
+            , deltaTime = delta
             }
         )
         world
@@ -270,22 +288,20 @@ frameSystem dt world =
 
 forwardThrustSystem : World -> World
 forwardThrustSystem world =
+    let
+        dt =
+            deltaTime world
+    in
     Ecs.EntityComponents.processFromLeft3
         specs.thrustCommand
         specs.positionVelocity
         specs.orientation
         (\_ thrust pv o w ->
-            let
-                bounds =
-                    ( -100, 100 )
-
-                ( dx, dy ) =
-                    vFromOrientation o |> vMult thrust
-            in
             Ecs.insertComponent specs.positionVelocity
-                { dx = limitRange bounds (pv.dx + dx)
-                , dy = limitRange bounds (pv.dy + dy)
-                }
+                (pv
+                    |> Vector2d.plus (Vector2d.withLength thrust o |> Vector2d.for dt)
+                    |> vectorLimit constants.speedLimit
+                )
                 w
         )
         world
@@ -293,13 +309,19 @@ forwardThrustSystem world =
 
 sideThrustSystem : World -> World
 sideThrustSystem world =
+    let
+        dt =
+            deltaTime world
+    in
     Ecs.EntityComponents.processFromLeft2
         specs.sideThrustCommand
         specs.rotationVelocity
         (\_ thrust rv w ->
             Ecs.insertComponent specs.rotationVelocity
-                { dr = limitRange ( -100, 100 ) (rv.dr + thrust)
-                }
+                (rv
+                    |> Quantity.plus (thrust |> Quantity.for dt)
+                    |> quantityRange ( Quantity.negate constants.angularSpeedLimit, constants.angularSpeedLimit )
+                )
                 w
         )
         world
@@ -321,7 +343,7 @@ rotationVelocitySystem : World -> World
 rotationVelocitySystem world =
     let
         dt =
-            deltaTime world / 1000
+            deltaTime world
     in
     Ecs.EntityComponents.processFromLeft
         specs.rotationVelocity
@@ -329,7 +351,7 @@ rotationVelocitySystem world =
             w
                 |> Ecs.updateComponent
                     specs.orientation
-                    (Maybe.map <| \r -> r + rv.dr * dt)
+                    (Maybe.map <| rotateBy (rv |> Quantity.for dt))
         )
         world
 
@@ -338,7 +360,7 @@ positionVelocitySystem : World -> World
 positionVelocitySystem world =
     let
         dt =
-            deltaTime world / 1000
+            deltaTime world
     in
     Ecs.EntityComponents.processFromLeft
         specs.positionVelocity
@@ -346,54 +368,74 @@ positionVelocitySystem world =
             w
                 |> Ecs.updateComponent
                     specs.position
-                    (Maybe.map <|
-                        \p ->
-                            { x = p.x + velocity.dx * dt
-                            , y = p.y + velocity.dy * dt
-                            }
-                    )
+                    (Maybe.map <| translateBy (velocity |> Vector2d.for dt))
         )
         world
 
 
-applyFrictions : World -> World
-applyFrictions world =
+velocityFrictionSystem : World -> World
+velocityFrictionSystem world =
+    let
+        dt =
+            deltaTime world
+
+        app vf v =
+            let
+                f =
+                    v
+                        |> scaleTo vf
+                        |> Vector2d.for dt
+                        |> Vector2d.reverse
+            in
+            if Vector2d.length f |> Quantity.greaterThan (Vector2d.length v) then
+                Vector2d.zero
+
+            else
+                v |> Vector2d.plus f
+    in
     Ecs.EntityComponents.processFromLeft
-        specs.friction
-        applyFriction
+        specs.velocityFriction
+        (\_ vf w ->
+            w
+                |> Ecs.updateComponent
+                    specs.positionVelocity
+                    (Maybe.map (app vf))
+        )
         world
 
 
-applyFriction : EntityId -> Friction -> World -> World
-applyFriction _ { f } world =
-    world
-        |> Ecs.updateComponent
-            specs.positionVelocity
-            (Maybe.map <|
-                \v ->
-                    let
-                        ( dx, dy ) =
-                            ( v.dx, v.dy )
-                                |> vApply ((*) f)
-                                |> vApply (zero 0.001)
-                    in
-                    { v
-                        | dx = dx
-                        , dy = dy
-                    }
-            )
-        |> Ecs.updateComponent
-            specs.rotationVelocity
-            (Maybe.map <|
-                \v ->
-                    let
-                        dr =
-                            zero 0.001 (v.dr * f)
-                    in
-                    { v
-                        | dr = dr
-                    }
-            )
+angularFrictionSystem : World -> World
+angularFrictionSystem world =
+    let
+        dt =
+            deltaTime world
+
+        app af v =
+            let
+                f =
+                    af |> Quantity.for dt
+
+                v2 =
+                    if f |> Quantity.greaterThan (Quantity.abs v) then
+                        zero
+
+                    else if v |> Quantity.greaterThanOrEqualToZero then
+                        v |> Quantity.minus f
+
+                    else
+                        v |> Quantity.plus f
+            in
+            v2 |> quantityRangeAbs constants.angularSpeedLimit
+    in
+    Ecs.EntityComponents.processFromLeft
+        specs.angularFriction
+        (\_ vf w ->
+            w
+                |> Ecs.updateComponent
+                    specs.rotationVelocity
+                    (Maybe.map (app vf))
+        )
+        world
 
 
 worldBoundsSystem : World -> World
@@ -406,26 +448,14 @@ worldBoundsSystem world =
                     specs.position
                     (Maybe.map <|
                         \p ->
-                            { p
-                                | x =
-                                    if p.x < 0 then
-                                        constants.width + p.x
+                            let
+                                x =
+                                    xCoordinate p |> quantityRangeMod ( zero, constants.width )
 
-                                    else if p.x > constants.width then
-                                        p.x - constants.width
-
-                                    else
-                                        p.x
-                                , y =
-                                    if p.y < 0 then
-                                        constants.height + p.y
-
-                                    else if p.y > constants.height then
-                                        p.y - constants.height
-
-                                    else
-                                        p.y
-                            }
+                                y =
+                                    yCoordinate p |> quantityRangeMod ( zero, constants.height )
+                            in
+                            Point2d.xy x y
                     )
         )
         world
@@ -443,15 +473,15 @@ ttlSystem world =
             (\_ ttl w ->
                 Ecs.insertComponent specs.ttl
                     { ttl
-                        | durationTime = ttl.durationTime + dt
-                        , remainingTime = ttl.remainingTime - dt
+                        | durationTime = ttl.durationTime |> Quantity.plus dt
+                        , remainingTime = ttl.remainingTime |> Quantity.minus dt
                     }
                     w
             )
         |> Ecs.EntityComponents.processFromLeft
             specs.ttl
             (\_ { remainingTime } w ->
-                if remainingTime < 0 then
+                if remainingTime |> lessThanOrEqualToZero then
                     Ecs.removeEntity specs.all w
 
                 else
@@ -481,21 +511,28 @@ type alias Model =
 -- INIT
 
 
-constants : { width : Float, height : Float }
+constants : { width : Quantity Float Pixels, height : Quantity Float Pixels, speedLimit : Quantity Float PixelsPerSecond, angularSpeedLimit : AngularSpeed }
 constants =
     { -- width of the canvas
-      width = 320.0
+      width = 320.0 |> pixels
 
     -- height of the canvas
-    , height = 240.0
+    , height = 240.0 |> pixels
+    , speedLimit = 90.0 |> pixelsPerSecond
+    , angularSpeedLimit = 100.0 |> degreesPerSecond
     }
+
+
+center : Point2d Pixels coordinates
+center =
+    Point2d.xy (constants.width |> Quantity.half) (constants.height |> Quantity.half)
 
 
 init : ( Model, Cmd Msg )
 init =
     let
         ( playgroundModel, playgroundCmd ) =
-            Widget.init constants.width constants.height "asteroids-game"
+            Widget.init (inPixels constants.width) (inPixels constants.height) "asteroids-game"
     in
     ( { world = Nothing
       , playground = playgroundModel
@@ -517,8 +554,8 @@ initWorld time =
 initSingletons : Int -> Singletons
 initSingletons seed =
     Ecs.Singletons4.init
-        { deltaTime = 0
-        , totalTime = 0
+        { deltaTime = Quantity.zero
+        , totalTime = Quantity.zero
         }
         1
         ( [], Nothing )
@@ -527,12 +564,25 @@ initSingletons seed =
 
 initEntities : World -> World
 initEntities world =
+    let
+        x =
+            10.0 |> pixels
+
+        y =
+            10.0 |> pixels
+
+        w =
+            constants.width |> Quantity.minus x
+
+        h =
+            constants.height |> Quantity.minus y
+    in
     world
         |> spawnShipEntity
-        |> spawnAsteroidEntity (Position 10 10)
-        |> spawnAsteroidEntity (Position (constants.width - 10) (constants.height - 10))
-        |> spawnAsteroidEntity (Position 10 (constants.height - 10))
-        |> spawnAsteroidEntity (Position (constants.width - 10) 10)
+        |> spawnAsteroidEntity (Point2d.xy x y)
+        |> spawnAsteroidEntity (Point2d.xy x h)
+        |> spawnAsteroidEntity (Point2d.xy w y)
+        |> spawnAsteroidEntity (Point2d.xy w h)
 
 
 newEntity : World -> World
@@ -551,35 +601,30 @@ spawnShipEntity : World -> World
 spawnShipEntity world =
     world
         |> Ecs.insertEntity shipEntityId
-        |> Ecs.insertComponent specs.position
-            { x = constants.width / 2
-            , y = constants.height / 2
-            }
-        |> Ecs.insertComponent specs.orientation 0.0
-        |> Ecs.insertComponent specs.rotationVelocity { dr = 0 }
-        |> Ecs.insertComponent specs.positionVelocity { dx = 0, dy = 0 }
-        |> Ecs.insertComponent specs.friction { f = 0.99 }
+        |> Ecs.insertComponent specs.position center
+        |> Ecs.insertComponent specs.orientation Direction2d.positiveY
+        |> Ecs.insertComponent specs.rotationVelocity Quantity.zero
+        |> Ecs.insertComponent specs.positionVelocity Vector2d.zero
+        |> Ecs.insertComponent specs.velocityFriction (pixelsPerSecondSquared 10.0)
+        |> Ecs.insertComponent specs.angularFriction (AngularAcceleration.degreesPerSecondSquared 20.0)
         |> Ecs.insertComponent specs.sprite shipSprite
 
 
 shipSprite : Sprite
 shipSprite =
-    isosceles 1.0 1.5
-        |> outlined (solid 5) blue
+    isosceles 5 8
+        |> outlined (solid 0.5) blue
 
 
 spawnBulletEntity : Orientation -> Position -> World -> World
 spawnBulletEntity orientation position world =
-    let
-        ( vx, vy ) =
-            orientation |> vFromOrientation |> vMult 150.0
-    in
     world
         |> newEntity
         |> Ecs.insertComponent specs.position position
         |> Ecs.insertComponent specs.orientation orientation
-        |> Ecs.insertComponent specs.positionVelocity { dx = vx, dy = vy }
-        |> Ecs.insertComponent specs.ttl (newTtl 5000)
+        |> Ecs.insertComponent specs.positionVelocity
+            (orientation |> Direction2d.toVector |> Vector2d.scaleTo (pixelsPerSecond 150.0))
+        |> Ecs.insertComponent specs.ttl (5 |> Duration.seconds |> newTtl)
         |> Ecs.insertComponent specs.sprite bulletSprite
 
 
@@ -660,10 +705,10 @@ update msg ({ world, keys } as model) =
             , Cmd.none
             )
 
-        ( GotAnimationFrameDeltaMilliseconds deltaMilliseconds, Just w ) ->
+        ( GotAnimationFrameDeltaMilliseconds delta, Just w ) ->
             ( { model
-                | world = Just <| updateWorld deltaMilliseconds model.keys w
-                , frames = addFrame model.frames deltaMilliseconds
+                | world = Just <| updateWorld (delta |> milliseconds) model.keys w
+                , frames = addFrame model.frames delta
                 , keys = ( first model.keys, Nothing )
               }
             , Cmd.none
@@ -688,9 +733,9 @@ update msg ({ world, keys } as model) =
             ( model, Cmd.none )
 
 
-updateWorld : Float -> ( List Key, Maybe KeyChange ) -> World -> World
-updateWorld deltaMillis keys world =
-    theSystem deltaMillis keys world
+updateWorld : Duration -> ( List Key, Maybe KeyChange ) -> World -> World
+updateWorld delta keys world =
+    theSystem delta keys world
 
 
 
@@ -756,11 +801,11 @@ renderWorld world =
                     world
                         |> Ecs.onEntity entityId
                         |> Ecs.getComponent specs.orientation
-                        |> Maybe.map (rotate << degrees)
+                        |> Maybe.map (rotate << (+) (-pi / 2) << inRadians << toAngle)
             in
             (sprite
                 |> withDefault identity maybeRotate
-                |> move ( position.x, position.y )
+                |> move (position |> Point2d.toTuple inPixels)
             )
                 :: acc
     in
@@ -771,7 +816,7 @@ renderWorld world =
         []
         world
         |> group
-        |> move ( -constants.width / 2.0, -constants.height / 2.0 )
+        |> move (Vector2d.from center Point2d.origin |> Vector2d.toTuple inPixels)
 
 
 
@@ -783,7 +828,7 @@ tau =
     2 * Math.pi
 
 
-deltaTime : World -> Float
+deltaTime : World -> Duration
 deltaTime world =
     Ecs.getSingleton specs.frame world |> .deltaTime
 
@@ -802,19 +847,27 @@ randomStep generator world =
 
 asteroidsPositionVelocityGenerator : Random.Generator PositionVelocity
 asteroidsPositionVelocityGenerator =
-    Random.map2 PositionVelocity
+    let
+        vectorPixelsPerSeconds x y =
+            Vector2d.xy (x |> pixelsPerSecond) (y |> pixelsPerSecond)
+    in
+    Random.map2 vectorPixelsPerSeconds
         (Random.float -20 20)
         (Random.float -20 20)
 
 
 asteroidsRotationVelocityGenerator : Random.Generator RotationVelocity
 asteroidsRotationVelocityGenerator =
-    Random.map RotationVelocity (Random.float -100 100)
+    Random.map
+        degreesPerSecond
+        (Random.float -20 20)
 
 
 asteroidsOrientationGenerator : Random.Generator Orientation
 asteroidsOrientationGenerator =
-    Random.float 0 360
+    Random.map
+        Direction2d.degrees
+        (Random.float 0 360)
 
 
 asteroidsSizeGenerator : Random.Generator ( Float, Float )
@@ -859,19 +912,45 @@ uncurry3 f ( a, b ) =
     f a b
 
 
-vFromOrientation : Orientation -> ( Float, Float )
-vFromOrientation orientation =
-    orientation
-        |> degrees
-        |> (\v ->
-                ( v, v )
-                    |> vApply2 (sin >> (*) -1) cos
-           )
+vectorLimit : Quantity Float units -> Vector2d units coordinates -> Vector2d units coordinates
+vectorLimit limit v =
+    if Vector2d.length v |> Quantity.greaterThan limit then
+        scaleTo limit v
+
+    else
+        v
 
 
-vMagSq : ( Float, Float ) -> Float
-vMagSq ( a, b ) =
-    a * a + b * b
+quantityRange : ( Quantity number units, Quantity number units ) -> Quantity number units -> Quantity number units
+quantityRange ( minv, maxv ) v =
+    v
+        |> Quantity.min maxv
+        |> Quantity.max minv
+
+
+quantityRangeAbs : Quantity number units -> Quantity number units -> Quantity number units
+quantityRangeAbs l v =
+    let
+        labs =
+            Quantity.abs l
+    in
+    quantityRange ( labs |> Quantity.negate, labs ) v
+
+
+quantityRangeMod : ( Quantity number units, Quantity number units ) -> Quantity number units -> Quantity number units
+quantityRangeMod (( minv, maxv ) as limit) v =
+    let
+        range =
+            maxv |> Quantity.minus minv
+    in
+    if v |> Quantity.lessThan minv then
+        quantityRangeMod limit (v |> Quantity.plus range)
+
+    else if v |> Quantity.greaterThan maxv then
+        quantityRangeMod limit (v |> Quantity.minus range)
+
+    else
+        v
 
 
 vApply : (Float -> Float) -> ( Float, Float ) -> ( Float, Float )
@@ -879,21 +958,6 @@ vApply f ( a, b ) =
     ( f a, f b )
 
 
-vApply2 : (Float -> Float) -> (Float -> Float) -> ( Float, Float ) -> ( Float, Float )
-vApply2 fa fb ( a, b ) =
-    ( fa a, fb b )
-
-
 vMult : Float -> ( Float, Float ) -> ( Float, Float )
 vMult by =
     vApply <| (*) by
-
-
-vAdd : Float -> ( Float, Float ) -> ( Float, Float )
-vAdd by =
-    vApply <| (+) by
-
-
-vMag : ( Float, Float ) -> Float
-vMag v =
-    sqrt (vMagSq v)
