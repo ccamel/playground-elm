@@ -24,6 +24,7 @@
       "elm-community/random-extra": "3.2.0",
       "elm-explorations/markdown": "1.0.0",
       "harmboschloo/elm-ecs": "2.0.0",
+      "ianmackenzie/elm-geometry": "3.9.0",
       "joakin/elm-canvas": "4.3.0",
       "lukewestby/elm-string-interpolate": "1.0.4",
       "mpizenberg/elm-pointer-events": "4.0.2",
@@ -38,7 +39,12 @@
       "elm/regex": "1.0.0",
       "elm/virtual-dom": "1.0.2",
       "fredcy/elm-parseint": "2.0.1",
-      "harmboschloo/elm-dict-intersect": "1.0.0"
+      "harmboschloo/elm-dict-intersect": "1.0.0",
+      "ianmackenzie/elm-1d-parameter": "1.0.1",
+      "ianmackenzie/elm-float-extra": "1.1.0",
+      "ianmackenzie/elm-interval": "2.0.0",
+      "ianmackenzie/elm-triangular-mesh": "1.1.0",
+      "ianmackenzie/elm-units-interval": "2.3.0"
     }
   },
   "test-dependencies": {
