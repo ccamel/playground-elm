@@ -25,6 +25,7 @@
       "elm-explorations/markdown": "1.0.0",
       "harmboschloo/elm-ecs": "2.0.0",
       "ianmackenzie/elm-geometry": "3.9.0",
+      "ianmackenzie/elm-units": "2.9.0",
       "joakin/elm-canvas": "4.3.0",
       "lukewestby/elm-string-interpolate": "1.0.4",
       "mpizenberg/elm-pointer-events": "4.0.2",
