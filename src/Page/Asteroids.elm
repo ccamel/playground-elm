@@ -4,11 +4,12 @@ import Angle exposing (inDegrees)
 import AngularAcceleration exposing (AngularAcceleration, radiansPerSecondSquared)
 import AngularSpeed exposing (AngularSpeed, degreesPerSecond)
 import Basics as Math
+import BoundingBox2d exposing (BoundingBox2d)
 import Browser.Events exposing (onAnimationFrameDelta)
 import Direction2d exposing (Direction2d, rotateBy, toAngle)
 import Duration exposing (Duration, Seconds, milliseconds)
 import Ecs
-import Ecs.Components12
+import Ecs.Components13
 import Ecs.EntityComponents exposing (foldFromRight2)
 import Ecs.Singletons4
 import Html exposing (Html, div, hr, p)
@@ -119,8 +120,12 @@ type alias Ttl =
     }
 
 
+type alias BoundingBox =
+    BoundingBox2d Pixels CanvasCoordinates
+
+
 type alias Components =
-    Ecs.Components12.Components12
+    Ecs.Components13.Components13
         EntityId
         Position
         PositionVelocity
@@ -134,6 +139,7 @@ type alias Components =
         AngularFriction
         Age
         Ttl
+        BoundingBox
 
 
 
@@ -168,6 +174,7 @@ type alias Specs =
     , angularFriction : ComponentSpec AngularFriction
     , age : ComponentSpec Age
     , ttl : ComponentSpec Ttl
+    , boundingBox : ComponentSpec BoundingBox
     , frame : SingletonSpec Frame
     , nextEntityId : SingletonSpec EntityId
     , keys : SingletonSpec Keys
@@ -189,7 +196,7 @@ type alias SingletonSpec a =
 
 specs : Specs
 specs =
-    Specs |> Ecs.Components12.specs |> Ecs.Singletons4.specs
+    Specs |> Ecs.Components13.specs |> Ecs.Singletons4.specs
 
 
 
@@ -652,13 +659,11 @@ bulletSprite =
 spawnAsteroidEntity : Position -> World -> World
 spawnAsteroidEntity position world =
     let
-        mapper positionVelocity orientation rotationVelocity ( minSize, width ) =
+        mapper positionVelocity orientation rotationVelocity shape =
             { positionVelocity = positionVelocity
             , orientation = orientation
             , rotationVelocity = rotationVelocity
-            , minRadius = minSize
-            , maxRadius = minSize + width
-            , granularity = width
+            , shape = shape
             }
 
         ( w, randoms ) =
@@ -667,7 +672,7 @@ spawnAsteroidEntity position world =
                     asteroidsPositionVelocityGenerator
                     asteroidsOrientationGenerator
                     asteroidsRotationVelocityGenerator
-                    asteroidsSizeGenerator
+                    (asteroidsSizeGenerator |> Random.andThen (\( minSize, width ) -> polygon2dGenerator minSize (minSize + width) width))
                 )
                 world
     in
@@ -677,35 +682,33 @@ spawnAsteroidEntity position world =
         |> Ecs.insertComponent specs.positionVelocity randoms.positionVelocity
         |> Ecs.insertComponent specs.orientation randoms.orientation
         |> Ecs.insertComponent specs.rotationVelocity randoms.rotationVelocity
-        |> asteroidSprite randoms.minRadius randoms.maxRadius randoms.granularity
-        |> uncurry2 (Ecs.insertComponent specs.sprite)
+        |> (case Polygon2d.boundingBox randoms.shape of
+                Just boundingBox ->
+                    Ecs.insertComponent specs.boundingBox boundingBox
+
+                _ ->
+                    identity
+           )
+        |> Ecs.insertComponent specs.sprite (asteroidSprite randoms.shape)
 
 
-asteroidSprite : Float -> Float -> Float -> World -> ( Sprite, World )
-asteroidSprite minRadius maxRadius granularity world =
+asteroidSprite : Polygon2d Pixels CanvasCoordinates -> Sprite
+asteroidSprite shape =
     let
-        seed =
-            Ecs.getSingleton specs.randomSeed world
-
-        ( seed2, shape ) =
-            randomPolygon2d seed minRadius maxRadius granularity
-
         coords =
             shape
                 |> Polygon2d.vertices
                 |> List.map (Point2d.toTuple inPixels)
                 |> foldl (\( x, y ) acc -> acc ++ " " ++ fromFloat x ++ "," ++ fromFloat y) ""
     in
-    ( [ polygon
-            [ points coords
-            , stroke "#8B979C"
-            , fill "#9AAAB0"
-            , strokeWidth "2"
-            ]
-            []
-      ]
-    , world |> Ecs.setSingleton specs.randomSeed seed2
-    )
+    [ polygon
+        [ points coords
+        , stroke "#8B979C"
+        , fill "#9AAAB0"
+        , strokeWidth "2"
+        ]
+        []
+    ]
 
 
 
@@ -815,6 +818,7 @@ renderWorld world =
         ( wStr, hStr ) =
             ( wPixels, hPixels ) |> vApply fromFloat
 
+        spriteCollector : EntityId -> List (Svg Msg) -> Position -> List (Svg Msg) -> List (Svg Msg)
         spriteCollector entityId sprite position acc =
             let
                 maybeDirection =
@@ -833,12 +837,11 @@ renderWorld world =
                 ( x, y ) =
                     position |> Point2d.toTuple inPixels |> vApply fromFloat
             in
-            (sprite
-                |> g
-                    [ id (fromInt entityId)
-                    , transform ("translate(" ++ x ++ "," ++ y ++ ")" ++ rotate)
-                    ]
-            )
+            g
+                [ id (fromInt entityId)
+                , transform ("translate(" ++ x ++ "," ++ y ++ ")" ++ rotate)
+                ]
+                sprite
                 :: acc
     in
     svg
@@ -918,42 +921,36 @@ asteroidsSizeGenerator =
         (Random.float 4 10)
 
 
-randomPolygon2d : Seed -> Float -> Float -> Float -> ( Seed, Polygon2d Pixels CanvasCoordinates )
-randomPolygon2d seed minRadius maxRadius granularity =
+polygon2dGenerator : Float -> Float -> Float -> Random.Generator (Polygon2d Pixels CanvasCoordinates)
+polygon2dGenerator minRadius maxRadius granularity =
     let
         increment =
             tau / granularity
 
-        rnd =
+        randomPoint ang =
             Random.float minRadius maxRadius
-
-        randomPolylineRec seed2 ang points =
-            if ang < tau then
-                let
-                    ( radius, seed3 ) =
-                        Random.step rnd seed2
-
-                    p =
+                |> Random.map
+                    (\radius ->
                         ( cos ang, sin ang )
                             |> vMult radius
                             |> Point2d.fromTuple Pixels.pixels
-                in
-                randomPolylineRec seed3 (ang + increment) (p :: points)
+                    )
+
+        randomPolylineRec : Float -> Random.Generator (List Position)
+        randomPolylineRec ang =
+            if ang < tau then
+                Random.map2 (::)
+                    (randomPoint ang)
+                    (randomPolylineRec <| ang + increment)
 
             else
-                ( seed2, points )
+                Random.constant []
     in
-    randomPolylineRec seed 0 []
-        |> Tuple.mapSecond singleLoop
+    Random.map singleLoop <| randomPolylineRec 0
 
 
 
 -- HELPERS
-
-
-uncurry2 : (a -> b -> c) -> ( a, b ) -> c
-uncurry2 f ( a, b ) =
-    f a b
 
 
 vectorLimit : Quantity Float units -> Vector2d units coordinates -> Vector2d units coordinates
@@ -963,6 +960,11 @@ vectorLimit limit v =
 
     else
         v
+
+
+inPixelsString : Quantity Float Pixels -> String
+inPixelsString =
+    inPixels >> fromFloat
 
 
 quantityRange : ( Quantity number units, Quantity number units ) -> Quantity number units -> Quantity number units
