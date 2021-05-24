@@ -8,7 +8,6 @@ import Browser.Events exposing (onAnimationFrameDelta)
 import Direction2d exposing (Direction2d, rotateBy, toAngle)
 import Duration exposing (Duration, Seconds, milliseconds)
 import Ecs
-import Ecs.Components11
 import Ecs.Components12
 import Ecs.EntityComponents exposing (foldFromRight2)
 import Ecs.Singletons4
@@ -22,7 +21,8 @@ import Maybe
 import Page.Common exposing (Frames, addFrame, createFrames, fpsText)
 import Pixels exposing (Pixels, PixelsPerSecond, PixelsPerSecondSquared, inPixels, pixels, pixelsPerSecond, pixelsPerSecondSquared)
 import Point2d exposing (Point2d, translateBy, xCoordinate, yCoordinate)
-import Quantity exposing (Product, Quantity, Rate, lessThanOrEqualTo, lessThanOrEqualToZero, plus, zero)
+import Polygon2d exposing (Polygon2d, singleLoop)
+import Quantity exposing (Product, Quantity, Rate, lessThanOrEqualTo, plus, zero)
 import Random exposing (Generator, Seed)
 import String exposing (fromFloat, fromInt)
 import Svg exposing (Svg, g, line, polygon, rect, svg)
@@ -678,7 +678,7 @@ spawnAsteroidEntity position world =
         |> Ecs.insertComponent specs.orientation randoms.orientation
         |> Ecs.insertComponent specs.rotationVelocity randoms.rotationVelocity
         |> asteroidSprite randoms.minRadius randoms.maxRadius randoms.granularity
-        |> uncurry3 (Ecs.insertComponent specs.sprite)
+        |> uncurry2 (Ecs.insertComponent specs.sprite)
 
 
 asteroidSprite : Float -> Float -> Float -> World -> ( Sprite, World )
@@ -688,16 +688,15 @@ asteroidSprite minRadius maxRadius granularity world =
             Ecs.getSingleton specs.randomSeed world
 
         ( seed2, shape ) =
-            randomPolyline seed minRadius maxRadius granularity
+            randomPolygon2d seed minRadius maxRadius granularity
 
         coords =
-            foldl
-                (\( x, y ) acc -> acc ++ " " ++ fromFloat x ++ "," ++ fromFloat y)
-                ""
-                shape
+            shape
+                |> Polygon2d.vertices
+                |> List.map (Point2d.toTuple inPixels)
+                |> foldl (\( x, y ) acc -> acc ++ " " ++ fromFloat x ++ "," ++ fromFloat y) ""
     in
-    ( [ -- 58 47 63
-        polygon
+    ( [ polygon
             [ points coords
             , stroke "#8B979C"
             , fill "#9AAAB0"
@@ -919,8 +918,8 @@ asteroidsSizeGenerator =
         (Random.float 4 10)
 
 
-randomPolyline : Seed -> Float -> Float -> Float -> ( Seed, List ( Float, Float ) )
-randomPolyline seed minRadius maxRadius granularity =
+randomPolygon2d : Seed -> Float -> Float -> Float -> ( Seed, Polygon2d Pixels CanvasCoordinates )
+randomPolygon2d seed minRadius maxRadius granularity =
     let
         increment =
             tau / granularity
@@ -935,7 +934,9 @@ randomPolyline seed minRadius maxRadius granularity =
                         Random.step rnd seed2
 
                     p =
-                        ( cos ang, sin ang ) |> vMult radius
+                        ( cos ang, sin ang )
+                            |> vMult radius
+                            |> Point2d.fromTuple Pixels.pixels
                 in
                 randomPolylineRec seed3 (ang + increment) (p :: points)
 
@@ -943,14 +944,15 @@ randomPolyline seed minRadius maxRadius granularity =
                 ( seed2, points )
     in
     randomPolylineRec seed 0 []
+        |> Tuple.mapSecond singleLoop
 
 
 
 -- HELPERS
 
 
-uncurry3 : (a -> b -> c) -> ( a, b ) -> c
-uncurry3 f ( a, b ) =
+uncurry2 : (a -> b -> c) -> ( a, b ) -> c
+uncurry2 f ( a, b ) =
     f a b
 
 
