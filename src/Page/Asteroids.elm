@@ -9,7 +9,7 @@ import Browser.Events exposing (onAnimationFrameDelta)
 import Direction2d exposing (Direction2d, rotateBy, toAngle)
 import Duration exposing (Duration, Seconds, milliseconds)
 import Ecs
-import Ecs.Components13
+import Ecs.Components14
 import Ecs.EntityComponents exposing (foldFromRight2)
 import Ecs.Singletons4
 import Html exposing (Html, div, hr, p)
@@ -62,8 +62,8 @@ type alias EntityId =
 -- UNITS
 
 
-type CanvasCoordinates
-    = CanvasCoordinates
+type alias CanvasCoordinates =
+    ()
 
 
 
@@ -120,12 +120,18 @@ type alias Ttl =
     }
 
 
-type alias BoundingBox =
+type alias Shape =
     BoundingBox2d Pixels CanvasCoordinates
 
 
+type Class
+    = Ship
+    | Asteroid
+    | Bullet
+
+
 type alias Components =
-    Ecs.Components13.Components13
+    Ecs.Components14.Components14
         EntityId
         Position
         PositionVelocity
@@ -139,7 +145,8 @@ type alias Components =
         AngularFriction
         Age
         Ttl
-        BoundingBox
+        Shape
+        Class
 
 
 
@@ -174,7 +181,8 @@ type alias Specs =
     , angularFriction : ComponentSpec AngularFriction
     , age : ComponentSpec Age
     , ttl : ComponentSpec Ttl
-    , boundingBox : ComponentSpec BoundingBox
+    , boundingBox : ComponentSpec Shape
+    , class : ComponentSpec Class
     , frame : SingletonSpec Frame
     , nextEntityId : SingletonSpec EntityId
     , keys : SingletonSpec Keys
@@ -196,7 +204,7 @@ type alias SingletonSpec a =
 
 specs : Specs
 specs =
-    Specs |> Ecs.Components13.specs |> Ecs.Singletons4.specs
+    Specs |> Ecs.Components14.specs |> Ecs.Singletons4.specs
 
 
 
@@ -612,6 +620,7 @@ spawnShipEntity : World -> World
 spawnShipEntity world =
     world
         |> Ecs.insertEntity shipEntityId
+        |> Ecs.insertComponent specs.class Ship
         |> Ecs.insertComponent specs.position center
         |> Ecs.insertComponent specs.orientation Direction2d.positiveY
         |> Ecs.insertComponent specs.rotationVelocity Quantity.zero
@@ -632,6 +641,7 @@ spawnBulletEntity : Orientation -> Position -> World -> World
 spawnBulletEntity orientation position world =
     world
         |> newEntity
+        |> Ecs.insertComponent specs.class Bullet
         |> Ecs.insertComponent specs.position position
         |> Ecs.insertComponent specs.orientation orientation
         |> Ecs.insertComponent specs.positionVelocity
@@ -678,6 +688,7 @@ spawnAsteroidEntity position world =
     in
     w
         |> newEntity
+        |> Ecs.insertComponent specs.class Asteroid
         |> Ecs.insertComponent specs.position position
         |> Ecs.insertComponent specs.positionVelocity randoms.positionVelocity
         |> Ecs.insertComponent specs.orientation randoms.orientation
@@ -960,11 +971,6 @@ vectorLimit limit v =
 
     else
         v
-
-
-inPixelsString : Quantity Float Pixels -> String
-inPixelsString =
-    inPixels >> fromFloat
 
 
 quantityRange : ( Quantity number units, Quantity number units ) -> Quantity number units -> Quantity number units
