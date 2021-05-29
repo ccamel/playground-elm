@@ -11,12 +11,13 @@ import Duration exposing (Duration, Seconds, milliseconds)
 import Ecs
 import Ecs.Components14
 import Ecs.EntityComponents exposing (foldFromRight2)
-import Ecs.Singletons4
+import Ecs.Singletons5
 import Html exposing (Html, div, hr, p)
 import Html.Attributes as Attributes
 import Keyboard exposing (Key(..), KeyChange(..))
 import Keyboard.Arrows as Keyboard exposing (Direction(..))
-import List exposing (concat, foldl)
+import List exposing (concat, foldl, length)
+import List.Extra exposing (uniquePairs)
 import Markdown
 import Maybe
 import Page.Common exposing (Frames, addFrame, createFrames, fpsText)
@@ -25,7 +26,8 @@ import Point2d exposing (Point2d, translateBy, xCoordinate, yCoordinate)
 import Polygon2d exposing (Polygon2d, singleLoop)
 import Quantity exposing (Product, Quantity, Rate, lessThanOrEqualTo, plus, zero)
 import Random exposing (Generator, Seed)
-import String exposing (fromFloat, fromInt)
+import Rectangle2d
+import String exposing (fromFloat, fromInt, padLeft)
 import Svg exposing (Svg, g, line, polygon, rect, svg)
 import Svg.Attributes exposing (..)
 import Task
@@ -154,7 +156,7 @@ type alias Components =
 
 
 type alias Singletons =
-    Ecs.Singletons4.Singletons4 Frame EntityId Keys Random.Seed
+    Ecs.Singletons5.Singletons5 Frame EntityId Keys Seed Collisions
 
 
 type alias Frame =
@@ -165,6 +167,23 @@ type alias Frame =
 
 type alias Keys =
     ( List Key, Maybe KeyChange )
+
+
+type alias Seed =
+    Random.Seed
+
+
+type alias CollidingEntity =
+    { entityId : EntityId
+    , position : Position
+    , orientation : Orientation
+    , shape : Shape
+    , class : Class
+    }
+
+
+type alias Collisions =
+    List ( CollidingEntity, CollidingEntity )
 
 
 type alias Specs =
@@ -181,12 +200,13 @@ type alias Specs =
     , angularFriction : ComponentSpec AngularFriction
     , age : ComponentSpec Age
     , ttl : ComponentSpec Ttl
-    , boundingBox : ComponentSpec Shape
+    , shape : ComponentSpec Shape
     , class : ComponentSpec Class
     , frame : SingletonSpec Frame
     , nextEntityId : SingletonSpec EntityId
     , keys : SingletonSpec Keys
-    , randomSeed : SingletonSpec Random.Seed
+    , randomSeed : SingletonSpec Seed
+    , collisions : SingletonSpec Collisions
     }
 
 
@@ -204,7 +224,7 @@ type alias SingletonSpec a =
 
 specs : Specs
 specs =
-    Specs |> Ecs.Components14.specs |> Ecs.Singletons4.specs
+    Specs |> Ecs.Components14.specs |> Ecs.Singletons5.specs
 
 
 
@@ -227,6 +247,7 @@ systems delta keys =
     , velocityFrictionSystem
     , angularFrictionSystem
     , worldBoundsSystem
+    , collisionDetectionSystem
     ]
 
 
@@ -511,6 +532,37 @@ worldBoundsSystem world =
         world
 
 
+collisionDetectionSystem : World -> World
+collisionDetectionSystem world =
+    let
+        toBoundingBox position orientation shape =
+            shape
+                |> Rectangle2d.fromBoundingBox
+                |> Rectangle2d.rotateAround Point2d.origin (orientation |> toAngle)
+                |> Rectangle2d.translateBy (Vector2d.from Point2d.origin position)
+                |> Rectangle2d.boundingBox
+
+        targets =
+            Ecs.EntityComponents.foldFromLeft4
+                specs.position
+                specs.orientation
+                specs.shape
+                specs.class
+                (\entityId position orientation shape class ->
+                    (::) (CollidingEntity entityId position orientation (shape |> toBoundingBox position orientation) class)
+                )
+                []
+
+        isColliding ( a, b ) =
+            (a.entityId /= b.entityId) && (a.shape |> BoundingBox2d.intersects b.shape)
+    in
+    Ecs.setSingleton specs.collisions
+        (targets world
+            |> uniquePairs
+            |> List.filter isColliding
+        )
+        world
+
 
 -- MODEL
 
@@ -572,13 +624,14 @@ initWorld time =
 
 initSingletons : Int -> Singletons
 initSingletons seed =
-    Ecs.Singletons4.init
+    Ecs.Singletons5.init
         { deltaTime = Quantity.zero
         , totalTime = Quantity.zero
         }
         1
         ( [], Nothing )
         (Random.initialSeed seed)
+        []
 
 
 initEntities : World -> World
@@ -627,6 +680,7 @@ spawnShipEntity world =
         |> Ecs.insertComponent specs.positionVelocity Vector2d.zero
         |> Ecs.insertComponent specs.velocityFriction (pixelsPerSecondSquared 10.0)
         |> Ecs.insertComponent specs.angularFriction (AngularAcceleration.degreesPerSecondSquared 20.0)
+        |> Ecs.insertComponent specs.shape (makeShape ( -10, -6 ) ( 10, 6 ))
         |> Ecs.insertComponent specs.sprite shipSprite
 
 
@@ -648,6 +702,7 @@ spawnBulletEntity orientation position world =
             (orientation |> Direction2d.toVector |> Vector2d.scaleTo (pixelsPerSecond 150.0))
         |> Ecs.insertComponent specs.age (Age zero)
         |> Ecs.insertComponent specs.ttl (5 |> Duration.seconds |> Ttl)
+        |> Ecs.insertComponent specs.shape (makeShape ( 0, -1 ) ( 5, 1 ))
         |> Ecs.insertComponent specs.sprite bulletSprite
 
 
@@ -695,7 +750,7 @@ spawnAsteroidEntity position world =
         |> Ecs.insertComponent specs.rotationVelocity randoms.rotationVelocity
         |> (case Polygon2d.boundingBox randoms.shape of
                 Just boundingBox ->
-                    Ecs.insertComponent specs.boundingBox boundingBox
+                    Ecs.insertComponent specs.shape boundingBox
 
                 _ ->
                     identity
@@ -801,15 +856,7 @@ view { world, frames } =
             , case world of
                 Just w ->
                     [ div [ Attributes.class "asteroids" ]
-                        [ div
-                            [ Attributes.style "font-family" "monospace"
-                            ]
-                            [ Html.text ("entities: " ++ (Ecs.worldEntityCount w |> String.fromInt))
-                            , Html.text " - "
-                            , Html.text ("components: " ++ (Ecs.worldComponentCount specs.all w |> String.fromInt))
-                            , Html.text " - "
-                            , Html.text <| fpsText frames
-                            ]
+                        [ renderInfos frames w
                         , renderWorld w
                         ]
                     ]
@@ -818,6 +865,31 @@ view { world, frames } =
                     []
             ]
         )
+
+
+renderInfos : Frames -> World -> Html.Html Msg
+renderInfos frames world =
+    let
+        entityCount =
+            Ecs.worldEntityCount world
+
+        componentCount =
+            Ecs.worldComponentCount specs.all world
+
+        collisionCount =
+            Ecs.getSingleton specs.collisions world |> length
+    in
+    div
+        [ Attributes.style "font-family" "monospace"
+        ]
+        [ Html.text ("entities: " ++ (entityCount |> String.fromInt |> padLeft 3 '0'))
+        , Html.text " - "
+        , Html.text ("components: " ++ (componentCount |> String.fromInt |> padLeft 4 '0'))
+        , Html.text " - "
+        , Html.text ("collisions: " ++ (collisionCount |> String.fromInt |> padLeft 5 '0'))
+        , Html.text " - "
+        , Html.text <| fpsText frames
+        ]
 
 
 renderWorld : World -> Html.Html Msg
@@ -962,6 +1034,11 @@ polygon2dGenerator minRadius maxRadius granularity =
 
 
 -- HELPERS
+
+
+makeShape : ( Float, Float ) -> ( Float, Float ) -> Shape
+makeShape ( x1, y1 ) ( x2, y2 ) =
+    BoundingBox2d.from (Point2d.pixels x1 y1) (Point2d.pixels x2 y2)
 
 
 vectorLimit : Quantity Float units -> Vector2d units coordinates -> Vector2d units coordinates
