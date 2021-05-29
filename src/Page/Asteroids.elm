@@ -4,6 +4,7 @@ import Angle exposing (inDegrees)
 import AngularAcceleration exposing (AngularAcceleration, radiansPerSecondSquared)
 import AngularSpeed exposing (AngularSpeed, degreesPerSecond)
 import Basics as Math
+import Basics.Extra exposing (swap, uncurry)
 import BoundingBox2d exposing (BoundingBox2d)
 import Browser.Events exposing (onAnimationFrameDelta)
 import Direction2d exposing (Direction2d, rotateBy, toAngle)
@@ -242,6 +243,7 @@ systems delta keys =
     [ frameSystem delta
     , ageSystem
     , ttlSystem
+    , healthSystem
     , keyboardInputSystem keys
     , controlCommandSystem
     , firingCommandSystem
@@ -310,6 +312,17 @@ ttlSystem world =
                         }
             )
 
+healthSystem : World -> World
+healthSystem world =
+    world
+        |> Ecs.EntityComponents.processFromLeft
+            specs.health
+            (\_ health ->
+                if health == 0 then
+                    Ecs.removeEntity specs.all
+                else
+                    identity
+            )
 
 keyboardInputSystem : ( List Key, Maybe KeyChange ) -> World -> World
 keyboardInputSystem keys world =
@@ -568,6 +581,7 @@ collisionDetectionSystem world =
             |> List.filter isColliding
         )
         world
+
 
 
 
