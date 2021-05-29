@@ -9,7 +9,7 @@ import Browser.Events exposing (onAnimationFrameDelta)
 import Direction2d exposing (Direction2d, rotateBy, toAngle)
 import Duration exposing (Duration, Seconds, milliseconds)
 import Ecs
-import Ecs.Components14
+import Ecs.Components15
 import Ecs.EntityComponents exposing (foldFromRight2)
 import Ecs.Singletons5
 import Html exposing (Html, div, hr, p)
@@ -132,8 +132,12 @@ type Class
     | Bullet
 
 
+type alias Health =
+    Int
+
+
 type alias Components =
-    Ecs.Components14.Components14
+    Ecs.Components15.Components15
         EntityId
         Position
         PositionVelocity
@@ -149,6 +153,7 @@ type alias Components =
         Ttl
         Shape
         Class
+        Health
 
 
 
@@ -202,6 +207,7 @@ type alias Specs =
     , ttl : ComponentSpec Ttl
     , shape : ComponentSpec Shape
     , class : ComponentSpec Class
+    , health : ComponentSpec Health
     , frame : SingletonSpec Frame
     , nextEntityId : SingletonSpec EntityId
     , keys : SingletonSpec Keys
@@ -224,7 +230,7 @@ type alias SingletonSpec a =
 
 specs : Specs
 specs =
-    Specs |> Ecs.Components14.specs |> Ecs.Singletons5.specs
+    Specs |> Ecs.Components15.specs |> Ecs.Singletons5.specs
 
 
 
@@ -564,6 +570,7 @@ collisionDetectionSystem world =
         world
 
 
+
 -- MODEL
 
 
@@ -651,10 +658,10 @@ initEntities world =
     in
     world
         |> spawnShipEntity
-        |> spawnAsteroidEntity (Point2d.xy x y)
-        |> spawnAsteroidEntity (Point2d.xy x h)
-        |> spawnAsteroidEntity (Point2d.xy w y)
-        |> spawnAsteroidEntity (Point2d.xy w h)
+        |> spawnAsteroidEntity BIG (Point2d.xy x y)
+        |> spawnAsteroidEntity BIG (Point2d.xy x h)
+        |> spawnAsteroidEntity BIG (Point2d.xy w y)
+        |> spawnAsteroidEntity BIG (Point2d.xy w h)
 
 
 newEntity : World -> World
@@ -721,9 +728,36 @@ bulletSprite =
     ]
 
 
-spawnAsteroidEntity : Position -> World -> World
-spawnAsteroidEntity position world =
+type AsteroidType
+    = BIG
+    | MEDIUM
+    | SMALL
+    | TINY
+
+
+spawnAsteroidEntity : AsteroidType -> Position -> World -> World
+spawnAsteroidEntity aType position world =
     let
+        size =
+            case aType of
+                BIG ->
+                    4
+
+                MEDIUM ->
+                    3
+
+                SMALL ->
+                    2
+
+                TINY ->
+                    1
+
+        factor =
+            (size |> toFloat) / 4
+
+        health =
+            size
+
         mapper positionVelocity orientation rotationVelocity shape =
             { positionVelocity = positionVelocity
             , orientation = orientation
@@ -737,7 +771,10 @@ spawnAsteroidEntity position world =
                     asteroidsPositionVelocityGenerator
                     asteroidsOrientationGenerator
                     asteroidsRotationVelocityGenerator
-                    (asteroidsSizeGenerator |> Random.andThen (\( minSize, width ) -> polygon2dGenerator minSize (minSize + width) width))
+                    (asteroidsSizeGenerator
+                        |> Random.map (Tuple.mapBoth ((*) factor) ((*) factor))
+                        |> Random.andThen (\( minSize, width ) -> polygon2dGenerator minSize (minSize + width) width)
+                    )
                 )
                 world
     in
@@ -745,6 +782,7 @@ spawnAsteroidEntity position world =
         |> newEntity
         |> Ecs.insertComponent specs.class Asteroid
         |> Ecs.insertComponent specs.position position
+        |> Ecs.insertComponent specs.health health
         |> Ecs.insertComponent specs.positionVelocity randoms.positionVelocity
         |> Ecs.insertComponent specs.orientation randoms.orientation
         |> Ecs.insertComponent specs.rotationVelocity randoms.rotationVelocity
@@ -1000,8 +1038,8 @@ asteroidsOrientationGenerator =
 asteroidsSizeGenerator : Random.Generator ( Float, Float )
 asteroidsSizeGenerator =
     Random.map2 Tuple.pair
-        (Random.float 5 10)
-        (Random.float 4 10)
+        (Random.float 12 20)
+        (Random.float 10 15)
 
 
 polygon2dGenerator : Float -> Float -> Float -> Random.Generator (Polygon2d Pixels CanvasCoordinates)
