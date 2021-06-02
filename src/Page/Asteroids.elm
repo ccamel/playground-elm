@@ -90,8 +90,9 @@ type alias Orientation =
     Direction2d CanvasCoordinates
 
 
-type alias Sprite =
-    List (Svg Msg)
+type Render
+    = SpriteView (List (Svg Msg))
+    | EntityView (World -> List (Svg Msg))
 
 
 type alias ThrustCommand =
@@ -149,7 +150,7 @@ type alias Components =
         PositionVelocity
         Orientation
         RotationVelocity
-        Sprite
+        Render
         ThrustCommand
         SideThrustCommand
         FireCommand
@@ -205,7 +206,7 @@ type alias Specs =
     , positionVelocity : ComponentSpec PositionVelocity
     , orientation : ComponentSpec Orientation
     , rotationVelocity : ComponentSpec RotationVelocity
-    , sprite : ComponentSpec Sprite
+    , render : ComponentSpec Render
     , thrustCommand : ComponentSpec ThrustCommand
     , sideThrustCommand : ComponentSpec SideThrustCommand
     , fireCommand : ComponentSpec FireCommand
@@ -826,14 +827,13 @@ spawnShipEntity world =
         |> Ecs.insertComponent specs.velocityFriction (pixelsPerSecondSquared 10.0)
         |> Ecs.insertComponent specs.angularFriction (AngularAcceleration.degreesPerSecondSquared 20.0)
         |> Ecs.insertComponent specs.shape (makeShape ( -10, -6 ) ( 10, 6 ))
-        |> Ecs.insertComponent specs.sprite shipSprite
+        |> Ecs.insertComponent specs.render (SpriteView [ shipSprite ])
 
 
-shipSprite : Sprite
+shipSprite : Svg Msg
 shipSprite =
-    [ g [ transform "scale(0.05) translate(-265, -310)" ]
+    g [ transform "scale(0.05) translate(-265, -310)" ]
         [ g [ transform "rotate(89.4391 252.538 305.805) matrix(0.635074 0 0 0.635074 116.501 73.0549)", id "imagebot_23" ] [ Svg.path [ fill "#ececec", fillRule "evenodd", stroke "#000000", strokeWidth "10", d "M212.77,5C181.98,29.506 -54.69,234.9 124.582,628.22L303.832,628.22C483.102,234.9 246.436,29.54 215.644,5.03L212.769,4.9988L212.77,5z", id "imagebot_62" ] [], Svg.path [ fill "#cccccc", strokeWidth "8", strokeLinecap "round", d "M220.19,259.65C182.897,259.65 152.565,290.013 152.565,327.306C152.565,364.599 182.897,394.931 220.19,394.931C257.483,394.931 287.846,364.599 287.846,327.306C287.846,290.013 257.483,259.65 220.19,259.65zM220.19,267.65C253.155,267.65 279.846,294.342 279.846,327.306C279.846,360.271 253.155,386.931 220.19,386.931C187.225,386.931 160.565,360.271 160.565,327.306C160.56503,294.341 187.225,267.65 220.19,267.65z", id "imagebot_61" ] [], g [ fillRule "evenodd", id "imagebot_43" ] [ g [ stroke "#000000", id "imagebot_54" ] [ g [ fill "#ff0000", id "imagebot_56" ] [ Svg.path [ d "M93.419,166.48L136.856,86.678L197.465,17.988L214.638,4.856L279.288,72.536L329.796,154.358L333.8366,171.531L92.4066,170.5208", id "imagebot_60" ] [], g [ strokeWidth "10", id "imagebot_57" ] [ Svg.path [ d "M69.175,470.54C69.175,470.54 -37.905,469.2064 26.749,741.26C26.749,741.26 32.8099,514.1 89.379,542.11", id "imagebot_59" ] [], Svg.path [ d "M359.55,470.54C359.55,470.54 466.63,469.2064 401.976,741.26C401.976,741.26 395.9151,514.1 339.346,542.11", id "imagebot_58" ] [] ] ], Svg.path [ fill "#b3b3b3", d "M98.47,572.56L124.734,628.118L304.544,627.1078L325.757,572.5598L98.477,572.5598L98.47,572.56z", id "imagebot_55" ] [] ], g [ fill "#d20000", id "imagebot_51" ] [ Svg.path [ d "M384.34,497.81L364.137,548.318L352.015,538.216L337.873,544.2769L357.066,468.5159L391.411,485.6889C391.411,485.6889 451.01,527.1049 404.543,733.1789C431.817,520.0389 383.33,497.8089 384.34,497.8089L384.34,497.81z", id "imagebot_53" ] [], Svg.path [ d "M23.718,738.23C23.718,738.23 13.657,517.86 82.307,517.01C89.8826,516.9157 89.378,541.254 89.378,541.254L62.104,547.3149L40.891,613.9849L23.718,738.2349L23.718,738.23z", id "imagebot_52" ] [] ], Svg.path [ fill "#999999", d "M259.87,572.57C263.9229,584.78 266.318,601.818 265.1512,626.101C266.01341,626.40477 266.9266,626.83104 267.87,627.3198L304.526,627.101L321.62,583.163C320.93046,579.4088 320.1337,576.0583 319.37,572.569L259.87,572.569L259.87,572.57z", id "imagebot_50" ] [], g [ fill "#cccccc", id "imagebot_47" ] [ Svg.path [ d "M233.85,465.92C227.0315,465.4149 222.725,466.48247 222.725,466.48247L217.6625,544.26347C217.6625,544.26347 241.9975,539.45797 253.4745,572.57547L313.0995,572.57547C293.7335,482.26647 253.4325,467.36547 233.8495,465.91547L233.85,465.92z", id "imagebot_49" ] [], Svg.path [ d "M101.31,577.09L121.31,627.09L149.31,629.09L141.31,572.09L101.31,577.09z", id "imagebot_48" ] [] ], g [ fill "none", stroke "#000000", strokeWidth "10", id "imagebot_44" ] [ Svg.path [ d "M212.77,5C181.98,29.506 -54.69,234.9 124.582,628.22L303.832,628.22C483.102,234.9 246.436,29.54 215.644,5.03L212.769,4.9988L212.77,5z", id "imagebot_46" ] [], Svg.path [ d "M93.419,168.5L330.809,168.5", id "imagebot_45" ] [] ] ], g [ stroke "#000000", id "imagebot_36" ] [ g [ strokeLinecap "round", id "imagebot_40" ] [ Svg.path [ fill "#b3b3b3", strokeWidth "8", d "M277.85,321.3A63.64,63.64 0 1 1 150.57,321.3A63.64,63.64 0 1 1 277.85,321.3z", id "imagebot_42" ] [], Svg.path [ fill "#80e5ff", strokeWidth "12.293", d "M255.63,321.3A41.416,41.416 0 1 1 172.798,321.3A41.416,41.416 0 1 1 255.63,321.3z", id "imagebot_41" ] [] ], g [ strokeWidth "10", id "imagebot_37" ] [ Svg.path [ fill "none", d "M101.5,573.57L325.75,573.57", id "imagebot_39" ] [], Svg.path [ fill "#ff0000", strokeLinecap "round", d "M205.12,468.52L223.303,468.52L223.303,741.26L205.12,741.26L205.12,468.52z", id "imagebot_38" ] [] ] ], Svg.path [ fill "#cccccc", fillRule "evenodd", d "M315.65,560.44C315.65,560.44 396.462,374.57 331.812,195.78C334.8425,512.97 247.969,560.44 247.969,560.44L315.649,560.44L315.65,560.44z", id "imagebot_35" ] [], g [ strokeLinecap "round", id "imagebot_32" ] [ rect [ fill "#ffffff", strokeWidth "10", x "360.76999", y "31.575", width "34.47", height "83.714", transform "matrix(0.70389,0.7103,-0.70389,0.7103,0,0)", id "imagebot_34" ] [], Svg.path [ fill "none", stroke "#000000", strokeWidth "12.293", d "M255.63,321.3A41.416,41.416 0 1 1 172.798,321.3A41.416,41.416 0 1 1 255.63,321.3z", id "imagebot_33" ] [] ], g [ fillRule "evenodd", id "imagebot_24" ] [ Svg.path [ fill "#d20000", d "M306.56,153.35C306.56,153.35 275.245,71.528 215.646,28.09C270.194,133.15 241.91,153.35 241.91,153.35L306.56,153.35z", id "imagebot_31" ] [], g [ fill "none", stroke "#000000", strokeWidth "10", id "imagebot_28" ] [ Svg.path [ d "M359.55,470.54C359.55,470.54 466.63,469.2064 401.976,741.26C401.976,741.26 395.9151,514.1 339.346,542.11", id "imagebot_30" ] [], Svg.path [ d "M69.175,470.54C69.175,470.54 -37.905,469.2064 26.749,741.26C26.749,741.26 32.8099,514.1 89.379,542.11", id "imagebot_29" ] [] ], g [ fill "#ffffff", id "imagebot_25" ] [ Svg.path [ d "M107.56,150.32C107.56,150.32 161.098,46.27 205.545,19C249.992,-8.274 108.57,152.34 107.56,150.32z", id "imagebot_27" ] [], Svg.path [ d "M76.027,426.8C72.8632,425.0433 53.303,280.84 101.741,191.09C131.608,167.051 172.243,179.693 170.312,189.6614C153.585,276.0124 94.842,437.2514 76.026,426.8014L76.027,426.8z", id "imagebot_26" ] [] ] ] ] ]
-    ]
 
 
 spawnBulletEntity : Orientation -> Position -> World -> World
@@ -848,12 +848,12 @@ spawnBulletEntity orientation position world =
         |> Ecs.insertComponent specs.age (Age zero)
         |> Ecs.insertComponent specs.ttl (5 |> Duration.seconds |> Ttl)
         |> Ecs.insertComponent specs.shape (makeShape ( 0, -1 ) ( 5, 1 ))
-        |> Ecs.insertComponent specs.sprite bulletSprite
+        |> Ecs.insertComponent specs.render (SpriteView [ bulletSprite ])
 
 
-bulletSprite : Sprite
+bulletSprite : Svg Msg
 bulletSprite =
-    [ line
+    line
         [ x1 <| fromFloat 0.0
         , y1 <| fromFloat 0.0
         , x2 <| fromFloat 5
@@ -863,7 +863,6 @@ bulletSprite =
         , strokeWidth "1"
         ]
         []
-    ]
 
 
 type AsteroidType
@@ -947,10 +946,10 @@ spawnAsteroidEntity aType position world =
                 _ ->
                     identity
            )
-        |> Ecs.insertComponent specs.sprite (asteroidSprite randoms.shape)
+        |> Ecs.insertComponent specs.render (SpriteView [ asteroidSprite randoms.shape ])
 
 
-asteroidSprite : Polygon2d Pixels CanvasCoordinates -> Sprite
+asteroidSprite : Polygon2d Pixels CanvasCoordinates -> Svg Msg
 asteroidSprite shape =
     let
         coords =
@@ -959,14 +958,13 @@ asteroidSprite shape =
                 |> List.map (Point2d.toTuple inPixels)
                 |> foldl (\( x, y ) acc -> acc ++ " " ++ fromFloat x ++ "," ++ fromFloat y) ""
     in
-    [ polygon
+    polygon
         [ points coords
         , stroke "#8B979C"
         , fill "#9AAAB0"
         , strokeWidth "2"
         ]
         []
-    ]
 
 
 
@@ -1106,16 +1104,16 @@ renderWorld world =
             ]
           <|
             foldFromLeft2
-                specs.sprite
+                specs.render
                 specs.position
-                (\entityId sprite position acc -> renderSprite entityId sprite position world :: acc)
+                (\entityId render position acc -> renderEntity entityId render position world :: acc)
                 []
                 world
         ]
 
 
-renderSprite : EntityId -> Sprite -> Position -> World -> Svg Msg
-renderSprite entityId sprite position world =
+renderEntity : EntityId -> Render -> Position -> World -> Svg Msg
+renderEntity entityId render position world =
     let
         maybeDirection =
             world
@@ -1137,7 +1135,13 @@ renderSprite entityId sprite position world =
         [ id (fromInt entityId)
         , transform ("translate(" ++ x ++ "," ++ y ++ ")" ++ rotate)
         ]
-        sprite
+        (case render of
+            SpriteView sprite ->
+                sprite
+
+            EntityView entityView ->
+                entityView world
+        )
 
 
 
@@ -1282,13 +1286,3 @@ vApply f ( a, b ) =
 vMult : Float -> ( Float, Float ) -> ( Float, Float )
 vMult by =
     vApply <| (*) by
-
-
-type Firework
-    = Fizzler Color
-
-
-type Color
-    = Red
-    | Green
-    | Blue
