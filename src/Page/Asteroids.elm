@@ -10,8 +10,8 @@ import Browser.Events exposing (onAnimationFrameDelta)
 import Direction2d exposing (Direction2d, rotateBy, toAngle)
 import Duration exposing (Duration, Seconds, milliseconds)
 import Ecs
-import Ecs.Components15
-import Ecs.EntityComponents exposing (foldFromRight2)
+import Ecs.Components16
+import Ecs.EntityComponents exposing (foldFromLeft2)
 import Ecs.Singletons5
 import Html exposing (Html, div, hr, p)
 import Html.Attributes as Attributes
@@ -22,6 +22,7 @@ import List.Extra exposing (uniquePairs)
 import Markdown
 import Maybe
 import Page.Common exposing (Frames, addFrame, createFrames, fpsText)
+import Particle exposing (directionDegrees, leftPixels, topPixels)
 import Pixels exposing (Pixels, PixelsPerSecond, PixelsPerSecondSquared, inPixels, pixels, pixelsPerSecond, pixelsPerSecondSquared)
 import Point2d exposing (Point2d, translateBy, xCoordinate, yCoordinate)
 import Polygon2d exposing (Polygon2d, singleLoop)
@@ -137,8 +138,12 @@ type alias Health =
     Int
 
 
+type alias Particle =
+    Particle.Particle ()
+
+
 type alias Components =
-    Ecs.Components15.Components15
+    Ecs.Components16.Components16
         EntityId
         Position
         PositionVelocity
@@ -155,6 +160,7 @@ type alias Components =
         Shape
         Class
         Health
+        Particle
 
 
 
@@ -210,6 +216,7 @@ type alias Specs =
     , shape : ComponentSpec Shape
     , class : ComponentSpec Class
     , health : ComponentSpec Health
+    , particle : ComponentSpec Particle
     , frame : SingletonSpec Frame
     , nextEntityId : SingletonSpec EntityId
     , keys : SingletonSpec Keys
@@ -232,7 +239,7 @@ type alias SingletonSpec a =
 
 specs : Specs
 specs =
-    Specs |> Ecs.Components15.specs |> Ecs.Singletons5.specs
+    Specs |> Ecs.Components16.specs |> Ecs.Singletons5.specs
 
 
 
@@ -535,7 +542,7 @@ angularFrictionSystem world =
 
 
 worldBoundsSystem : World -> World
-worldBoundsSystem world =
+worldBoundsSystem =
     Ecs.EntityComponents.processFromLeft
         specs.positionVelocity
         (\_ _ ->
@@ -553,7 +560,6 @@ worldBoundsSystem world =
                         Point2d.xy x y
                 )
         )
-        world
 
 
 collisionDetectionSystem : World -> World
@@ -1059,32 +1065,6 @@ renderWorld world =
 
         ( wStr, hStr ) =
             ( wPixels, hPixels ) |> vApply fromFloat
-
-        spriteCollector : EntityId -> List (Svg Msg) -> Position -> List (Svg Msg) -> List (Svg Msg)
-        spriteCollector entityId sprite position acc =
-            let
-                maybeDirection =
-                    world
-                        |> Ecs.onEntity entityId
-                        |> Ecs.getComponent specs.orientation
-
-                rotate =
-                    case maybeDirection of
-                        Just direction ->
-                            " rotate(" ++ (direction |> toAngle |> inDegrees |> fromFloat) ++ ")"
-
-                        _ ->
-                            ""
-
-                ( x, y ) =
-                    position |> Point2d.toTuple inPixels |> vApply fromFloat
-            in
-            g
-                [ id (fromInt entityId)
-                , transform ("translate(" ++ x ++ "," ++ y ++ ")" ++ rotate)
-                ]
-                sprite
-                :: acc
     in
     svg
         [ version "1.1"
@@ -1094,17 +1074,43 @@ renderWorld world =
         , viewBox ("0 0 " ++ wStr ++ " " ++ hStr)
         ]
         [ g
-            [ id "entities"
+            [ id "sprites"
             , transform ("translate(0," ++ hStr ++ ") scale(1,-1)")
             ]
           <|
-            foldFromRight2
+            foldFromLeft2
                 specs.sprite
                 specs.position
-                spriteCollector
+                (\entityId sprite position acc -> renderSprite entityId sprite position world :: acc)
                 []
                 world
         ]
+
+
+renderSprite : EntityId -> Sprite -> Position -> World -> Svg Msg
+renderSprite entityId sprite position world =
+    let
+        maybeDirection =
+            world
+                |> Ecs.onEntity entityId
+                |> Ecs.getComponent specs.orientation
+
+        rotate =
+            case maybeDirection of
+                Just direction ->
+                    " rotate(" ++ (direction |> toAngle |> inDegrees |> fromFloat) ++ ")"
+
+                _ ->
+                    ""
+
+        ( x, y ) =
+            position |> Point2d.toTuple inPixels |> vApply fromFloat
+    in
+    g
+        [ id (fromInt entityId)
+        , transform ("translate(" ++ x ++ "," ++ y ++ ")" ++ rotate)
+        ]
+        sprite
 
 
 
@@ -1249,3 +1255,13 @@ vApply f ( a, b ) =
 vMult : Float -> ( Float, Float ) -> ( Float, Float )
 vMult by =
     vApply <| (*) by
+
+
+type Firework
+    = Fizzler Color
+
+
+type Color
+    = Red
+    | Green
+    | Blue
