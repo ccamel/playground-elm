@@ -185,6 +185,7 @@ type alias CollidingEntity =
     , orientation : Orientation
     , shape : Shape
     , class : Class
+    , health : Maybe Health
     }
 
 
@@ -243,7 +244,6 @@ systems delta keys =
     [ frameSystem delta
     , ageSystem
     , ttlSystem
-    , healthSystem
     , keyboardInputSystem keys
     , controlCommandSystem
     , firingCommandSystem
@@ -256,6 +256,8 @@ systems delta keys =
     , angularFrictionSystem
     , worldBoundsSystem
     , collisionDetectionSystem
+    , healthSystem
+    , bulletAsteroidCollisionSystem
     ]
 
 
@@ -312,6 +314,7 @@ ttlSystem world =
                         }
             )
 
+
 healthSystem : World -> World
 healthSystem world =
     world
@@ -320,9 +323,11 @@ healthSystem world =
             (\_ health ->
                 if health == 0 then
                     Ecs.removeEntity specs.all
+
                 else
                     identity
             )
+
 
 keyboardInputSystem : ( List Key, Maybe KeyChange ) -> World -> World
 keyboardInputSystem keys world =
@@ -561,16 +566,25 @@ collisionDetectionSystem world =
                 |> Rectangle2d.translateBy (Vector2d.from Point2d.origin position)
                 |> Rectangle2d.boundingBox
 
-        targets =
+        targets w =
             Ecs.EntityComponents.foldFromLeft4
                 specs.position
                 specs.orientation
                 specs.shape
                 specs.class
                 (\entityId position orientation shape class ->
-                    (::) (CollidingEntity entityId position orientation (shape |> toBoundingBox position orientation) class)
+                    (::)
+                        (CollidingEntity
+                            entityId
+                            position
+                            orientation
+                            (shape |> toBoundingBox position orientation)
+                            class
+                            (Ecs.getComponent specs.health w)
+                        )
                 )
                 []
+                w
 
         isColliding ( a, b ) =
             (a.entityId /= b.entityId) && (a.shape |> BoundingBox2d.intersects b.shape)
@@ -582,6 +596,83 @@ collisionDetectionSystem world =
         )
         world
 
+
+isCollidingClasses : ( Class, Class ) -> { a | class : Class } -> { a | class : Class } -> Bool
+isCollidingClasses c a b =
+    ( a.class, b.class ) == c || ( a.class, b.class ) == swap c
+
+
+orderCollidingClassesWith : ({ a | class : Class } -> { a | class : Class } -> Order) -> ( { a | class : Class }, { a | class : Class } ) -> ( { a | class : Class }, { a | class : Class } )
+orderCollidingClassesWith comparator (( a, b ) as e) =
+    case comparator a b of
+        GT ->
+            swap e
+
+        _ ->
+            e
+
+
+firstClassComparator : Class -> ({ a | class : Class } -> { a | class : Class } -> Order)
+firstClassComparator c c1 c2 =
+    if c == c1.class then
+        LT
+
+    else if c == c2.class then
+        GT
+
+    else
+        EQ
+
+
+bulletAsteroidCollisionSystem : World -> World
+bulletAsteroidCollisionSystem world =
+    let
+        targets =
+            ( Bullet, Asteroid )
+    in
+    Ecs.getSingleton specs.collisions world
+        |> List.filter (uncurry <| isCollidingClasses targets)
+        |> List.map (orderCollidingClassesWith <| firstClassComparator Bullet)
+        |> List.foldl
+            (\( bullet, asteroid ) w ->
+                w
+                    |> Ecs.onEntity bullet.entityId
+                    |> Ecs.removeEntity specs.all
+                    |> Ecs.onEntity asteroid.entityId
+                    |> Ecs.removeEntity specs.all
+                    |> (\w2 ->
+                            let
+                                maybeSize : Maybe.Maybe AsteroidType
+                                maybeSize =
+                                    (case asteroid.health of
+                                        Just 0 ->
+                                            Nothing
+
+                                        Just 1 ->
+                                            Just TINY
+
+                                        Just 2 ->
+                                            Just SMALL
+
+                                        Just 3 ->
+                                            Just MEDIUM
+
+                                        _ ->
+                                            Just BIG
+                                    )
+                                        |> Maybe.andThen downSizeAsteroidType
+                            in
+                            case maybeSize of
+                                Just size ->
+                                    w2
+                                        |> spawnAsteroidEntity size asteroid.position
+                                        |> spawnAsteroidEntity size asteroid.position
+
+                                _ ->
+                                    w2
+                       )
+            )
+            world
 
 
 
@@ -747,6 +838,22 @@ type AsteroidType
     | MEDIUM
     | SMALL
     | TINY
+
+
+downSizeAsteroidType : AsteroidType -> Maybe AsteroidType
+downSizeAsteroidType aType =
+    case aType of
+        BIG ->
+            Just MEDIUM
+
+        MEDIUM ->
+            Just SMALL
+
+        SMALL ->
+            Just TINY
+
+        TINY ->
+            Nothing
 
 
 spawnAsteroidEntity : AsteroidType -> Position -> World -> World
