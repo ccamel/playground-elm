@@ -265,6 +265,7 @@ systems delta keys =
     , collisionDetectionSystem
     , healthSystem
     , bulletAsteroidCollisionSystem
+    , particleSystem
     ]
 
 
@@ -679,6 +680,32 @@ bulletAsteroidCollisionSystem world =
                        )
             )
             world
+
+
+particleSystem : World -> World
+particleSystem world =
+    let
+        dtms =
+            deltaTime world |> Duration.inMilliseconds
+    in
+    Ecs.EntityComponents.processFromLeft
+        specs.particle
+        (\_ particle world2 ->
+            case Particle.update dtms particle of
+                Just particle2 ->
+                    world2
+                        |> Ecs.insertComponent specs.particle particle2
+                        |> Ecs.insertComponent specs.position
+                            (Point2d.xy (particle2 |> leftPixels |> pixels) (particle2 |> topPixels |> pixels))
+                        |> Ecs.insertComponent specs.orientation
+                            (particle2 |> directionDegrees |> Direction2d.degrees)
+
+                Nothing ->
+                    -- should be managed by the ttl system, but if not, remove the entity particle ourselves
+                    world2
+                        |> Ecs.removeEntity specs.all
+        )
+        world
 
 
 
