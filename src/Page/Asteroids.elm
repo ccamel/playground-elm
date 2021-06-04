@@ -588,7 +588,8 @@ collisionDetectionSystem world =
                             orientation
                             (shape |> toBoundingBox position orientation)
                             class
-                            (Ecs.getComponent specs.health w)
+                            ( w |> Ecs.onEntity entityId |> Ecs.getComponent specs.health
+                            )
                         )
                 )
                 []
