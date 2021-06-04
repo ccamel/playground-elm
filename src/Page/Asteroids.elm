@@ -5,14 +5,15 @@ import AngularAcceleration exposing (AngularAcceleration, radiansPerSecondSquare
 import AngularSpeed exposing (AngularSpeed, degreesPerSecond)
 import Basics as Math
 import Basics.Extra exposing (swap, uncurry)
-import BoundingBox2d exposing (BoundingBox2d)
+import BoundingBox2d exposing (BoundingBox2d, minX, minY)
 import Browser.Events exposing (onAnimationFrameDelta)
+import Conditional.List exposing (addWhen)
 import Direction2d exposing (Direction2d, rotateBy, toAngle)
 import Duration exposing (Duration, Seconds, milliseconds)
 import Ecs
 import Ecs.Components16
 import Ecs.EntityComponents exposing (foldFromLeft2)
-import Ecs.Singletons5
+import Ecs.Singletons6
 import Html exposing (Html, div, hr, p)
 import Html.Attributes as Attributes
 import Keyboard exposing (Key(..), KeyChange(..))
@@ -170,7 +171,7 @@ type alias Components =
 
 
 type alias Singletons =
-    Ecs.Singletons5.Singletons5 Frame EntityId Keys Seed Collisions
+    Ecs.Singletons6.Singletons6 Frame EntityId Keys Seed Collisions Parameters
 
 
 type alias Frame =
@@ -201,6 +202,11 @@ type alias Collisions =
     List ( CollidingEntity, CollidingEntity )
 
 
+type alias Parameters =
+    { showBoundingBox : Bool
+    }
+
+
 type alias Specs =
     { all : AllComponentsSpec
     , position : ComponentSpec Position
@@ -224,6 +230,7 @@ type alias Specs =
     , keys : SingletonSpec Keys
     , randomSeed : SingletonSpec Seed
     , collisions : SingletonSpec Collisions
+    , parameters : SingletonSpec Parameters
     }
 
 
@@ -241,7 +248,7 @@ type alias SingletonSpec a =
 
 specs : Specs
 specs =
-    Specs |> Ecs.Components16.specs |> Ecs.Singletons5.specs
+    Specs |> Ecs.Components16.specs |> Ecs.Singletons6.specs
 
 
 
@@ -772,7 +779,7 @@ initWorld time =
 
 initSingletons : Int -> Singletons
 initSingletons seed =
-    Ecs.Singletons5.init
+    Ecs.Singletons6.init
         { deltaTime = Quantity.zero
         , totalTime = Quantity.zero
         }
@@ -780,6 +787,8 @@ initSingletons seed =
         ( [], Nothing )
         (Random.initialSeed seed)
         []
+        { showBoundingBox = True
+        }
 
 
 initEntities : World -> World
@@ -1208,6 +1217,9 @@ renderInfos frames world =
 renderWorld : World -> Html.Html Msg
 renderWorld world =
     let
+        { showBoundingBox } =
+            Ecs.getSingleton specs.parameters world
+
         ( wPixels, hPixels ) =
             ( constants.width, constants.height ) |> vApply inPixels
 
@@ -1230,11 +1242,21 @@ renderWorld world =
                 specs.render
                 specs.position
                 (\entityId render position acc ->
-                    (world
-                        |> Ecs.onEntity entityId
-                        |> renderEntity entityId render position
-                    )
-                        :: acc
+                    let
+                        w2 =
+                            Ecs.onEntity entityId world
+                    in
+                    acc
+                        |> addWhen
+                            (if showBoundingBox then
+                                Ecs.getComponent specs.shape w2
+                                    |> Maybe.map (\shape -> renderShape entityId shape position w2)
+
+                             else
+                                Nothing
+                            )
+                        |> (::)
+                            (w2 |> renderEntity entityId render position)
                 )
                 []
                 world
@@ -1270,6 +1292,43 @@ renderEntity entityId render position world =
             EntityView entityView ->
                 entityView world
         )
+
+
+renderShape : EntityId -> Shape -> Position -> World -> Svg Msg
+renderShape entityId shape position world =
+    let
+        maybeDirection =
+            world
+                |> Ecs.getComponent specs.orientation
+
+        boundingBox : BoundingBox2d Pixels CanvasCoordinates
+        boundingBox =
+            shape
+                |> Rectangle2d.fromBoundingBox
+                |> (case maybeDirection of
+                        Just orientation ->
+                            Rectangle2d.rotateAround Point2d.origin (orientation |> toAngle)
+
+                        Nothing ->
+                            identity
+                   )
+                |> Rectangle2d.translateBy (Vector2d.from Point2d.origin position)
+                |> Rectangle2d.boundingBox
+
+        ( bbWidth, bbHeight ) =
+            BoundingBox2d.dimensions boundingBox
+    in
+    rect
+        [ id ("bb-" ++ fromInt entityId)
+        , x (boundingBox |> minX |> inPixels |> fromFloat)
+        , y (boundingBox |> minY |> inPixels |> fromFloat)
+        , width (bbWidth |> inPixels |> fromFloat)
+        , height (bbHeight |> inPixels |> fromFloat)
+        , fill "none"
+        , stroke "white"
+        , strokeWidth "0.2"
+        ]
+        []
 
 
 
