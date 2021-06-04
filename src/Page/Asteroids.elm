@@ -17,7 +17,7 @@ import Html exposing (Html, div, hr, p)
 import Html.Attributes as Attributes
 import Keyboard exposing (Key(..), KeyChange(..))
 import Keyboard.Arrows as Keyboard exposing (Direction(..))
-import List exposing (concat, foldl, length)
+import List exposing (concat, foldl, length, singleton)
 import List.Extra exposing (uniquePairs)
 import Markdown
 import Maybe
@@ -28,6 +28,7 @@ import Point2d exposing (Point2d, translateBy, xCoordinate, yCoordinate)
 import Polygon2d exposing (Polygon2d, singleLoop)
 import Quantity exposing (Product, Quantity, Rate, lessThanOrEqualTo, plus, zero)
 import Random exposing (Generator, Seed)
+import Random.Float exposing (normal)
 import Rectangle2d
 import String exposing (fromFloat, fromInt, padLeft)
 import Svg exposing (Svg, g, line, polygon, rect, svg)
@@ -588,8 +589,7 @@ collisionDetectionSystem world =
                             orientation
                             (shape |> toBoundingBox position orientation)
                             class
-                            ( w |> Ecs.onEntity entityId |> Ecs.getComponent specs.health
-                            )
+                            (w |> Ecs.onEntity entityId |> Ecs.getComponent specs.health)
                         )
                 )
                 []
@@ -671,14 +671,15 @@ bulletAsteroidCollisionSystem world =
                                     )
                                         |> Maybe.andThen downSizeAsteroidType
                             in
-                            case maybeSize of
-                                Just size ->
-                                    w2
-                                        |> spawnAsteroidEntity size asteroid.position
-                                        |> spawnAsteroidEntity size asteroid.position
+                            spawnExplosion asteroid.position w2
+                                |> (case maybeSize of
+                                        Just size ->
+                                            spawnAsteroidEntity size asteroid.position
+                                                >> spawnAsteroidEntity size asteroid.position
 
-                                _ ->
-                                    w2
+                                        _ ->
+                                            identity
+                                   )
                        )
             )
             world
@@ -950,6 +951,33 @@ spawnAsteroidEntity aType position world =
         |> Ecs.insertComponent specs.render (SpriteView [ asteroidSprite randoms.shape ])
 
 
+spawnExplosion : Position -> World -> World
+spawnExplosion position world =
+    let
+        ( w, particles ) =
+            randomStep
+                (fizzler position
+                    |> Random.list 100
+                )
+                world
+
+        entityView w2 =
+            w2
+                |> Ecs.getComponent specs.particle
+                |> Maybe.map (fizzleParticleSprite >> singleton)
+                |> Maybe.withDefault []
+    in
+    List.foldl
+        (\p w2 ->
+            w2
+                |> newEntity
+                |> Ecs.insertComponent specs.particle p
+                |> Ecs.insertComponent specs.render (EntityView entityView)
+        )
+        w
+        particles
+
+
 asteroidSprite : Polygon2d Pixels CanvasCoordinates -> Svg Msg
 asteroidSprite shape =
     let
@@ -966,6 +994,100 @@ asteroidSprite shape =
         , strokeWidth "2"
         ]
         []
+
+
+fizzleParticleSprite : Particle -> Svg Msg
+fizzleParticleSprite particle =
+    let
+        ( hue, saturation, luminance ) =
+            ( 0, 86, 75 )
+
+        maxLuminance =
+            100
+
+        luminanceDelta =
+            maxLuminance - luminance
+
+        lifetime =
+            Particle.lifetimePercent particle
+
+        o =
+            if lifetime < 0.1 then
+                lifetime * 10
+
+            else
+                1
+
+        color =
+            hslString
+                hue
+                saturation
+                (maxLuminance - luminanceDelta * (1 - lifetime))
+    in
+    Svg.ellipse
+        [ cx "0"
+        , cy "0"
+        , rx "0.5"
+        , ry "0.5"
+        , opacity (String.fromFloat o)
+        , fill color
+        ]
+        []
+
+
+
+-- GENERATORS
+
+
+asteroidsPositionVelocityGenerator : Random.Generator PositionVelocity
+asteroidsPositionVelocityGenerator =
+    let
+        vectorPixelsPerSeconds x y =
+            Vector2d.xy (x |> pixelsPerSecond) (y |> pixelsPerSecond)
+    in
+    Random.map2 vectorPixelsPerSeconds
+        (Random.float -20 20)
+        (Random.float -20 20)
+
+
+asteroidsRotationVelocityGenerator : Random.Generator RotationVelocity
+asteroidsRotationVelocityGenerator =
+    Random.map
+        degreesPerSecond
+        (Random.float -20 20)
+
+
+asteroidsOrientationGenerator : Random.Generator Orientation
+asteroidsOrientationGenerator =
+    Direction2d.random
+
+
+asteroidsSizeGenerator : Random.Generator ( Float, Float )
+asteroidsSizeGenerator =
+    Random.map2 Tuple.pair
+        (Random.float 12 20)
+        (Random.float 10 15)
+
+
+fizzler : Position -> Generator Particle
+fizzler position =
+    let
+        ( x, y ) =
+            position |> Point2d.toTuple inPixels
+    in
+    Particle.init (Random.constant ())
+        |> Particle.withDirection (Random.map degrees (Random.float 0 360))
+        |> Particle.withSpeed (Random.map (clamp 0 200) (normal 100 100))
+        |> Particle.withLifetime (normal 1.25 0.1)
+        |> Particle.withLocation (Random.constant { x = x, y = y })
+        |> Particle.withGravity 50
+        |> Particle.withDrag
+            (\_ ->
+                { coefficient = 2
+                , density = 0.015
+                , area = 8
+                }
+            )
 
 
 
@@ -1107,7 +1229,13 @@ renderWorld world =
             foldFromLeft2
                 specs.render
                 specs.position
-                (\entityId render position acc -> renderEntity entityId render position world :: acc)
+                (\entityId render position acc ->
+                    (world
+                        |> Ecs.onEntity entityId
+                        |> renderEntity entityId render position
+                    )
+                        :: acc
+                )
                 []
                 world
         ]
@@ -1118,7 +1246,6 @@ renderEntity entityId render position world =
     let
         maybeDirection =
             world
-                |> Ecs.onEntity entityId
                 |> Ecs.getComponent specs.orientation
 
         rotate =
@@ -1169,36 +1296,6 @@ randomStep generator world =
             Random.step generator seed
     in
     ( Ecs.setSingleton specs.randomSeed seed2 world, r )
-
-
-asteroidsPositionVelocityGenerator : Random.Generator PositionVelocity
-asteroidsPositionVelocityGenerator =
-    let
-        vectorPixelsPerSeconds x y =
-            Vector2d.xy (x |> pixelsPerSecond) (y |> pixelsPerSecond)
-    in
-    Random.map2 vectorPixelsPerSeconds
-        (Random.float -20 20)
-        (Random.float -20 20)
-
-
-asteroidsRotationVelocityGenerator : Random.Generator RotationVelocity
-asteroidsRotationVelocityGenerator =
-    Random.map
-        degreesPerSecond
-        (Random.float -20 20)
-
-
-asteroidsOrientationGenerator : Random.Generator Orientation
-asteroidsOrientationGenerator =
-    Direction2d.random
-
-
-asteroidsSizeGenerator : Random.Generator ( Float, Float )
-asteroidsSizeGenerator =
-    Random.map2 Tuple.pair
-        (Random.float 12 20)
-        (Random.float 10 15)
 
 
 polygon2dGenerator : Float -> Float -> Float -> Random.Generator (Polygon2d Pixels CanvasCoordinates)
@@ -1287,3 +1384,14 @@ vApply f ( a, b ) =
 vMult : Float -> ( Float, Float ) -> ( Float, Float )
 vMult by =
     vApply <| (*) by
+
+
+hslString : Float -> Float -> Float -> String
+hslString hue saturation luminance =
+    "hsl("
+        ++ String.fromFloat hue
+        ++ ","
+        ++ String.fromFloat saturation
+        ++ "%,"
+        ++ String.fromFloat luminance
+        ++ "%)"
