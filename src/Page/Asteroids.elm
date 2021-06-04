@@ -128,7 +128,7 @@ type alias Ttl =
 
 
 type alias Shape =
-    BoundingBox2d Pixels CanvasCoordinates
+    Polygon2d Pixels CanvasCoordinates
 
 
 type Class
@@ -570,13 +570,6 @@ worldBoundsSystem =
 collisionDetectionSystem : World -> World
 collisionDetectionSystem world =
     let
-        toBoundingBox position orientation shape =
-            shape
-                |> Rectangle2d.fromBoundingBox
-                |> Rectangle2d.rotateAround Point2d.origin (orientation |> toAngle)
-                |> Rectangle2d.translateBy (Vector2d.from Point2d.origin position)
-                |> Rectangle2d.boundingBox
-
         targets w =
             Ecs.EntityComponents.foldFromLeft4
                 specs.position
@@ -589,7 +582,10 @@ collisionDetectionSystem world =
                             entityId
                             position
                             orientation
-                            (shape |> toBoundingBox position orientation)
+                            (shape
+                                |> Polygon2d.rotateAround Point2d.origin (orientation |> toAngle)
+                                |> Polygon2d.translateBy (Vector2d.from Point2d.origin position)
+                            )
                             class
                             (w |> Ecs.onEntity entityId |> Ecs.getComponent specs.health)
                         )
@@ -598,7 +594,18 @@ collisionDetectionSystem world =
                 w
 
         isColliding ( a, b ) =
-            (a.entityId /= b.entityId) && (a.shape |> BoundingBox2d.intersects b.shape)
+            (a.entityId /= b.entityId)
+                && (( a.shape, b.shape )
+                        |> vApply Polygon2d.boundingBox
+                        |> (\shapes ->
+                                case shapes of
+                                    ( Just shapeA, Just shapeB ) ->
+                                        shapeA |> BoundingBox2d.intersects shapeB
+
+                                    _ ->
+                                        False
+                           )
+                   )
     in
     Ecs.setSingleton
         specs.collisions
@@ -946,13 +953,7 @@ spawnAsteroidEntity aType position world =
         |> Ecs.insertComponent specs.positionVelocity randoms.positionVelocity
         |> Ecs.insertComponent specs.orientation randoms.orientation
         |> Ecs.insertComponent specs.rotationVelocity randoms.rotationVelocity
-        |> (case Polygon2d.boundingBox randoms.shape of
-                Just boundingBox ->
-                    Ecs.insertComponent specs.shape boundingBox
-
-                _ ->
-                    identity
-           )
+        |> Ecs.insertComponent specs.shape randoms.shape
         |> Ecs.insertComponent specs.render (SpriteView [ asteroidSprite randoms.shape ])
 
 
@@ -1294,34 +1295,38 @@ renderShape entityId shape position world =
             world
                 |> Ecs.getComponent specs.orientation
 
-        boundingBox : BoundingBox2d Pixels CanvasCoordinates
-        boundingBox =
+        maybeBoundingBox =
             shape
-                |> Rectangle2d.fromBoundingBox
                 |> (case maybeDirection of
                         Just orientation ->
-                            Rectangle2d.rotateAround Point2d.origin (orientation |> toAngle)
+                            Polygon2d.rotateAround Point2d.origin (orientation |> toAngle)
 
                         Nothing ->
                             identity
                    )
-                |> Rectangle2d.translateBy (Vector2d.from Point2d.origin position)
-                |> Rectangle2d.boundingBox
-
-        ( bbWidth, bbHeight ) =
-            BoundingBox2d.dimensions boundingBox
+                |> Polygon2d.translateBy (Vector2d.from Point2d.origin position)
+                |> Polygon2d.boundingBox
     in
-    rect
-        [ id ("bb-" ++ fromInt entityId)
-        , x (boundingBox |> minX |> inPixels |> fromFloat)
-        , y (boundingBox |> minY |> inPixels |> fromFloat)
-        , width (bbWidth |> inPixels |> fromFloat)
-        , height (bbHeight |> inPixels |> fromFloat)
-        , fill "none"
-        , stroke "white"
-        , strokeWidth "0.2"
-        ]
-        []
+    case maybeBoundingBox of
+        Just boundingBox ->
+            let
+                ( w, h ) =
+                    BoundingBox2d.dimensions boundingBox
+            in
+            rect
+                [ id ("bb-" ++ fromInt entityId)
+                , x (boundingBox |> minX |> inPixels |> fromFloat)
+                , y (boundingBox |> minY |> inPixels |> fromFloat)
+                , width (w |> inPixels |> fromFloat)
+                , height (h |> inPixels |> fromFloat)
+                , fill "none"
+                , stroke "white"
+                , strokeWidth "0.2"
+                ]
+                []
+
+        _ ->
+            g [] []
 
 
 
@@ -1384,7 +1389,7 @@ polygon2dGenerator minRadius maxRadius granularity =
 
 makeShape : ( Float, Float ) -> ( Float, Float ) -> Shape
 makeShape ( x1, y1 ) ( x2, y2 ) =
-    BoundingBox2d.from (Point2d.pixels x1 y1) (Point2d.pixels x2 y2)
+    Rectangle2d.from (Point2d.pixels x1 y1) (Point2d.pixels x2 y2) |> Rectangle2d.toPolygon
 
 
 vectorLimit : Quantity Float units -> Vector2d units coordinates -> Vector2d units coordinates
