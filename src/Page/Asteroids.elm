@@ -31,7 +31,7 @@ import Quantity exposing (Product, Quantity, Rate, lessThanOrEqualTo, plus, zero
 import Random exposing (Generator, Seed)
 import Random.Float exposing (normal)
 import Rectangle2d
-import String exposing (fromFloat, fromInt, padLeft)
+import String exposing (fromFloat, fromInt, join, padLeft)
 import Svg exposing (Svg, g, line, polygon, rect, svg)
 import Svg.Attributes exposing (..)
 import Task
@@ -300,15 +300,15 @@ ageSystem world =
         dt =
             deltaTime world
     in
-    world
-        |> Ecs.EntityComponents.processFromLeft
-            specs.age
-            (\_ age ->
-                Ecs.insertComponent specs.age
-                    { age
-                        | duration = age.duration |> Quantity.plus dt
-                    }
-            )
+    Ecs.EntityComponents.processFromLeft
+        specs.age
+        (\_ age ->
+            Ecs.insertComponent specs.age
+                { age
+                    | duration = age.duration |> Quantity.plus dt
+                }
+        )
+        world
 
 
 ttlSystem : World -> World
@@ -317,33 +317,33 @@ ttlSystem world =
         dt =
             deltaTime world
     in
-    world
-        |> Ecs.EntityComponents.processFromLeft
-            specs.ttl
-            (\_ ttl ->
-                if ttl.remaining |> lessThanOrEqualTo dt then
-                    Ecs.removeEntity specs.all
+    Ecs.EntityComponents.processFromLeft
+        specs.ttl
+        (\_ ttl ->
+            if ttl.remaining |> lessThanOrEqualTo dt then
+                Ecs.removeEntity specs.all
 
-                else
-                    Ecs.insertComponent specs.ttl
-                        { ttl
-                            | remaining = ttl.remaining |> Quantity.minus dt
-                        }
-            )
+            else
+                Ecs.insertComponent specs.ttl
+                    { ttl
+                        | remaining = ttl.remaining |> Quantity.minus dt
+                    }
+        )
+        world
 
 
 healthSystem : World -> World
 healthSystem world =
-    world
-        |> Ecs.EntityComponents.processFromLeft
-            specs.health
-            (\_ health ->
-                if health == 0 then
-                    Ecs.removeEntity specs.all
+    Ecs.EntityComponents.processFromLeft
+        specs.health
+        (\_ health ->
+            if health == 0 then
+                Ecs.removeEntity specs.all
 
-                else
-                    identity
-            )
+            else
+                identity
+        )
+        world
 
 
 keyboardInputSystem : ( List Key, Maybe KeyChange ) -> World -> World
@@ -560,14 +560,9 @@ worldBoundsSystem =
                 specs.position
                 (Maybe.map <|
                     \p ->
-                        let
-                            x =
-                                xCoordinate p |> quantityRangeMod ( zero, constants.width )
-
-                            y =
-                                yCoordinate p |> quantityRangeMod ( zero, constants.height )
-                        in
-                        Point2d.xy x y
+                        Point2d.xy
+                            (xCoordinate p |> quantityRangeMod ( zero, constants.width ))
+                            (yCoordinate p |> quantityRangeMod ( zero, constants.height ))
                 )
         )
 
@@ -605,7 +600,8 @@ collisionDetectionSystem world =
         isColliding ( a, b ) =
             (a.entityId /= b.entityId) && (a.shape |> BoundingBox2d.intersects b.shape)
     in
-    Ecs.setSingleton specs.collisions
+    Ecs.setSingleton
+        specs.collisions
         (targets world
             |> uniquePairs
             |> List.filter isColliding
@@ -1028,7 +1024,7 @@ fizzleParticleSprite particle =
                 1
 
         color =
-            hslString
+            hslSvg
                 hue
                 saturation
                 (maxLuminance - luminanceDelta * (1 - lifetime))
@@ -1222,20 +1218,17 @@ renderWorld world =
 
         ( wPixels, hPixels ) =
             ( constants.width, constants.height ) |> vApply inPixels
-
-        ( wStr, hStr ) =
-            ( wPixels, hPixels ) |> vApply fromFloat
     in
     svg
         [ version "1.1"
         , class "world"
         , width "640"
         , height "480"
-        , viewBox ("0 0 " ++ wStr ++ " " ++ hStr)
+        , viewBox (join " " [ "0", "0", fromFloat wPixels, fromFloat hPixels ])
         ]
         [ g
             [ id "sprites"
-            , transform ("translate(0," ++ hStr ++ ") scale(1,-1)")
+            , transform (join " " [ translateSvg 0 hPixels, scaleSvg 1 -1 ])
             ]
           <|
             foldFromLeft2
@@ -1445,12 +1438,30 @@ vMult by =
     vApply <| (*) by
 
 
-hslString : Float -> Float -> Float -> String
-hslString hue saturation luminance =
+hslSvg : Float -> Float -> Float -> String
+hslSvg hue saturation luminance =
     "hsl("
-        ++ String.fromFloat hue
+        ++ fromFloat hue
         ++ ","
-        ++ String.fromFloat saturation
+        ++ fromFloat saturation
         ++ "%,"
-        ++ String.fromFloat luminance
+        ++ fromFloat luminance
         ++ "%)"
+
+
+translateSvg : Float -> Float -> String
+translateSvg dx dy =
+    "translate("
+        ++ fromFloat dx
+        ++ ","
+        ++ fromFloat dy
+        ++ ")"
+
+
+scaleSvg : Float -> Float -> String
+scaleSvg dx dy =
+    "scale("
+        ++ fromFloat dx
+        ++ ","
+        ++ fromFloat dy
+        ++ ")"
