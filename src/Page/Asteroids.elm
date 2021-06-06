@@ -416,11 +416,13 @@ forwardThrustSystem world =
         specs.positionVelocity
         specs.orientation
         (\_ thrust pv o ->
-            Ecs.insertComponent specs.positionVelocity
-                (pv
-                    |> Vector2d.plus (Vector2d.withLength thrust o |> Vector2d.for dt)
-                    |> vectorLimit constants.speedLimit
-                )
+            identity
+                >> Ecs.insertComponent specs.positionVelocity
+                    (pv
+                        |> Vector2d.plus (Vector2d.withLength thrust o |> Vector2d.for dt)
+                        |> vectorLimit constants.speedLimit
+                    )
+                >> Ecs.insertComponent specs.health 10
         )
         world
 
@@ -594,18 +596,19 @@ collisionDetectionSystem world =
                 w
 
         isColliding ( a, b ) =
-            (a.entityId /= b.entityId)
-                && (( a.shape, b.shape )
-                        |> vApply Polygon2d.boundingBox
-                        |> (\shapes ->
-                                case shapes of
-                                    ( Just shapeA, Just shapeB ) ->
-                                        shapeA |> BoundingBox2d.intersects shapeB
+            (&&)
+                (a.entityId /= b.entityId)
+                (( a.shape, b.shape )
+                    |> vApply Polygon2d.boundingBox
+                    |> (\shapes ->
+                            case shapes of
+                                ( Just shapeA, Just shapeB ) ->
+                                    shapeA |> BoundingBox2d.intersects shapeB
 
-                                    _ ->
-                                        False
-                           )
-                   )
+                                _ ->
+                                    False
+                       )
+                )
     in
     Ecs.setSingleton
         specs.collisions
@@ -653,43 +656,41 @@ bulletAsteroidCollisionSystem world =
         |> List.filter (uncurry <| isCollidingClasses targets)
         |> List.map (orderCollidingClassesWith <| firstClassComparator Bullet)
         |> List.foldl
-            (\( bullet, asteroid ) w ->
-                w
-                    |> Ecs.onEntity bullet.entityId
-                    |> Ecs.removeEntity specs.all
-                    |> Ecs.onEntity asteroid.entityId
-                    |> Ecs.removeEntity specs.all
-                    |> (\w2 ->
-                            let
-                                maybeSize : Maybe.Maybe AsteroidType
-                                maybeSize =
-                                    (case asteroid.health of
-                                        Just 0 ->
-                                            Nothing
+            (\( bullet, asteroid ) ->
+                let
+                    maybeSize : Maybe.Maybe AsteroidType
+                    maybeSize =
+                        (case asteroid.health of
+                            Just 0 ->
+                                Nothing
 
-                                        Just 1 ->
-                                            Just TINY
+                            Just 1 ->
+                                Just TINY
 
-                                        Just 2 ->
-                                            Just SMALL
+                            Just 2 ->
+                                Just SMALL
 
-                                        Just 3 ->
-                                            Just MEDIUM
+                            Just 3 ->
+                                Just MEDIUM
 
-                                        _ ->
-                                            Just BIG
-                                    )
-                                        |> Maybe.andThen downSizeAsteroidType
-                            in
-                            spawnExplosion asteroid.position w2
-                                |> (case maybeSize of
-                                        Just size ->
-                                            spawnAsteroidEntity size asteroid.position
-                                                >> spawnAsteroidEntity size asteroid.position
+                            _ ->
+                                Just BIG
+                        )
+                            |> Maybe.andThen downSizeAsteroidType
+                in
+                identity
+                    >> Ecs.onEntity bullet.entityId
+                    >> Ecs.removeEntity specs.all
+                    >> Ecs.onEntity asteroid.entityId
+                    >> Ecs.removeEntity specs.all
+                    >> spawnExplosion asteroid.position
+                    >> (case maybeSize of
+                            Just size ->
+                                spawnAsteroidEntity size asteroid.position
+                                    >> spawnAsteroidEntity size asteroid.position
 
-                                        _ ->
-                                            identity
-                                   )
+                            _ ->
+                                identity
                        )
             )
             world
@@ -703,20 +704,19 @@ particleSystem world =
     in
     Ecs.EntityComponents.processFromLeft
         specs.particle
-        (\_ particle world2 ->
+        (\_ particle ->
             case Particle.update dtms particle of
                 Just particle2 ->
-                    world2
-                        |> Ecs.insertComponent specs.particle particle2
-                        |> Ecs.insertComponent specs.position
+                    identity
+                        >> Ecs.insertComponent specs.particle particle2
+                        >> Ecs.insertComponent specs.position
                             (Point2d.xy (particle2 |> leftPixels |> pixels) (particle2 |> topPixels |> pixels))
-                        |> Ecs.insertComponent specs.orientation
+                        >> Ecs.insertComponent specs.orientation
                             (particle2 |> directionDegrees |> Direction2d.degrees)
 
                 Nothing ->
                     -- should be managed by the ttl system, but if not, remove the entity particle ourselves
-                    world2
-                        |> Ecs.removeEntity specs.all
+                    Ecs.removeEntity specs.all
         )
         world
 
