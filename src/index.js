@@ -13,6 +13,7 @@ require("./lissajous.css");
 require("./digital-clock.css");
 require("./maze.css");
 require("./term.css");
+require("./asteroids.css");
 
 const { Elm } = require("./Main.elm");
 const basePath = new URL(document.baseURI).pathname;

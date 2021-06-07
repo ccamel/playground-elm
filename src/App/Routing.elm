@@ -2,6 +2,7 @@ module App.Routing exposing (..)
 
 import App.Messages exposing (Page(..))
 import Page.About
+import Page.Asteroids
 import Page.Calc
 import Page.DigitalClock
 import Page.Lissajous
@@ -53,6 +54,9 @@ parseFragment fragment =
 
             else if p == Page.Term.info.name then
                 Page Term
+
+            else if p == Page.Asteroids.info.name then
+                Page Asteroids
 
             else
                 NotFoundRoute

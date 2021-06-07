@@ -22,7 +22,7 @@ The showcases are intended to be:
 - **exploratory**:
   - _Highlight_ some aspects of the [elm][] language, like immutability, reactiveness, performance and
     interoperability with other JS libraries and CSS frameworks.
-  - _Explore_ some architectural/design patterns around reactive static/serverless [SPA][].
+  - _Explore_ some architectural/design patterns around reactive static/serverless [SPA][]
 - **playable**: As much as possible, provides a useful and enjoyable content.
 
 ## 🍿 Showcases
@@ -168,7 +168,19 @@ The site is accessible through the `http://localhost:1234/` endpoint.
 
 ## 🔋 Technologies
 
-- [`elm`](http://elm-lang.org/): ELM language
+- [`elm`](http://elm-lang.org/): ELM
+
+  With the following (main and non exhaustive) packages:
+
+  - [Chadtech/elm-vector](https://package.elm-lang.org/packages/Chadtech/elm-vector/latest/)
+  - [avh4/elm-color](https://package.elm-lang.org/packages/avh4/elm-color/latest/)
+  - [cuducos/elm-format-number](https://package.elm-lang.org/packages/cuducos/elm-format-number/latest/)
+  - [elm-explorations/markdown](https://package.elm-lang.org/packages/elm-explorations/markdown/latest/)
+  - [simonh1000/elm-colorpicker](https://package.elm-lang.org/packages/simonh1000/elm-colorpicker/latest/)
+  - [joakin/elm-canvas](https://package.elm-lang.org/packages/joakin/elm-canvas/latest/)
+  - [wsowens/term](https://package.elm-lang.org/packages/wsowens/term/latest/)
+  - [MacCASOutreach/graphicsvg](https://package.elm-lang.org/packages/MacCASOutreach/graphicsvg/latest/)
+
 - [`parceljs`](https://parceljs.org/): Web application bundler
 - [`bootstrap`](https://getbootstrap.com/): Free and open-source CSS framework
 

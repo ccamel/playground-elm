@@ -2,6 +2,7 @@ module App.Messages exposing (..)
 
 import Browser exposing (Document)
 import Page.About
+import Page.Asteroids
 import Page.Calc
 import Page.DigitalClock
 import Page.Lissajous
@@ -19,6 +20,7 @@ type Page
     | Maze
     | Physics
     | Term
+    | Asteroids
 
 
 type Msg
@@ -34,3 +36,4 @@ type Msg
     | MazePageMsg Page.Maze.Msg
     | PhysicsPageMsg Page.Physics.Msg
     | TermPageMsg Page.Term.Msg
+    | AsteroidsPageMsg Page.Asteroids.Msg

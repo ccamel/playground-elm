@@ -1,7 +1,6 @@
 module Page.Lissajous exposing (..)
 
 import Array
-import Basics.Extra exposing (flip)
 import Browser.Events exposing (onAnimationFrameDelta)
 import Color exposing (green, red, rgb255, toCssString)
 import ColorPicker
@@ -13,7 +12,7 @@ import Html.Events exposing (onInput)
 import List exposing (concat, concatMap, filterMap, indexedMap, map, range)
 import Markdown
 import Maybe
-import Page.Common exposing (BoundedArray, Frames, addFrame, appendToBoundedArray, createBoundedArray, createFrames, fpsText, onClickNotPropagate, resetBoundedArray, resetFrames, resizeBoundedArray, strToFloatWithMinMax, strToIntWithMinMax)
+import Page.Common exposing (BoundedArray, Frames, addFrame, appendToBoundedArray, createBoundedArray, createFrames, fpsText, onClickNotPropagate, resetFrames, resizeBoundedArray, strToFloatWithMinMax, strToIntWithMinMax, toPixels)
 import Platform.Cmd exposing (batch)
 import Round
 import String exposing (fromFloat, fromInt)
@@ -661,10 +660,3 @@ fadeColor f c =
 sendMsg : msg -> Cmd msg
 sendMsg msg =
     Task.succeed msg |> Task.perform identity
-
-
-toPixels : Int -> String
-toPixels size =
-    size
-        |> fromInt
-        |> flip String.append "px"
