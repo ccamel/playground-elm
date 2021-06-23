@@ -33,7 +33,8 @@
     "build": "BASE_URL=/playground-elm/ parcel build src/index.html --public-url ./",
     "serve": "BASE_URL=/ parcel src/index.html",
     "release": "release-it",
-    "prettify": "prettier --write . && elm-format src"
+    "prettify": "prettier --write . && elm-format src",
+    "analyse": "elm-analyse"
   },
   "dependencies": {
     "animate.css": "^3.5.2",
