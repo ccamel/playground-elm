@@ -1,6 +1,6 @@
 module App.Messages exposing (..)
 
-import Browser exposing (Document)
+import Browser
 import Page.About
 import Page.Asteroids
 import Page.Calc
