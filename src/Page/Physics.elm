@@ -1,9 +1,9 @@
 module Page.Physics exposing (..)
 
 import Array exposing (Array, foldr, fromList, get, map, set, toList)
-import Basics.Extra exposing (curry, flip, uncurry)
+import Basics.Extra exposing (flip, uncurry)
 import Browser.Events exposing (onAnimationFrameDelta)
-import Canvas exposing (Renderable, Shape, arc, lineTo, path, rect, shapes)
+import Canvas exposing (Renderable, arc, lineTo, path, rect, shapes)
 import Canvas.Settings exposing (fill, stroke)
 import Canvas.Settings.Advanced exposing (Transform, transform, translate)
 import Canvas.Settings.Line exposing (lineWidth)
@@ -18,7 +18,6 @@ import List exposing (head, length)
 import Markdown
 import Maybe exposing (withDefault)
 import Page.Common exposing (Frames, addFrame, createFrames, fpsText, onClickNotPropagate, withAlpha)
-import Platform.Sub
 import String exposing (fromInt)
 import Vector2 exposing (Index(..), Vector2, map2)
 
