@@ -367,12 +367,10 @@ view model =
             , div [ class "description col-sm-6" ]
                 [ p []
                     [ text "You can "
-                    , case model.started of
-                        False ->
-                            a [ class "action", href "", onClickNotPropagate Start ] [ text "start" ]
-
-                        True ->
-                            a [ class "action", href "", onClickNotPropagate Stop ] [ text "stop" ]
+                    , if model.started then
+                        a [ class "action", href "", onClickNotPropagate Start ] [ text "start" ]
+                      else
+                        a [ class "action", href "", onClickNotPropagate Stop ] [ text "stop" ]
                     , text " the animation. You can also "
                     , a [ class "action", href "", onClickNotPropagate Reset ] [ text "reset" ]
                     , text " the values to default."
