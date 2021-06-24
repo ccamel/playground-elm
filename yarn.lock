@@ -1539,7 +1539,7 @@ bindings@^1.5.0:
   dependencies:
     file-uri-to-path "1.0.0"
 
-binwrap@^0.2.3:
+binwrap@^0.2.2, binwrap@^0.2.3:
   version "0.2.3"
   resolved "https://registry.yarnpkg.com/binwrap/-/binwrap-0.2.3.tgz#87c4e46fa022e2c78b8380e6dd465973bfc7fbca"
   integrity sha512-N4Pm7iyDEv0BrAMs+dny8WQa+e0nNTdzn2ODkf/MM6XBtKSCxCSUA1ZOQGoc1n7mUqdgOS5pwjsW91rmXVxy2Q==
@@ -2861,6 +2861,13 @@ elm-hot@^1.1.6:
   version "1.1.6"
   resolved "https://registry.yarnpkg.com/elm-hot/-/elm-hot-1.1.6.tgz#93e3962b40670e65f0a3640951b3add2702bfd0e"
   integrity sha512-zYZJlfs7Gt4BdjA+D+857K+XAWzwwySJmXCgFpHW1dIEfaHSZCIPYPf7/jinZBLfKRkOAlKzI32AA84DY50g7Q==
+
+elm-json@^0.2.10:
+  version "0.2.10"
+  resolved "https://registry.yarnpkg.com/elm-json/-/elm-json-0.2.10.tgz#3787182efa77f6a619ec4ac70974f63f8c8d1639"
+  integrity sha512-1CsCUV7heSp/GViKdYOmy6nxs1E2MlCYG+Fbn6xopl27pcnKI+2ZElBlsTLNF6DUqIWJ6k7+luDWfdkJW1CEBg==
+  dependencies:
+    binwrap "^0.2.2"
 
 elm@^0.19.1-no-dep:
   version "0.19.1"
