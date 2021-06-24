@@ -526,7 +526,7 @@ xAxisForm =
 
         ticks =
             rangeStep -halfW halfW 10
-                -- TODO: not sure it's optimal
+                -- not sure it's optimal
                 |> List.map toFloat
                 |> List.map (\v -> line ( v, 0 ) ( v, 5 ))
     in
