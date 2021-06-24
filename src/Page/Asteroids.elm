@@ -596,19 +596,18 @@ collisionDetectionSystem world =
                 w
 
         isColliding ( a, b ) =
-            (&&)
-                (a.entityId /= b.entityId)
-                (( a.shape, b.shape )
-                    |> vApply Polygon2d.boundingBox
-                    |> (\shapes ->
-                            case shapes of
-                                ( Just shapeA, Just shapeB ) ->
-                                    shapeA |> BoundingBox2d.intersects shapeB
+              (a.entityId /= b.entityId) &&
+              (( a.shape, b.shape )
+                  |> vApply Polygon2d.boundingBox
+                  |> (\shapes ->
+                          case shapes of
+                              ( Just shapeA, Just shapeB ) ->
+                                  shapeA |> BoundingBox2d.intersects shapeB
 
-                                _ ->
-                                    False
-                       )
-                )
+                              _ ->
+                                  False
+                      )
+              )
     in
     Ecs.setSingleton
         specs.collisions
