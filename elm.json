@@ -13,7 +13,6 @@
             "avh4/elm-color": "1.0.0",
             "cuducos/elm-format-number": "8.1.4",
             "elm/browser": "1.0.2",
-            "elm/bytes": "1.0.8",
             "elm/core": "1.0.5",
             "elm/file": "1.0.5",
             "elm/html": "1.0.0",
@@ -39,6 +38,7 @@
             "wsowens/term": "2.0.6"
         },
         "indirect": {
+            "elm/bytes": "1.0.8",
             "elm/parser": "1.1.0",
             "elm/regex": "1.0.0",
             "elm/virtual-dom": "1.0.2",
