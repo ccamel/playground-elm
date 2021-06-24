@@ -2,7 +2,7 @@ module Page.Lissajous exposing (..)
 
 import Array
 import Browser.Events exposing (onAnimationFrameDelta)
-import Color exposing (green, red, rgb255, toCssString)
+import Color exposing (rgb255, toCssString)
 import ColorPicker
 import GraphicSVG exposing (LineType, Shape, Stencil, circle, filled, fixedwidth, group, line, move, openPolygon, outlined, rect, rotate, solid)
 import GraphicSVG.Widget as Widget

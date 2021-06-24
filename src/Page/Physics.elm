@@ -774,7 +774,7 @@ getDot id { dots } =
 
 
 setDot : Dot -> Entity -> Entity
-setDot ({ id } as p) ({ dots } as entity) =
+setDot ({ id } as p) entity =
     { entity
         | dots = set id p entity.dots
     }
