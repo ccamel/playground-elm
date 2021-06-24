@@ -8,7 +8,6 @@ import FormatNumber.Locales exposing (Decimals(..), Locale, usLocale)
 import Html exposing (Html)
 import Html.Events exposing (..)
 import Json.Decode as Decode
-import List exposing (length)
 import Maybe exposing (map, withDefault)
 import String exposing (fromInt, padLeft)
 import String.Interpolate exposing (interpolate)

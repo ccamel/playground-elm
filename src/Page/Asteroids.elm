@@ -1107,7 +1107,7 @@ type Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg ({ world, keys } as model) =
+update msg ({ world } as model) =
     case ( msg, world ) of
         ( GotTime time, Nothing ) ->
             ( { model
