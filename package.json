@@ -34,7 +34,8 @@
     "serve": "BASE_URL=/ parcel src/index.html",
     "release": "release-it",
     "prettify": "prettier --write . && elm-format src",
-    "analyse": "elm-analyse"
+    "analyse": "elm-analyse",
+    "elm-json": "elm-json"
   },
   "dependencies": {
     "animate.css": "^3.5.2",
