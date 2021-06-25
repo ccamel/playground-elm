@@ -2,7 +2,7 @@ module Page.Lissajous exposing (..)
 
 import Array
 import Browser.Events exposing (onAnimationFrameDelta)
-import Color exposing (green, red, rgb255, toCssString)
+import Color exposing (rgb255, toCssString)
 import ColorPicker
 import GraphicSVG exposing (LineType, Shape, Stencil, circle, filled, fixedwidth, group, line, move, openPolygon, outlined, rect, rotate, solid)
 import GraphicSVG.Widget as Widget
@@ -367,12 +367,10 @@ view model =
             , div [ class "description col-sm-6" ]
                 [ p []
                     [ text "You can "
-                    , case model.started of
-                        False ->
-                            a [ class "action", href "", onClickNotPropagate Start ] [ text "start" ]
-
-                        True ->
-                            a [ class "action", href "", onClickNotPropagate Stop ] [ text "stop" ]
+                    , if model.started then
+                        a [ class "action", href "", onClickNotPropagate Start ] [ text "start" ]
+                      else
+                        a [ class "action", href "", onClickNotPropagate Stop ] [ text "stop" ]
                     , text " the animation. You can also "
                     , a [ class "action", href "", onClickNotPropagate Reset ] [ text "reset" ]
                     , text " the values to default."
@@ -528,7 +526,7 @@ xAxisForm =
 
         ticks =
             rangeStep -halfW halfW 10
-                -- TODO: not sure it's optimal
+                -- not sure it's optimal
                 |> List.map toFloat
                 |> List.map (\v -> line ( v, 0 ) ( v, 5 ))
     in

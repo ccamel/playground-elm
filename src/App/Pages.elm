@@ -6,7 +6,7 @@ import Html exposing (Html)
 import Page.About
 import Page.Asteroids
 import Page.Calc
-import Page.Common
+import Page.Common exposing (PageInfo)
 import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
@@ -45,6 +45,7 @@ pages =
     ]
 
 
+toView : (a -> Html b) -> (b -> msg) -> (d -> Maybe a) -> d -> Html msg
 toView aPageView pageMsg modelExtractor model =
     model
         |> modelExtractor
@@ -53,6 +54,7 @@ toView aPageView pageMsg modelExtractor model =
         |> Maybe.withDefault emptyNode
 
 
+toSubscriptions : (a -> Sub b) -> (b -> msg) -> (d -> Maybe a) -> d -> Sub msg
 toSubscriptions aPageSubscriptions pageMsg modelExtractor model =
     model
         |> modelExtractor
@@ -61,19 +63,14 @@ toSubscriptions aPageSubscriptions pageMsg modelExtractor model =
         |> Maybe.withDefault Sub.none
 
 
+toSpec : PageInfo msg -> (model -> Html msg) -> (model -> Sub msg) -> (msg -> Msg) -> (Model -> Maybe model) -> PageSpec
 toSpec info aPageView aPageSubscriptions pageMsg modelExtractor =
-    let
-        desc =
-            info.description
-
-        info2 =
-            { name = info.name
-            , hash = info.hash
-            , description = Html.map pageMsg desc
-            , srcRel = info.srcRel
-            }
-    in
-    { info = info2
+    { info =
+        { name = info.name
+        , hash = info.hash
+        , description = Html.map pageMsg info.description
+        , srcRel = info.srcRel
+        }
     , view = toView aPageView pageMsg modelExtractor --currified form
     , subscriptions = toSubscriptions aPageSubscriptions pageMsg modelExtractor
     }

@@ -5,11 +5,11 @@ import AngularAcceleration exposing (AngularAcceleration, radiansPerSecondSquare
 import AngularSpeed exposing (AngularSpeed, degreesPerSecond)
 import Basics as Math
 import Basics.Extra exposing (swap, uncurry)
-import BoundingBox2d exposing (BoundingBox2d, minX, minY)
+import BoundingBox2d exposing (minX, minY)
 import Browser.Events exposing (onAnimationFrameDelta)
 import Conditional.List exposing (addWhen)
 import Direction2d exposing (Direction2d, rotateBy, toAngle)
-import Duration exposing (Duration, Seconds, milliseconds)
+import Duration exposing (Duration, milliseconds)
 import Ecs
 import Ecs.Components16
 import Ecs.EntityComponents exposing (foldFromLeft2)
@@ -27,7 +27,7 @@ import Particle exposing (directionDegrees, leftPixels, topPixels)
 import Pixels exposing (Pixels, PixelsPerSecond, PixelsPerSecondSquared, inPixels, pixels, pixelsPerSecond, pixelsPerSecondSquared)
 import Point2d exposing (Point2d, translateBy, xCoordinate, yCoordinate)
 import Polygon2d exposing (Polygon2d, singleLoop)
-import Quantity exposing (Product, Quantity, Rate, lessThanOrEqualTo, plus, zero)
+import Quantity exposing (Quantity, lessThanOrEqualTo, plus, zero)
 import Random exposing (Generator, Seed)
 import Random.Float exposing (normal)
 import Rectangle2d
@@ -596,19 +596,18 @@ collisionDetectionSystem world =
                 w
 
         isColliding ( a, b ) =
-            (&&)
-                (a.entityId /= b.entityId)
-                (( a.shape, b.shape )
-                    |> vApply Polygon2d.boundingBox
-                    |> (\shapes ->
-                            case shapes of
-                                ( Just shapeA, Just shapeB ) ->
-                                    shapeA |> BoundingBox2d.intersects shapeB
+              (a.entityId /= b.entityId) &&
+              (( a.shape, b.shape )
+                  |> vApply Polygon2d.boundingBox
+                  |> (\shapes ->
+                          case shapes of
+                              ( Just shapeA, Just shapeB ) ->
+                                  shapeA |> BoundingBox2d.intersects shapeB
 
-                                _ ->
-                                    False
-                       )
-                )
+                              _ ->
+                                  False
+                      )
+              )
     in
     Ecs.setSingleton
         specs.collisions
@@ -1107,7 +1106,7 @@ type Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg ({ world, keys } as model) =
+update msg ({ world } as model) =
     case ( msg, world ) of
         ( GotTime time, Nothing ) ->
             ( { model

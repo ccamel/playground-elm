@@ -12,7 +12,7 @@ import Page.Common exposing (classList, strToIntWithMinMax)
 import String exposing (fromInt, padLeft)
 import String.Interpolate exposing (interpolate)
 import Svg exposing (Svg, circle, g, path, svg)
-import Svg.Attributes as SvgAtt exposing (cx, cy, d, height, id, r, transform, viewBox, width, x)
+import Svg.Attributes as SvgAtt exposing (cx, cy, d, height, id, r, transform, viewBox, width)
 import Time exposing (Posix, Zone, every, toHour, toMinute, toSecond, utc)
 
 

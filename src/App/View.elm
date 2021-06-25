@@ -8,7 +8,6 @@ import Browser
 import Html exposing (Html, a, div, footer, h1, h2, h3, hr, i, img, li, nav, p, section, span, text, ul)
 import Html.Attributes exposing (alt, attribute, class, href, id, src, style, title, type_)
 import Html.Events exposing (onClick)
-import String exposing (concat)
 
 
 

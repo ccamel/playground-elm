@@ -4,7 +4,6 @@ import App.Messages exposing (Msg(..), Page(..))
 import App.Models exposing (Model)
 import App.Pages exposing (pageSubscriptions)
 import App.Routing exposing (Route(..))
-import Platform.Sub
 
 
 subscriptions : Model -> Sub Msg

@@ -2,8 +2,8 @@ module Page.Calc exposing (..)
 
 import Basics.Extra exposing (flip)
 import Browser.Events
-import Html exposing (Html, a, div, hr, input, p, text)
-import Html.Attributes exposing (attribute, class, style, type_, value)
+import Html exposing (Html, div, hr, input, p, text)
+import Html.Attributes exposing (attribute, class, type_, value)
 import Html.Events exposing (onClick)
 import Json.Decode as Json
 import List exposing (drop, foldl, foldr, take)

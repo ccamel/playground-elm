@@ -33,7 +33,9 @@
     "build": "BASE_URL=/playground-elm/ parcel build src/index.html --public-url ./",
     "serve": "BASE_URL=/ parcel src/index.html",
     "release": "release-it",
-    "prettify": "prettier --write . && elm-format src"
+    "prettify": "prettier --write . && elm-format src",
+    "analyse": "elm-analyse",
+    "elm-json": "elm-json"
   },
   "dependencies": {
     "animate.css": "^3.5.2",
@@ -49,8 +51,10 @@
   },
   "devDependencies": {
     "elm": "^0.19.1-no-dep",
+    "elm-analyse": "^0.16.5",
     "elm-format": "^0.8.5",
     "elm-hot": "^1.1.6",
+    "elm-json": "^0.2.10",
     "node-elm-compiler": "^5.0.6",
     "parcel-bundler": "^1.12.5",
     "posthtml-expressions": "^1.7.1",

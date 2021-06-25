@@ -40,6 +40,7 @@ type alias Model =
     }
 
 
+emptyPagesModel : { aboutPage : Maybe a, calcPage : Maybe b, lissajousPage : Maybe c, digitalClockPage : Maybe d, mazePage : Maybe e, physicsPage : Maybe f, termPage : Maybe g, asteroidsPage : Maybe h }
 emptyPagesModel =
     { aboutPage = Nothing
     , calcPage = Nothing

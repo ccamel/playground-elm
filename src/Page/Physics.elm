@@ -1,9 +1,9 @@
 module Page.Physics exposing (..)
 
 import Array exposing (Array, foldr, fromList, get, map, set, toList)
-import Basics.Extra exposing (curry, flip, uncurry)
+import Basics.Extra exposing (flip, uncurry)
 import Browser.Events exposing (onAnimationFrameDelta)
-import Canvas exposing (Renderable, Shape, arc, lineTo, path, rect, shapes)
+import Canvas exposing (Renderable, arc, lineTo, path, rect, shapes)
 import Canvas.Settings exposing (fill, stroke)
 import Canvas.Settings.Advanced exposing (Transform, transform, translate)
 import Canvas.Settings.Line exposing (lineWidth)
@@ -18,7 +18,6 @@ import List exposing (head, length)
 import Markdown
 import Maybe exposing (withDefault)
 import Page.Common exposing (Frames, addFrame, createFrames, fpsText, onClickNotPropagate, withAlpha)
-import Platform.Sub
 import String exposing (fromInt)
 import Vector2 exposing (Index(..), Vector2, map2)
 
@@ -775,7 +774,7 @@ getDot id { dots } =
 
 
 setDot : Dot -> Entity -> Entity
-setDot ({ id } as p) ({ dots } as entity) =
+setDot ({ id } as p) entity =
     { entity
         | dots = set id p entity.dots
     }
@@ -1021,12 +1020,10 @@ Click on the left button of the mouse to interact with the simulation.
             , div [ class "description col-sm-6" ]
                 [ p []
                     [ text "You can "
-                    , case model.started of
-                        False ->
-                            a [ class "action", href "", onClickNotPropagate Start ] [ text "start" ]
-
-                        True ->
-                            a [ class "action", href "", onClickNotPropagate Stop ] [ text "stop" ]
+                    , if model.started then
+                        a [ class "action", href "", onClickNotPropagate Start ] [ text "start" ]
+                      else
+                        a [ class "action", href "", onClickNotPropagate Stop ] [ text "stop" ]
                     , text " the simulation. You can also "
                     , a [ class "action", href "", onClickNotPropagate Reset ] [ text "reset" ]
                     , text " the values to default."
