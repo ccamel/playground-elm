@@ -60,7 +60,7 @@
     "posthtml-expressions": "^1.7.1",
     "prettier": "^2.3.1",
     "release-it": "^14.10.0",
-    "resolve-url-loader": "^2.1.0",
+    "resolve-url-loader": "^4.0.0",
     "rimraf": "^3.0.2"
   }
 }
