@@ -8,7 +8,7 @@
         "direct": {
             "BrianHicks/elm-particle": "1.5.0",
             "Chadtech/elm-vector": "3.0.2",
-            "MacCASOutreach/graphicsvg": "7.1.0",
+            "MacCASOutreach/graphicsvg": "7.2.0",
             "andre-dietrich/elm-conditional": "1.0.0",
             "avh4/elm-color": "1.0.0",
             "cuducos/elm-format-number": "8.1.4",
