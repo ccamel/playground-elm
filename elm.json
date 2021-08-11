@@ -34,7 +34,7 @@
             "myrho/elm-round": "1.0.4",
             "noahzgordon/elm-color-extra": "1.0.2",
             "ohanhi/keyboard": "2.0.1",
-            "simonh1000/elm-colorpicker": "2.0.2",
+            "simonh1000/elm-colorpicker": "2.0.3",
             "wsowens/term": "2.0.6"
         },
         "indirect": {
