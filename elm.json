@@ -22,7 +22,7 @@
             "elm/time": "1.0.0",
             "elm/url": "1.0.0",
             "elm-community/basics-extra": "4.1.0",
-            "elm-community/list-extra": "8.4.0",
+            "elm-community/list-extra": "8.5.1",
             "elm-community/random-extra": "3.2.0",
             "elm-explorations/markdown": "1.0.0",
             "harmboschloo/elm-ecs": "2.0.0",
