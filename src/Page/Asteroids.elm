@@ -263,6 +263,7 @@ systems delta keys =
     , keyboardInputSystem keys
     , controlCommandSystem
     , firingCommandSystem
+    , optionsCommandSystem
     , forwardThrustSystem
     , sideThrustSystem
     , firingSystem
@@ -402,6 +403,25 @@ firingCommandSystem world =
 
                 _ ->
                     Ecs.removeComponent specs.fireCommand
+           )
+
+
+optionsCommandSystem : World -> World
+optionsCommandSystem world =
+    let
+        ( keys, maybeKeyChange ) =
+            Ecs.getSingleton specs.keys world
+
+        parameters =
+            Ecs.getSingleton specs.parameters world
+    in
+    world
+        |> (case maybeKeyChange of
+                Just (KeyDown (Character "S")) ->
+                    Ecs.setSingleton specs.parameters { parameters | showBoundingBox = not <| .showBoundingBox parameters } >> Ecs.setSingleton specs.keys ( keys, Nothing )
+
+                _ ->
+                    identity
            )
 
 
@@ -596,18 +616,18 @@ collisionDetectionSystem world =
                 w
 
         isColliding ( a, b ) =
-              (a.entityId /= b.entityId) &&
-              (( a.shape, b.shape )
-                  |> vApply Polygon2d.boundingBox
-                  |> (\shapes ->
-                          case shapes of
-                              ( Just shapeA, Just shapeB ) ->
-                                  shapeA |> BoundingBox2d.intersects shapeB
+            (a.entityId /= b.entityId)
+                && (( a.shape, b.shape )
+                        |> vApply Polygon2d.boundingBox
+                        |> (\shapes ->
+                                case shapes of
+                                    ( Just shapeA, Just shapeB ) ->
+                                        shapeA |> BoundingBox2d.intersects shapeB
 
-                              _ ->
-                                  False
-                      )
-              )
+                                    _ ->
+                                        False
+                           )
+                   )
     in
     Ecs.setSingleton
         specs.collisions
@@ -1169,7 +1189,7 @@ view { world, frames } =
                     [ Markdown.toHtml [ Attributes.class "info" ] """
   Simple Asteroids clone in [Elm](https://elm-lang.org/).
 
-  **Controls:** `↑` move, `←` rotate left, `→` rotate right, `space` shoot.
+  **Controls:** `↑` move, `←` rotate left, `→` rotate right, `space` shoot, `s` show bounding boxes.
   """
                     ]
               ]
