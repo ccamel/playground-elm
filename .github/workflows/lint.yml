@@ -1,4 +1,4 @@
-name: Build
+name: Lint
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
+  analyse-elm:
     runs-on: ubuntu-18.04
     steps:
       - name: Check out repository
@@ -34,4 +34,4 @@ jobs:
         run: yarn
 
       - name: Build project
-        run: yarn build
+        run: yarn analyse
