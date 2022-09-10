@@ -31,7 +31,7 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Fetch dependencies
-        run: yarn
+        run: yarn --frozen-lockfile
 
       - name: Build project
         run: yarn build
