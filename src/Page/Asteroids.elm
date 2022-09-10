@@ -50,7 +50,7 @@ info =
     , hash = "asteroids"
     , description = Markdown.toHtml [ Attributes.class "info" ] """
 
-A simple Asteroids clone in [Elm](https://elm-lang.org/).
+A simple Asteroidcs clone in [Elm](https://elm-lang.org/).
        """
     , srcRel = "Page/Asteroids.elm"
     }
@@ -1167,7 +1167,9 @@ view { world, frames } =
             [ [ hr [] []
               , p [ Attributes.class "text-muted" ]
                     [ Markdown.toHtml [ Attributes.class "info" ] """
-  Simple Asteroids clone in [Elm](https://elm-lang.org/) .
+  Simple Asteroids clone in [Elm](https://elm-lang.org/).
+
+  **Controls:** `↑` move, `←` rotate left, `→` rotate right, `space` shoot.
   """
                     ]
               ]
