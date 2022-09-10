@@ -7,22 +7,22 @@
 # see: https://github.com/neverpanic/google-font-download
 
 # Absolute path to this script
-SCRIPT=$(readlink -f $0)
+SCRIPT=$(readlink -f "$0")
 # Absolute path this script is in.
-SCRIPTPATH=$(dirname $SCRIPT)
+SCRIPTPATH=$(dirname "$SCRIPT")
 # Absolute path the downloaded fonts are in.
 PATH_FONT="$SCRIPTPATH/../src/resources/fonts"
 
 echo "Cleaning path $PATH_FONT"
-rm -f $PATH_FONT/*.*
+rm -f "$PATH_FONT"/*.*
 
 pushd .
 
-cd $PATH_FONT
+cd "$PATH_FONT" || exit
 
 echo "Downloading fonts..."
 google-font-download "Bad Script:400" "Orbitron:500" "Oxygen Mono:400" "Roboto Mono:500" "Share Tech Mono:400"
 
 echo "Done."
 
-popd
+popd || exit

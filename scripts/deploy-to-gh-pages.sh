@@ -8,7 +8,7 @@ rm -rf site
 mkdir site
 
 echo "checkout gh-pages branch from playground-elm.git"
-git clone https://ccamel:$GH_TOKEN@github.com/ccamel/playground-elm.git -b gh-pages --depth 1 site
+git clone "https://ccamel:$GH_TOKEN@github.com/ccamel/playground-elm.git" -b gh-pages --depth 1 site
 
 cd site
 
@@ -18,7 +18,7 @@ git config push.default simple
 
 # add changes
 echo "clear old site"
-rm -f *.*
+rm -f -- *.*
 
 echo "copy dist"
 cp -R ../dist/* .
