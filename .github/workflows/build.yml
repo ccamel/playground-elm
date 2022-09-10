@@ -16,7 +16,7 @@ jobs:
       - name: Setup node environment (for building)
         uses: actions/setup-node@v2
         with:
-          node-version: 14.15.3
+          node-version: 16.14.0
 
       - id: yarn-cache-dir-path
         run: echo "::set-output name=dir::$(yarn cache dir)"
