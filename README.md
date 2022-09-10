@@ -16,6 +16,12 @@
 
 The purpose of this playground is to explore, study and assess the [elm][] language — a delightful language for reliable webapps.
 
+<p align="center">
+   <a href="https://ccamel.github.io/playground-elm/">
+    <img alt="demo-link" src="https://img.shields.io/badge/demo-https%3A%2F%2Fccamel.github.io%2Fplayground--elm%2F-blue?style=for-the-badge&logo=firefox">
+   </a>
+</p>
+
 The showcases are intended to be:
 
 - **simple**: Fairly simple and understandable. Every showcase is implemented in a single elm file.
