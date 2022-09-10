@@ -23,3 +23,13 @@ updates:
       - ccamel
     commit-message:
       prefix: ":arrow_up:"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    assignees:
+      - ccamel
+    reviewers:
+      - ccamel
