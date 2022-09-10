@@ -204,6 +204,8 @@ The site is accessible through the `http://localhost:1234/` endpoint.
   - [joakin/elm-canvas](https://package.elm-lang.org/packages/joakin/elm-canvas/latest/)
   - [wsowens/term](https://package.elm-lang.org/packages/wsowens/term/latest/)
   - [MacCASOutreach/graphicsvg](https://package.elm-lang.org/packages/MacCASOutreach/graphicsvg/latest/)
+  - [harmboschloo/elm-ecs](https://package.elm-lang.org/packages/harmboschloo/elm-ecs/latest/)
+  - [BrianHicks/elm-particle](https://github.com/BrianHicks/elm-particle)
 
 - [`parceljs`](https://parceljs.org/): Web application bundler
 - [`bootstrap`](https://getbootstrap.com/): Free and open-source CSS framework
