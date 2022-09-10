@@ -789,7 +789,7 @@ initSingletons seed =
         ( [], Nothing )
         (Random.initialSeed seed)
         []
-        { showBoundingBox = True
+        { showBoundingBox = False
         }
 
 
