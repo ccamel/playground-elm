@@ -4,6 +4,10 @@ on:
   push:
     tags: ['*']
 
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-20.04
