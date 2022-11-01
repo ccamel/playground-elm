@@ -2,9 +2,9 @@ name: Lint
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 concurrency:
   group: lint-${{ github.ref }}
@@ -72,3 +72,28 @@ jobs:
         with:
           scandir: "./scripts"
           version: "v0.8.0"
+
+  lint-json:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Lint json files
+        run: |
+          sudo apt install -y jsonlint
+          find ./ -type f -name "*.json" -exec sh -c '
+            for file do
+              if ! jsonlint-php -q "$file"; then
+                echo "❌ $file"
+                export FAILED=1
+              else
+                echo "✅ $file"
+              fi
+            done
+            if [ "${FAILED}" = "1" ]; then
+              exit 1
+            fi
+          ' sh {} +
