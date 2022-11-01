@@ -13,3 +13,7 @@ trim_trailing_whitespace = true
 [*.{json,js}]
 indent_style = space
 indent_size = 2
+
+[*.elm]
+indent_style = space
+indent_size = 4
