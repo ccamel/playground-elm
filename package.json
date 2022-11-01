@@ -1,7 +1,7 @@
 {
   "name": "playground-elm",
   "version": "1.3.0",
-  "author": "Chris Camel <camel.christophe@gmail.com> (https://ccamel.github.io)",
+  "author": "Chris Camel <camel.christophe@gmail.com>",
   "description": "My playground I use for playing with fancy and exciting technologies. This one's for elm.",
   "homepage": "https://github.com/ccamel",
   "license": "MIT",
