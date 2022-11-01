@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   analyse-elm:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
@@ -41,7 +41,7 @@ jobs:
         run: yarn analyse
 
   lint-markdown:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
@@ -53,7 +53,7 @@ jobs:
           ignore: "CHANGELOG.md"
 
   lint-yaml:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
@@ -62,7 +62,7 @@ jobs:
         uses: ibiqlik/action-yamllint@v3.1.0
 
   lint-shell:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
