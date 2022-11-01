@@ -71,3 +71,4 @@ jobs:
         uses: ludeeus/action-shellcheck@master
         with:
           scandir: "./scripts"
+          version: "v0.8.0"
