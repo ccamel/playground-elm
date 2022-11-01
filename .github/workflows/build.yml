@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
@@ -20,7 +20,7 @@ jobs:
       - name: Setup node environment (for building)
         uses: actions/setup-node@v3
         with:
-          node-version: 16.14.0
+          node-version: 16.18.0
 
       - id: yarn-cache-dir-path
         run: echo "::set-output name=dir::$(yarn cache dir)"
