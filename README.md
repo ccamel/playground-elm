@@ -7,6 +7,7 @@
 [![quality-grade](https://app.codacy.com/project/badge/Grade/05944c94318b4da3b8f438f8d441d869)](https://app.codacy.com/gh/ccamel/playground-elm/dashboard?branch=master)
 [![ELM](https://img.shields.io/badge/elm-0.19.1-blue.svg?style=flat&logo=elm)](http://elm-lang.org/)
 [![Boostrap](https://img.shields.io/badge/bootstrap-4.0.1-orange.svg?style=flat&logo=bootstrap)](https://getbootstrap.com/)
+[![pnpm](https://img.shields.io/badge/pnpm-%234a4a4a.svg?style=flat&logo=pnpm&logoColor=f69220)](https://pnpm.io)
 [![StackShare](https://img.shields.io/badge/tech-stack-0690fa.svg?style=flat&logo=stackshare)](https://stackshare.io/ccamel/playground-elm)
 [![Demo](https://img.shields.io/badge/play-demo!-b30059.svg?style=flat)](https://ccamel.github.io/playground-elm/)
 
@@ -160,6 +161,13 @@ Elm 0.19 broke me as many other coders, due to a lot of changes on topics I used
 
 I finally managed to migrate to this new version but instabilities can be noticed though.
 
+### Prerequisites
+
+Be sure to have the following properly installed:
+
+- [Node.js](https://nodejs.org/ru/) `v16.18` ([gallium](https://nodejs.org/en/blog/release/v16.18.0/))
+- [pnpm](https://pnpm.io/) `v8.3`
+
 ### Build
 
 The project now relies on [parceljs][], a web application bundler which handles [elm][] builds at free.
@@ -168,13 +176,13 @@ At first, all the node packages this project depends on must be installed locall
 following command:
 
 ```bash
-yarn
+pnpm install
 ```
 
 The build can be launched with:
 
 ```bash
-yarn build
+pnpm build
 ```
 
 Then, open `./dist/index.html` file in your browser.
@@ -185,7 +193,7 @@ the project will be started again, and the site automatically updated in the bro
 The publication is launched with the following command:
 
 ```bash
-yarn serve
+pnpm serve
 ```
 
 The site is accessible through the `http://localhost:1234/` endpoint.
