@@ -25,7 +25,7 @@
     "email": "camel.christophe@gmail.com"
   },
   "engines": {
-    "node": "^16.18.0",
+    "node": "^18.17.1",
     "pnpm": "^8.3.0"
   },
   "targets": {
