@@ -1,4 +1,4 @@
-module Page.Maze exposing (..)
+module Page.Maze exposing (Cells, InitializingCtx, Maze, MazeState(..), Model, Msg(..), Side(..), Sides, VisitedCell, info, init, subscriptions, update, view)
 
 import Array exposing (Array, get, initialize, set)
 import File.Download as Download
@@ -59,11 +59,6 @@ sides =
 
 type alias Cells =
     Array (Array Sides)
-
-
-type alias Cell =
-    { sides : Sides -- opened sides for the cell (if empty then cell has no issues)
-    }
 
 
 type alias VisitedCell =
@@ -199,9 +194,6 @@ stepMaze maze =
                                 ( nx, ny ) =
                                     ( cx + dx, cy + dy )
 
-                                cellC =
-                                    cellAt cx cy maze |> Maybe.withDefault []
-
                                 cellN =
                                     cellAt nx ny maze |> Maybe.withDefault []
 
@@ -215,6 +207,9 @@ stepMaze maze =
                             then
                                 let
                                     -- update maze with new path
+                                    cellC =
+                                        cellAt cx cy maze |> Maybe.withDefault []
+
                                     newMaze =
                                         maze
                                             |> cellSet cx cy (dir :: cellC)
@@ -488,7 +483,7 @@ controlView model =
                 [ div [ attribute "aria-label" "Maze toolbar", class "btn-toolbar", attribute "role" "toolbar" ]
                     [ div [ attribute "aria-label" "Generation controls", class "btn-group mr-4  btn-group-sm", attribute "role" "group" ]
                         [ button
-                            [ classList [ ( "btn btn-danger", True ) ]
+                            [ class "btn btn-danger"
                             , type_ "button"
                             , title "reset the maze"
                             , onClickNotPropagate Reset
@@ -539,7 +534,7 @@ controlView model =
                         ]
                     , div [ attribute "aria-label" "Import/Export controls", class "btn-group mr-4", attribute "role" "group" ]
                         [ a
-                            [ classList [ ( "btn btn-info", True ) ]
+                            [ class "btn btn-info"
                             , attribute "role" "button"
                             , title "Export the maze state to JSON"
                             , href "."
@@ -822,15 +817,15 @@ stateString maze =
 
 progress : Maze -> Float
 progress maze =
-    let
-        totalStepsForMaze =
-            totalSteps maze
-    in
     case maze.state of
         Created ->
             0.0
 
         Initializing ctx ->
+            let
+                totalStepsForMaze =
+                    totalSteps maze
+            in
             100.0 * (min totalStepsForMaze ctx.steps |> toFloat) / (totalStepsForMaze |> toFloat)
 
         Ready ->

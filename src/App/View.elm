@@ -1,6 +1,6 @@
-module App.View exposing (..)
+module App.View exposing (view)
 
-import App.Messages exposing (Msg(..), Page(..))
+import App.Messages exposing (Msg(..), Page)
 import App.Models exposing (Model)
 import App.Pages exposing (pageDescription, pageHash, pageName, pageSrc, pageView, pages)
 import App.Routing exposing (Route(..), nextPage, prevPage)
@@ -43,7 +43,7 @@ view model =
                              else
                                 "default"
                             )
-                        , href (prev |> Maybe.map pageHash |> Maybe.withDefault "" |> (++) "#")
+                        , href ("#" ++ (prev |> Maybe.map pageHash |> Maybe.withDefault ""))
                         , onClick (prev |> Maybe.map GoToPage |> Maybe.withDefault GoToHome)
                         ]
                         [ i [ class "fa fa-caret-left", attribute "aria-hidden" "true" ] [] ]
@@ -67,7 +67,7 @@ view model =
                              else
                                 "default"
                             )
-                        , href (next |> Maybe.map pageHash |> Maybe.withDefault "" |> (++) "#")
+                        , href ("#" ++ (next |> Maybe.map pageHash |> Maybe.withDefault ""))
                         , onClick (next |> Maybe.map GoToPage |> Maybe.withDefault GoToHome)
                         ]
                         [ i [ class "fa fa-caret-right", attribute "aria-hidden" "true" ] [] ]

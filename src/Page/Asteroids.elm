@@ -1,4 +1,4 @@
-module Page.Asteroids exposing (..)
+module Page.Asteroids exposing (Age, AllComponentsSpec, AngularFriction, AsteroidType(..), CanvasCoordinates, Class(..), CollidingEntity, Collisions, ComponentSpec, Components, EntityId, FireCommand(..), Frame, Health, Keys, Model, Msg(..), Orientation, Parameters, Particle, Position, PositionVelocity, Render(..), RotationVelocity, Seed, Shape, SideThrustCommand, SingletonSpec, Singletons, Specs, ThrustCommand, Ttl, VelocityFriction, World, info, init, subscriptions, update, view)
 
 import Angle exposing (inDegrees)
 import AngularAcceleration exposing (AngularAcceleration, radiansPerSecondSquared)
@@ -33,7 +33,7 @@ import Random.Float exposing (normal)
 import Rectangle2d
 import String exposing (fromFloat, fromInt, join, padLeft)
 import Svg exposing (Svg, g, line, polygon, rect, svg)
-import Svg.Attributes exposing (..)
+import Svg.Attributes exposing (class, cx, cy, d, fill, fillRule, height, id, opacity, points, rx, ry, stroke, strokeLinecap, strokeWidth, transform, version, viewBox, width, x, x1, x2, y, y1, y2)
 import Task
 import Time
 import Tuple exposing (first)
@@ -411,13 +411,14 @@ optionsCommandSystem world =
     let
         ( keys, maybeKeyChange ) =
             Ecs.getSingleton specs.keys world
-
-        parameters =
-            Ecs.getSingleton specs.parameters world
     in
     world
         |> (case maybeKeyChange of
                 Just (KeyDown (Character "S")) ->
+                    let
+                        parameters =
+                            Ecs.getSingleton specs.parameters world
+                    in
                     Ecs.setSingleton specs.parameters { parameters | showBoundingBox = not <| .showBoundingBox parameters } >> Ecs.setSingleton specs.keys ( keys, Nothing )
 
                 _ ->
@@ -436,12 +437,11 @@ forwardThrustSystem world =
         specs.positionVelocity
         specs.orientation
         (\_ thrust pv o ->
-            identity
-                >> Ecs.insertComponent specs.positionVelocity
-                    (pv
-                        |> Vector2d.plus (Vector2d.withLength thrust o |> Vector2d.for dt)
-                        |> vectorLimit constants.speedLimit
-                    )
+            Ecs.insertComponent specs.positionVelocity
+                (pv
+                    |> Vector2d.plus (Vector2d.withLength thrust o |> Vector2d.for dt)
+                    |> vectorLimit constants.speedLimit
+                )
                 >> Ecs.insertComponent specs.health 10
         )
         world
@@ -697,8 +697,7 @@ bulletAsteroidCollisionSystem world =
                         )
                             |> Maybe.andThen downSizeAsteroidType
                 in
-                identity
-                    >> Ecs.onEntity bullet.entityId
+                Ecs.onEntity bullet.entityId
                     >> Ecs.removeEntity specs.all
                     >> Ecs.onEntity asteroid.entityId
                     >> Ecs.removeEntity specs.all
@@ -726,8 +725,7 @@ particleSystem world =
         (\_ particle ->
             case Particle.update dtms particle of
                 Just particle2 ->
-                    identity
-                        >> Ecs.insertComponent specs.particle particle2
+                    Ecs.insertComponent specs.particle particle2
                         >> Ecs.insertComponent specs.position
                             (Point2d.xy (particle2 |> leftPixels |> pixels) (particle2 |> topPixels |> pixels))
                         >> Ecs.insertComponent specs.orientation
@@ -788,9 +786,7 @@ init =
       , keys = ( [], Nothing )
       , frames = createFrames 10 -- initial capacity
       }
-    , Cmd.batch
-        [ Task.perform GotTime Time.now
-        ]
+    , Task.perform GotTime Time.now
     )
 
 

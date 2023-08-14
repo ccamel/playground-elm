@@ -1,4 +1,4 @@
-module Page.Common exposing (..)
+module Page.Common exposing (BoundedArray, Frames, PageInfo, addFrame, appendToBoundedArray, classList, createBoundedArray, createFrames, fpsText, onClickNotPropagate, resetFrames, resizeBoundedArray, strToFloatWithMinMax, strToIntWithMinMax, toPixels, withAlpha)
 
 import Array exposing (Array, foldl, get, indexedMap)
 import Basics.Extra exposing (flip)
@@ -6,7 +6,7 @@ import Color exposing (Color, fromRgba, toRgba)
 import FormatNumber exposing (format)
 import FormatNumber.Locales exposing (Decimals(..), Locale, usLocale)
 import Html exposing (Html)
-import Html.Events exposing (..)
+import Html.Events exposing (custom)
 import Json.Decode as Decode
 import Maybe exposing (map, withDefault)
 import String exposing (fromInt, padLeft)
@@ -60,17 +60,6 @@ limitRange ( minv, maxv ) v =
         |> Basics.max minv
 
 
-{-| returns zero value if the given comparable is lower (in absolute value) than the given epsilon.
--}
-zero : number -> number -> number
-zero epsilon v =
-    if abs v < epsilon then
-        0
-
-    else
-        v
-
-
 {-| This function makes it easier to build a space-separated class attribute with SVG
 TODO: To replace with equivalent function in core modules when available
 -}
@@ -92,25 +81,6 @@ onClickNotPropagate msg =
             , preventDefault = True
             }
         )
-
-
-indexOfHelper : Array a -> a -> Int -> Int
-indexOfHelper array elem offset =
-    case Array.get offset array of
-        Just x ->
-            if x == elem then
-                offset
-
-            else
-                indexOfHelper array elem (offset + 1)
-
-        Nothing ->
-            -1
-
-
-indexOf : Array a -> a -> Int
-indexOf array elem =
-    indexOfHelper array elem 0
 
 
 type alias BoundedArray a =
@@ -193,9 +163,15 @@ fps frames =
     if frames.length > 1 then
         frames.values
             |> foldl (+) 0
-            |> (/) (toFloat frames.length)
-            |> (*) 1000.0
-            |> Just
+            |> (\f ->
+                    toFloat frames.length
+                        / f
+                        |> (\v ->
+                                1000.0
+                                    * v
+                                    |> Just
+                           )
+               )
 
     else
         Nothing

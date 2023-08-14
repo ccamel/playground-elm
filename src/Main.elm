@@ -1,4 +1,4 @@
-module Main exposing (..)
+module Main exposing (main)
 
 import App.Messages exposing (Msg(..))
 import App.Models exposing (Flags, Model)
