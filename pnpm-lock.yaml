@@ -47,8 +47,8 @@ devDependencies:
     specifier: ^0.16.5
     version: 0.16.5
   elm-format:
-    specifier: ^0.8.5
-    version: 0.8.5
+    specifier: ^0.8.7
+    version: 0.8.7
   elm-hot:
     specifier: ^1.1.6
     version: 1.1.6
@@ -78,6 +78,46 @@ devDependencies:
     version: 3.0.2
 
 packages:
+
+  /@avh4/elm-format-darwin-arm64@0.8.7-2:
+    resolution: {integrity: sha512-F5JD44mJ3KX960J5GkXMfh1/dtkXuPcQpX2EToHQKjLTZUfnhZ++ytQQt0gAvrJ0bzoOvhNzjNjUHDA1ruTVbg==}
+    cpu: [arm64]
+    os: [darwin]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@avh4/elm-format-darwin-x64@0.8.7-2:
+    resolution: {integrity: sha512-4pfF1cl0KyTion+7Mg4XKM3yi4Yc7vP76Kt/DotLVGJOSag4ISGic1og2mt8RZZ7XArybBmHNyYkiUbe/cEiCw==}
+    cpu: [x64]
+    os: [darwin]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@avh4/elm-format-linux-arm64@0.8.7-2:
+    resolution: {integrity: sha512-WkVmuce2zU6s9dupHhqPc886Vaqpea8dZlxv2fpZ4wSzPUbiiKHoHZzoVndMIMTUL0TZukP3Ps0n/lWO5R5+FA==}
+    cpu: [arm64]
+    os: [linux]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@avh4/elm-format-linux-x64@0.8.7-2:
+    resolution: {integrity: sha512-kmncfJrTBjVT94JtQvMf4M5Pn2Yl0sZt3wo7AzgFiDnB/CiZ+KjJyXuWM64NeGiv4MQqzPq65tsFXUH1CIJeiQ==}
+    cpu: [x64]
+    os: [linux]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@avh4/elm-format-win32-x64@0.8.7-2:
+    resolution: {integrity: sha512-sBdMBGq/8mD8Y5C+fIr5vlb3N50yB7S1MfgeAq2QEbvkr/sKrCZI540i43lZDH9gWsfA1w2W8wCe0penFYzsGw==}
+    cpu: [x64]
+    os: [win32]
+    requiresBuild: true
+    dev: true
+    optional: true
 
   /@babel/code-frame@7.22.10:
     resolution: {integrity: sha512-/KKIMG4UEL35WmI9OlvMhurwtytjvXoFcGNrOvyG9zIzA8YmPjVtIZUf7b05+TPO7G7/GEmLHDaoCgACHl9hhA==}
@@ -2211,12 +2251,16 @@ packages:
     resolution: {integrity: sha512-Kc2MD5CO161/+6WWfzmRB14v4D4RFTK9+7oWOCKVLIxNdud4YYvFIwfJS5PrhMGfiyqxK64ie2FDIcFGLVJdbw==}
     dev: false
 
-  /elm-format@0.8.5:
-    resolution: {integrity: sha512-/Mjwz5RhJ8cdcMsHT98AEKprSIHyRde+URIPvnHez9WH7Xp+rFCOJx0FNMPIYrbHE9Ei7HDSVwhjDP0i+mlvpQ==}
+  /elm-format@0.8.7:
+    resolution: {integrity: sha512-sVzFXfWnb+6rzXK+q3e3Ccgr6/uS5mFbFk1VSmigC+x2XZ28QycAa7lS8owl009ALPhRQk+pZ95Eq5ANjpEZsQ==}
     hasBin: true
     requiresBuild: true
-    dependencies:
-      binwrap: 0.2.3
+    optionalDependencies:
+      '@avh4/elm-format-darwin-arm64': 0.8.7-2
+      '@avh4/elm-format-darwin-x64': 0.8.7-2
+      '@avh4/elm-format-linux-arm64': 0.8.7-2
+      '@avh4/elm-format-linux-x64': 0.8.7-2
+      '@avh4/elm-format-win32-x64': 0.8.7-2
     dev: true
 
   /elm-hot@1.1.6:

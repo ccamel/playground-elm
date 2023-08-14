@@ -59,7 +59,7 @@
     "@parcel/transformer-elm": "2.9.3",
     "elm": "^0.19.1-no-dep",
     "elm-analyse": "^0.16.5",
-    "elm-format": "^0.8.5",
+    "elm-format": "^0.8.7",
     "elm-hot": "^1.1.6",
     "elm-json": "^0.2.13",
     "node-elm-compiler": "^5.0.6",
