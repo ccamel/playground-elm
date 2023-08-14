@@ -1,4 +1,4 @@
-port module Page.Term exposing (..)
+port module Page.Term exposing (Model, Msg(..), info, init, subscriptions, update, view)
 
 import Html exposing (Html, div, hr, p, text)
 import Html.Attributes exposing (class)
@@ -57,17 +57,13 @@ init =
 
 
 type Msg
-    = Reset
-    | CommandTyped String
+    = CommandTyped String
     | EvalResult String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Reset ->
-            init
-
         CommandTyped str ->
             ( model, evalJS str )
 

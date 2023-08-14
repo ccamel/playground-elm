@@ -40,7 +40,7 @@
     "serve": "BASE_URL=/ parcel src/index.html",
     "release": "release-it",
     "prettify": "prettier --write . && elm-format src",
-    "analyse": "elm-analyse",
+    "lint": "elm-review",
     "elm-json": "elm-json"
   },
   "dependencies": {
@@ -57,11 +57,12 @@
   },
   "devDependencies": {
     "@parcel/transformer-elm": "2.9.3",
-    "elm": "^0.19.1-no-dep",
+    "elm": "^0.19.1",
     "elm-analyse": "^0.16.5",
     "elm-format": "^0.8.7",
     "elm-hot": "^1.1.6",
     "elm-json": "^0.2.13",
+    "elm-review": "^2.10.2",
     "node-elm-compiler": "^5.0.6",
     "parcel": "^2.9.3",
     "posthtml-expressions": "^1.11.1",

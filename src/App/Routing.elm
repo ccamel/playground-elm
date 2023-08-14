@@ -1,4 +1,4 @@
-module App.Routing exposing (..)
+module App.Routing exposing (Route(..), nextPage, prevPage, toRoute)
 
 import App.Messages exposing (Page(..))
 import Page.About
@@ -10,7 +10,7 @@ import Page.Maze
 import Page.Physics
 import Page.Term
 import Url exposing (Url)
-import Url.Parser exposing (..)
+import Url.Parser exposing (Parser, fragment, map, parse)
 
 
 type Route

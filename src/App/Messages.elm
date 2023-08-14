@@ -1,4 +1,4 @@
-module App.Messages exposing (..)
+module App.Messages exposing (Msg(..), Page(..))
 
 import Browser
 import Page.About

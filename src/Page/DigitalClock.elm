@@ -1,4 +1,4 @@
-module Page.DigitalClock exposing (..)
+module Page.DigitalClock exposing (Figure(..), Model, Msg(..), Segment(..), info, init, subscriptions, update, view)
 
 import Color exposing (Color, rgb255, toCssString)
 import ColorPicker
@@ -74,8 +74,7 @@ initialCmd =
 
 
 type Msg
-    = Reset
-    | Tick Posix
+    = Tick Posix
     | SetSpaceX String
     | SetTilt String
     | SetRefreshInterval String
@@ -85,9 +84,6 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Reset ->
-            ( initialModel, initialCmd )
-
         Tick t ->
             ( { model | time = Just t }, Cmd.none )
 
@@ -219,7 +215,6 @@ view model =
 
 {-| segments code (7 segments display)
 A
-
 
 F |.| B . H
 G -

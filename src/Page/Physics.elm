@@ -1,4 +1,4 @@
-module Page.Physics exposing (..)
+module Page.Physics exposing (Dot, Entity, EntityMaker, ID, Model, MouseButton(..), MouseState, Msg(..), Stick, Vector2D, info, init, subscriptions, update, view)
 
 import Array exposing (Array, foldr, fromList, get, map, set, toList)
 import Basics.Extra exposing (flip, uncurry)
@@ -7,9 +7,9 @@ import Canvas exposing (Renderable, arc, lineTo, path, rect, shapes)
 import Canvas.Settings exposing (fill, stroke)
 import Canvas.Settings.Advanced exposing (Transform, transform, translate)
 import Canvas.Settings.Line exposing (lineWidth)
-import Canvas.Settings.Text as TextAlign exposing (TextAlign(..), align, font)
+import Canvas.Settings.Text as TextAlign exposing (align, font)
 import Color exposing (Color, rgb255)
-import Color.Interpolate as Color exposing (Space(..), interpolate)
+import Color.Interpolate as Color exposing (interpolate)
 import Html exposing (Html, a, br, button, div, hr, input, label, p, text)
 import Html.Attributes exposing (attribute, checked, class, classList, for, href, id, style, type_)
 import Html.Events exposing (onClick)
@@ -132,7 +132,7 @@ mult a v =
 
 divide : Float -> Vector2D -> Vector2D
 divide a v =
-    Vector2.map ((/) a) v
+    Vector2.map (\b -> a / b) v
 
 
 magSq : Vector2D -> Float
@@ -224,11 +224,6 @@ pinDotWith pin p =
 pinDotPos : Dot -> Dot
 pinDotPos ({ pos } as dot) =
     pinDotWith pos dot
-
-
-unpinDot : Dot -> Dot
-unpinDot p =
-    { p | pin = Nothing }
 
 
 updateDot : Dot -> Dot
@@ -397,14 +392,12 @@ updateStick entity stick =
         m =
             p1.mass + p2.mass
 
-        m2 =
-            p1.mass / m
-
-        m1 =
-            p2.mass / m
-
         p1u =
             if p1.pin == Nothing then
+                let
+                    m1 =
+                        p2.mass / m
+                in
                 { p1 | pos = p1.pos |> flip sub (mult m1 offset) }
 
             else
@@ -412,6 +405,10 @@ updateStick entity stick =
 
         p2u =
             if p2.pin == Nothing then
+                let
+                    m2 =
+                        p1.mass / m
+                in
                 { p2 | pos = p2.pos |> add (mult m2 offset) }
 
             else
@@ -537,15 +534,12 @@ makeCloth w h spacing =
 
                     else
                         acc
-
-                step2 =
-                    if y /= 0 then
-                        addStick n (x + (y - 1) * w) Nothing step1
-
-                    else
-                        step1
             in
-            step2
+            if y /= 0 then
+                addStick n (x + (y - 1) * w) Nothing step1
+
+            else
+                step1
         )
         cloth
         cloth.dots
@@ -861,7 +855,7 @@ init =
 type Msg
     = MouseDown Button Vector2D
     | MouseMove Vector2D
-    | MouseUp Vector2D
+    | MouseUp
     | Start
     | Stop
     | Reset
@@ -894,7 +888,7 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
-        MouseUp _ ->
+        MouseUp ->
             ( { model | mouse = Nothing }, Cmd.none )
 
         MouseMove pos ->
@@ -972,7 +966,7 @@ Click on the left button of the mouse to interact with the simulation.
                 [ style "display" "block"
                 , Mouse.onDown (\e -> MouseDown e.button (makeVector2D e.offsetPos))
                 , Mouse.onMove (.offsetPos >> makeVector2D >> MouseMove)
-                , Mouse.onUp (.offsetPos >> makeVector2D >> MouseUp)
+                , Mouse.onUp (\_ -> MouseUp)
                 ]
                 (List.concat
                     [ [ shapes [ fill (rgb255 242 242 242) ] [ rect ( 0, 0 ) constants.width constants.height ]
@@ -1022,6 +1016,7 @@ Click on the left button of the mouse to interact with the simulation.
                     [ text "You can "
                     , if model.started then
                         a [ class "action", href "", onClickNotPropagate Start ] [ text "start" ]
+
                       else
                         a [ class "action", href "", onClickNotPropagate Stop ] [ text "stop" ]
                     , text " the simulation. You can also "

@@ -1,4 +1,4 @@
-module Page.Lissajous exposing (..)
+module Page.Lissajous exposing (LineStyle, Model, Msg(..), info, init, subscriptions, update, view)
 
 import Array
 import Browser.Events exposing (onAnimationFrameDelta)
@@ -13,7 +13,6 @@ import List exposing (concat, concatMap, filterMap, indexedMap, map, range)
 import Markdown
 import Maybe
 import Page.Common exposing (BoundedArray, Frames, addFrame, appendToBoundedArray, createBoundedArray, createFrames, fpsText, onClickNotPropagate, resetFrames, resizeBoundedArray, strToFloatWithMinMax, strToIntWithMinMax, toPixels)
-import Platform.Cmd exposing (batch)
 import Round
 import String exposing (fromFloat, fromInt)
 import String.Interpolate exposing (interpolate)
@@ -110,9 +109,7 @@ init =
       , foregroundColorPicker = ColorPicker.empty
       , widgetState = widgetModel
       }
-    , batch
-        [ Cmd.map WidgetMessage widgetCmd
-        ]
+    , Cmd.map WidgetMessage widgetCmd
     )
 
 
@@ -134,7 +131,6 @@ type Msg
     | ForegroundColorPickerMsg ColorPicker.Msg
     | WidgetMessage Widget.Msg
     | Batch (List Msg)
-    | NoOp
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -272,9 +268,6 @@ update msg model =
             , Cmd.batch [ cmd, sendMsg (Batch xs) ]
             )
 
-        NoOp ->
-            ( model, Cmd.none )
-
 
 
 -- SUBSCRIPTIONS
@@ -369,6 +362,7 @@ view model =
                     [ text "You can "
                     , if model.started then
                         a [ class "action", href "", onClickNotPropagate Start ] [ text "start" ]
+
                       else
                         a [ class "action", href "", onClickNotPropagate Stop ] [ text "stop" ]
                     , text " the animation. You can also "

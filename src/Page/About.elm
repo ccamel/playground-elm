@@ -1,4 +1,4 @@
-module Page.About exposing (..)
+module Page.About exposing (Model, Msg, info, init, subscriptions, update, view)
 
 import Html exposing (Html, a, div, h2, hr, i, p, text)
 import Html.Attributes exposing (attribute, class, href, style)
@@ -41,15 +41,13 @@ init =
 -- UPDATE
 
 
-type Msg
-    = Reset
+type alias Msg =
+    ()
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg _ =
-    case msg of
-        Reset ->
-            init
+update _ _ =
+    ( {}, Cmd.none )
 
 
 

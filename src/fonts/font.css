@@ -2,7 +2,9 @@
   font-family: "Bad Script";
   font-style: normal;
   font-weight: 400;
-  src: local("Bad Script Regular"), local("BadScript-Regular"),
+  src:
+    local("Bad Script Regular"),
+    local("BadScript-Regular"),
     /* from https://fonts.gstatic.com/s/badscript/v5/rL_b2ND61EQmMOJ8CRr1flQlYEbsez9cZjKsNMjLOwM.eot */
       url("Bad_Script_400.eot?#iefix") format("embedded-opentype"),
     /* from https://fonts.gstatic.com/s/badscript/v5/rL_b2ND61EQmMOJ8CRr1fhsxEYwM7FgeyaSgU71cLG0.woff */
@@ -18,7 +20,9 @@
   font-family: "Orbitron";
   font-style: normal;
   font-weight: 500;
-  src: local("Orbitron Medium"), local("Orbitron-Medium"),
+  src:
+    local("Orbitron Medium"),
+    local("Orbitron-Medium"),
     /* from https://fonts.gstatic.com/s/orbitron/v8/VK2oK8L4CJesxwY5dF3zxWfQcKutQXcIrRfyR5jdjY8.eot */
       url("Orbitron_500.eot?#iefix") format("embedded-opentype"),
     /* from https://fonts.gstatic.com/s/orbitron/v8/VK2oK8L4CJesxwY5dF3zxYbN6UDyHWBl620a-IRfuBk.woff */
@@ -34,7 +38,9 @@
   font-family: "Oxygen Mono";
   font-style: normal;
   font-weight: 400;
-  src: local("Oxygen Mono"), local("OxygenMono-Regular"),
+  src:
+    local("Oxygen Mono"),
+    local("OxygenMono-Regular"),
     /* from https://fonts.gstatic.com/s/oxygenmono/v4/BzV4DVOwAgGelLT9EC5xymfQcKutQXcIrRfyR5jdjY8.eot */
       url("Oxygen_Mono_400.eot?#iefix") format("embedded-opentype"),
     /* from https://fonts.gstatic.com/s/oxygenmono/v4/BzV4DVOwAgGelLT9EC5xyobN6UDyHWBl620a-IRfuBk.woff */
@@ -50,7 +56,9 @@
   font-family: "Roboto Mono";
   font-style: normal;
   font-weight: 500;
-  src: local("Roboto Mono Medium"), local("RobotoMono-Medium"),
+  src:
+    local("Roboto Mono Medium"),
+    local("RobotoMono-Medium"),
     /* from https://fonts.gstatic.com/s/robotomono/v4/N4duVc9C58uwPiY8_59FzyGu2KOSTawI8d9zCvShylg.eot */
       url("Roboto_Mono_500.eot?#iefix") format("embedded-opentype"),
     /* from https://fonts.gstatic.com/s/robotomono/v4/N4duVc9C58uwPiY8_59FzyqHEX2q--o2so14pIEl08w.woff */
@@ -66,7 +74,9 @@
   font-family: "Share Tech Mono";
   font-style: normal;
   font-weight: 400;
-  src: local("Share Tech Mono"), local("ShareTechMono-Regular"),
+  src:
+    local("Share Tech Mono"),
+    local("ShareTechMono-Regular"),
     /* from https://fonts.gstatic.com/s/sharetechmono/v6/RQxK-3RA0Lnf3gnnnNrAsTwtzT4qNq-faudv5qbO9-U.eot */
       url("Share_Tech_Mono_400.eot?#iefix") format("embedded-opentype"),
     /* from https://fonts.gstatic.com/s/sharetechmono/v6/RQxK-3RA0Lnf3gnnnNrAsUYuTAAIFFn5GTWtryCmBQ4.woff */

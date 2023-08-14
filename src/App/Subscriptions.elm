@@ -1,6 +1,6 @@
-module App.Subscriptions exposing (..)
+module App.Subscriptions exposing (subscriptions)
 
-import App.Messages exposing (Msg(..), Page(..))
+import App.Messages exposing (Msg)
 import App.Models exposing (Model)
 import App.Pages exposing (pageSubscriptions)
 import App.Routing exposing (Route(..))

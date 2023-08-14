@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  analyse-elm:
+  lint-elm:
     runs-on: ubuntu-22.04
     steps:
       - name: Check out repository
@@ -32,9 +32,9 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
 
-      - name: Build project
+      - name: Lint project
         run: |
-          pnpm analyse
+          pnpm lint
 
   lint-markdown:
     runs-on: ubuntu-22.04

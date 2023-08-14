@@ -1,4 +1,4 @@
-module App.Pages exposing (..)
+module App.Pages exposing (PageSpec, pageDescription, pageHash, pageName, pageSrc, pageSubscriptions, pageView, pages)
 
 import App.Messages exposing (Msg(..), Page(..))
 import App.Models exposing (Model)

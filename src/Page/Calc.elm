@@ -1,4 +1,4 @@
-module Page.Calc exposing (..)
+module Page.Calc exposing (Model, Msg(..), Op(..), State(..), Token(..), info, init, subscriptions, update, view)
 
 import Basics.Extra exposing (flip)
 import Browser.Events
@@ -6,7 +6,7 @@ import Html exposing (Html, div, hr, input, p, text)
 import Html.Attributes exposing (attribute, class, type_, value)
 import Html.Events exposing (onClick)
 import Json.Decode as Json
-import List exposing (drop, foldl, foldr, take)
+import List exposing (drop, foldl, take)
 import Markdown
 import Maybe exposing (withDefault)
 import Page.Common
@@ -35,8 +35,7 @@ A very simple and basic calculator
 
 
 type State
-    = ERROR
-    | ACCUM
+    = ACCUM
     | OPERATOR
     | DOT
 
@@ -304,14 +303,6 @@ apply token model =
                     , Cmd.none
                     )
 
-        ERROR ->
-            case token of
-                Clear ->
-                    doClear model
-
-                _ ->
-                    ( model, Cmd.none )
-
 
 doAccumulate : Token -> Model -> Model
 doAccumulate d model =
@@ -347,13 +338,13 @@ doOperator op model =
                             r =
                                 case head of
                                     Plus ->
-                                        foldr (\a b -> a + b) 0 args
+                                        List.sum args
 
                                     Minus ->
                                         foldl (\a b -> a - b) 0 args
 
                                     Multiply ->
-                                        foldr (\a b -> b * a) 1 args
+                                        List.product args
 
                                     Divide ->
                                         foldl (\a b -> a / b) 1 args
@@ -441,17 +432,12 @@ opPriority op =
 
 result : Model -> Result String Float
 result model =
-    case model.state of
-        ERROR ->
-            Err "error"
+    case model.accumulator of
+        "" ->
+            Ok 0.0
 
-        _ ->
-            case model.accumulator of
-                "" ->
-                    Ok 0.0
-
-                d ->
-                    String.toFloat d |> Result.fromMaybe "error"
+        d ->
+            String.toFloat d |> Result.fromMaybe "error"
 
 
 

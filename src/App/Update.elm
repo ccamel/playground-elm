@@ -1,4 +1,4 @@
-module App.Update exposing (..)
+module App.Update exposing (initialModel, update)
 
 import App.Messages exposing (Msg(..), Page(..))
 import App.Models exposing (Flags, Model, PagesModel, emptyPagesModel)
