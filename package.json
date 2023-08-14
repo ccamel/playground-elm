@@ -39,7 +39,7 @@
   },
   "dependencies": {
     "animate.css": "^4.1.1",
-    "bootstrap": "^4.0.1",
+    "bootstrap": "^4.6.2",
     "elm-canvas": "^2.2.4",
     "file-loader": "^0.11.2",
     "font-awesome": "^4.7.0",
