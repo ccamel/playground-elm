@@ -1,19 +1,19 @@
 "use strict";
 
-require("./fonts/font.css");
-require("tether/dist/css/tether.css");
-require("bootstrap/dist/css/bootstrap.css");
-require("bootstrap/dist/js/bootstrap.bundle.js");
-require("elm-canvas/elm-canvas.js");
-require("font-awesome/css/font-awesome.css");
-require("animate.css/animate.css");
-require("./playground.css");
-require("./calc.css");
-require("./lissajous.css");
-require("./digital-clock.css");
-require("./maze.css");
-require("./term.css");
-require("./asteroids.css");
+import "./fonts/font.css";
+import "tether/dist/css/tether.css";
+import "bootstrap/dist/js/bootstrap.bundle.js";
+import "bootstrap/dist/css/bootstrap.css";
+import "elm-canvas/elm-canvas.js";
+import "font-awesome/css/font-awesome.css";
+import "animate.css/animate.css";
+import "./playground.css";
+import "./calc.css";
+import "./lissajous.css";
+import "./digital-clock.css";
+import "./maze.css";
+import "./term.css";
+import "./asteroids.css";
 
 const { Elm } = require("./Main.elm");
 const basePath = new URL(document.baseURI).pathname;
