@@ -28,6 +28,13 @@
     "node": "^16.18.0",
     "pnpm": "^8.3.0"
   },
+  "targets": {
+    "modern": {
+      "engines": {
+        "browsers": ">= 50%"
+      }
+    }
+  },
   "scripts": {
     "build": "BASE_URL=/playground-elm/ parcel build src/index.html --public-url ./",
     "serve": "BASE_URL=/ parcel src/index.html",
