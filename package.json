@@ -36,7 +36,7 @@
     }
   },
   "scripts": {
-    "build": "BASE_URL=/playground-elm/ parcel build src/index.html --public-url ./",
+    "build": "BASE_URL=/playground-elm/ parcel build src/index.html --no-source-maps --public-url ./",
     "serve": "BASE_URL=/ parcel src/index.html",
     "release": "release-it",
     "prettify": "prettier --write . && elm-format src",
