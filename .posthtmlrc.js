@@ -6,6 +6,8 @@ module.exports = {
       locals: {
         BASE_URL: process.env.BASE_URL,
         VERSION: pjson.version,
+        DESCRIPTION: pjson.description,
+        AUTHOR: pjson.author,
       },
     },
   },
