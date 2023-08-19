@@ -27,8 +27,8 @@ dependencies:
     specifier: ^1.16.1
     version: 1.16.1
   style-loader:
-    specifier: ^0.23.1
-    version: 0.23.1
+    specifier: ^3.3.3
+    version: 3.3.3(webpack@5.88.2)
   tether:
     specifier: ^2.0.0
     version: 2.0.0
@@ -1646,14 +1646,6 @@ packages:
     transitivePeerDependencies:
       - supports-color
     dev: true
-
-  /ajv-errors@1.0.1(ajv@6.12.6):
-    resolution: {integrity: sha512-DCRfO/4nQ+89p/RK43i8Ezd41EqdGIU4ld7nGF8OQ14oc/we5rEntLCUa7+jrn3nn83BosfwZA0wb4pon2o8iQ==}
-    peerDependencies:
-      ajv: '>=5.0.0'
-    dependencies:
-      ajv: 6.12.6
-    dev: false
 
   /ajv-keywords@3.5.2(ajv@6.12.6):
     resolution: {integrity: sha512-5p6WTN0DdTGVQk6VjcEju19IgaHudalcfabD7yhDGeA6bcQnmL+CpveLJq/3hvfwd1aof6L386Ougkx6RfyMIQ==}
@@ -5552,12 +5544,12 @@ packages:
       ajv: 5.5.2
     dev: false
 
-  /schema-utils@1.0.0:
-    resolution: {integrity: sha512-i27Mic4KovM/lnGsy8whRCHhc7VicJajAjTrYg11K9zfZXnYIt4k5F+kZkwjnrhKzLic/HLU4j11mjsz2G/75g==}
-    engines: {node: '>= 4'}
+  /schema-utils@3.3.0:
+    resolution: {integrity: sha512-pN/yOAvcC+5rQ5nERGuwrjLlYvLTbCibnZ1I7B1LaiAz9BRBlE9GMgE/eqV30P7aJQUf7Ddimy/RsbYO/GrVGg==}
+    engines: {node: '>= 10.13.0'}
     dependencies:
+      '@types/json-schema': 7.0.12
       ajv: 6.12.6
-      ajv-errors: 1.0.1(ajv@6.12.6)
       ajv-keywords: 3.5.2(ajv@6.12.6)
     dev: false
 
@@ -5881,12 +5873,13 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
-  /style-loader@0.23.1:
-    resolution: {integrity: sha512-XK+uv9kWwhZMZ1y7mysB+zoihsEj4wneFWAS5qoiLwzW0WzSqMrrsIy+a3zkQJq0ipFtBpX5W3MqyRIBF/WFGg==}
-    engines: {node: '>= 0.12.0'}
+  /style-loader@3.3.3(webpack@5.88.2):
+    resolution: {integrity: sha512-53BiGLXAcll9maCYtZi2RCQZKa8NQQai5C4horqKyRmHj9H7QmcUyucrH+4KW/gBQbXM2AsB0axoEcFZPlfPcw==}
+    engines: {node: '>= 12.13.0'}
+    peerDependencies:
+      webpack: ^5.0.0
     dependencies:
-      loader-utils: 1.4.2
-      schema-utils: 1.0.0
+      webpack: 5.88.2
     dev: false
 
   /sums@0.2.4:
