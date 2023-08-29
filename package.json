@@ -49,7 +49,7 @@
     "elm-canvas": "^2.2.4",
     "file-loader": "^6.2.0",
     "font-awesome": "^4.7.0",
-    "jquery": "^3.7.0",
+    "jquery": "^3.7.1",
     "popper.js": "^1.16.1",
     "style-loader": "^3.3.3",
     "tether": "^2.0.0",
