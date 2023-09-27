@@ -77,8 +77,8 @@ devDependencies:
     specifier: ^5.0.0
     version: 5.0.0
   rimraf:
-    specifier: ^5.0.4
-    version: 5.0.4
+    specifier: ^5.0.5
+    version: 5.0.5
 
 packages:
 
@@ -2649,7 +2649,7 @@ packages:
       ora: 5.4.1
       path-key: 3.1.1
       prompts: 2.4.2
-      rimraf: 5.0.4
+      rimraf: 5.0.5
       strip-ansi: 6.0.1
       terminal-link: 2.1.1
       which: 2.0.2
@@ -5427,8 +5427,8 @@ packages:
       glob: 7.2.3
     dev: true
 
-  /rimraf@5.0.4:
-    resolution: {integrity: sha512-rizQI/o/YAMM1us0Zyax0uRfIK39XR52EAjjOi0fzMolpGp0onj6CWzBAXuOx6+6Xi9Rgi0d9tUZojhJerLUmQ==}
+  /rimraf@5.0.5:
+    resolution: {integrity: sha512-CqDakW+hMe/Bz202FPEymy68P+G50RfMQK+Qo5YUqc9SPipvbGjCGKd0RSKEelbsfQuw3g5NZDSrlZZAJurH1A==}
     engines: {node: '>=14'}
     hasBin: true
     dependencies:
