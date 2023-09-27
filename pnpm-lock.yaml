@@ -56,8 +56,8 @@ devDependencies:
     specifier: ^0.2.13
     version: 0.2.13
   elm-review:
-    specifier: ^2.10.2
-    version: 2.10.2
+    specifier: ^2.10.3
+    version: 2.10.3
   node-elm-compiler:
     specifier: ^5.0.6
     version: 5.0.6
@@ -2629,16 +2629,16 @@ packages:
       binwrap: 0.2.3
     dev: true
 
-  /elm-review@2.10.2:
-    resolution: {integrity: sha512-9cgv3ILetV/Gb/cr42ZHYWHK5hrnl1UsGuxah1DL/NI6EZlu+GrwaSng4DvYsETrccaoNzRJMuhfv7JoPCdK/A==}
+  /elm-review@2.10.3:
+    resolution: {integrity: sha512-9gBqLc5Xm3v9Ncpf8y2haEaBZZyMX25vmwQkrNqSIaNYQ2vdGOIx1eyqRtt1xwX5O8pZdqU8IWC/ENyTrOTKbw==}
     engines: {node: '>=10.0.0'}
     hasBin: true
     dependencies:
       chalk: 4.1.2
       chokidar: 3.5.3
       cross-spawn: 7.0.3
-      elm-tooling: 1.14.0
-      fast-levenshtein: 3.0.0
+      elm-tooling: 1.14.1
+      fastest-levenshtein: 1.0.16
       find-up: 4.1.0
       folder-hash: 3.3.3
       fs-extra: 9.1.0
@@ -2658,8 +2658,8 @@ packages:
       - supports-color
     dev: true
 
-  /elm-tooling@1.14.0:
-    resolution: {integrity: sha512-cIbK3gfYWK086HsqOIGM4reIYcV/FF2R/8jIJ6ZUy1/RSkYFUv2BgPTGYYZo1Io9oymmbwoCWWleNtw7LgGL2w==}
+  /elm-tooling@1.14.1:
+    resolution: {integrity: sha512-3LjMe2WXdH/0swZsWT6R9RS73NhsqqLjbwS2PF0QmFauCII/9nomOtFFv/DIPOJ3oxbKFltBgvDELMCMdV+Bww==}
     hasBin: true
     dev: true
 
@@ -3002,12 +3002,6 @@ packages:
 
   /fast-json-stable-stringify@2.1.0:
     resolution: {integrity: sha512-lhd/wF+Lk98HZoTCtlVraHtfh5XYijIjalXck7saUtuanSDyLMxnHhSXEDJqHxD7msR8D0uCmqlkwjCV8xvwHw==}
-
-  /fast-levenshtein@3.0.0:
-    resolution: {integrity: sha512-hKKNajm46uNmTlhHSyZkmToAc56uZJwYq7yrciZjqOxnlfQwERDQJmHPUp7m1m9wx8vgOe8IaCKZ5Kv2k1DdCQ==}
-    dependencies:
-      fastest-levenshtein: 1.0.16
-    dev: true
 
   /fastest-levenshtein@1.0.16:
     resolution: {integrity: sha512-eRnCtTTtGZFpQCwhJiUOuxPQWRXVKYDn0b2PeHfXL6/Zi53SLAzAHfVhVWK2AryC/WH05kGfxhFIPvTF0SXQzg==}
