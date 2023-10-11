@@ -64,7 +64,7 @@
     "elm-json": "^0.2.13",
     "elm-review": "^2.10.3",
     "node-elm-compiler": "^5.0.6",
-    "parcel": "^2.9.3",
+    "parcel": "^2.10.0",
     "posthtml-expressions": "^1.11.1",
     "prettier": "^3.0.3",
     "release-it": "^16.2.1",
