@@ -234,7 +234,7 @@ linkToGitHub : Page -> Html a
 linkToGitHub page =
     let
         url =
-            "https://github.com/ccamel/playground-elm/blob/master/src/"
+            "https://github.com/ccamel/playground-elm/blob/main/src/"
 
         link =
             url ++ pageSrc page

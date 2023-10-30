@@ -4,7 +4,7 @@
 [![MIT](https://img.shields.io/badge/licence-MIT-lightgrey.svg?style=flat)](https://tldrlegal.com/license/mit-license)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fccamel%2Fplayground-elm.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fccamel%2Fplayground-elm?ref=badge_shield)
 [![build-status](https://github.com/ccamel/playground-elm/actions/workflows/build.yml/badge.svg)](https://github.com/ccamel/playground-elm/actions/workflows/build.yml)
-[![quality-grade](https://app.codacy.com/project/badge/Grade/05944c94318b4da3b8f438f8d441d869)](https://app.codacy.com/gh/ccamel/playground-elm/dashboard?branch=master)
+[![quality-grade](https://app.codacy.com/project/badge/Grade/05944c94318b4da3b8f438f8d441d869)](https://app.codacy.com/gh/ccamel/playground-elm/dashboard?branch=main)
 [![ELM](https://img.shields.io/badge/elm-0.19.1-blue.svg?style=flat&logo=elm)](http://elm-lang.org/)
 [![Boostrap](https://img.shields.io/badge/bootstrap-4.0.1-orange.svg?style=flat&logo=bootstrap)](https://getbootstrap.com/)
 [![pnpm](https://img.shields.io/badge/pnpm-%234a4a4a.svg?style=flat&logo=pnpm&logoColor=f69220)](https://pnpm.io)
@@ -44,7 +44,7 @@ Calc is a very simple and basic calculator.
 <p align="center">
   <b>Links:</b><br>
   <a href="https://ccamel.github.io/playground-elm/#calc">Play</a>  |
-  <a href="https://github.com/ccamel/playground-elm/blob/master/src/Page/Calc.elm">Code</a>
+  <a href="https://github.com/ccamel/playground-elm/blob/main/src/Page/Calc.elm">Code</a>
   <br><br>
   <kbd><img src="doc/assets/showcase-calc.png"></kbd>
 </p>
@@ -58,7 +58,7 @@ Simple digital clock using [SVG][].
 <p align="center">
   <b>Links:</b><br>
   <a href="https://ccamel.github.io/playground-elm/#digital-clock">Play</a> |
-  <a href="https://github.com/ccamel/playground-elm/blob/master/src/Page/DigitalClock.elm">Code</a>
+  <a href="https://github.com/ccamel/playground-elm/blob/main/src/Page/DigitalClock.elm">Code</a>
   <br><br>
   <kbd><img src="doc/assets/showcase-digitalclock.png"></kbd>
 </p>
@@ -73,7 +73,7 @@ Animated [Lissajous figures](https://en.wikipedia.org/wiki/Lissajouss_curve) usi
 <p align="center">
   <b>Links:</b><br>
   <a href="https://ccamel.github.io/playground-elm/#lissajous">Play</a> |
-  <a href="https://github.com/ccamel/playground-elm/blob/master/src/Page/Lissajous.elm">Code</a>
+  <a href="https://github.com/ccamel/playground-elm/blob/main/src/Page/Lissajous.elm">Code</a>
   <br><br>
   <kbd><img src="doc/assets/showcase-lissajous.png"></kbd>
 </p>
@@ -86,7 +86,7 @@ algorithm with control of the generation process.
 <p align="center">
   <b>Links:</b><br>
   <a href="https://ccamel.github.io/playground-elm/#maze">Play</a> |
-  <a href="https://github.com/ccamel/playground-elm/blob/master/src/Page/Maze.elm">Code</a>
+  <a href="https://github.com/ccamel/playground-elm/blob/main/src/Page/Maze.elm">Code</a>
   <br><br>
   <kbd><img src="doc/assets/showcase-maze.png"></kbd>
 </p>
@@ -103,7 +103,7 @@ using elementary functions from the fantastic [joakin/elm-canvas](https://packag
 <p align="center">
   <b>Links:</b><br>
   <a href="https://ccamel.github.io/playground-elm/#physics-engine">Play</a> |
-  <a href="https://github.com/ccamel/playground-elm/blob/master/src/Page/Physics.elm">Code</a>
+  <a href="https://github.com/ccamel/playground-elm/blob/main/src/Page/Physics.elm">Code</a>
   <br><br>
   <kbd><img src="doc/assets/showcase-physics-cloth.png"></kbd>
 </p>
@@ -121,7 +121,7 @@ A basic terminal ([wsowens/term](https://github.com/wsowens/term)) which simply 
 <p align="center">
   <b>Links:</b><br>
   <a href="https://ccamel.github.io/playground-elm/#term">Play</a> |
-  <a href="https://github.com/ccamel/playground-elm/blob/master/src/Page/Term.elm">Code</a>
+  <a href="https://github.com/ccamel/playground-elm/blob/main/src/Page/Term.elm">Code</a>
   <br><br>
   <kbd><img src="doc/assets/showcase-term.png"></kbd>
 </p>
@@ -139,7 +139,7 @@ fantastic [BrianHicks/elm-particle](https://package.elm-lang.org/packages/BrianH
 <p align="center">
   <b>Links:</b><br>
   <a href="https://ccamel.github.io/playground-elm/#asteroids">Play</a> |
-  <a href="https://github.com/ccamel/playground-elm/blob/master/src/Page/Asteroids.elm">Code</a>
+  <a href="https://github.com/ccamel/playground-elm/blob/main/src/Page/Asteroids.elm">Code</a>
   <br><br>
   <kbd><img src="doc/assets/showcase-asteroids.png"></kbd>
 </p>
