@@ -10,7 +10,6 @@
     "elm",
     "web-application",
     "spa",
-    "bootstrap",
     "parcel",
     "svg",
     "demo-site"
@@ -45,7 +44,6 @@
   },
   "dependencies": {
     "animate.css": "^4.1.1",
-    "bootstrap": "^4.6.2",
     "elm-canvas": "^2.2.4",
     "file-loader": "^6.2.0",
     "font-awesome": "^4.7.0",
