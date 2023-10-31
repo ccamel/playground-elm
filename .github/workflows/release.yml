@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      increment:
+        description: |
+          The increment to apply to the current version.
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: "patch"
+
+jobs:
+  lint:
+    uses: ./.github/workflows/lint.yml
+
+  build:
+    uses: ./.github/workflows/build.yml
+
+  perfom-release:
+    needs:
+      - lint
+      - build
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8.3.0
+
+      - name: Setup node environment (for building)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.17
+          cache: "pnpm"
+
+      - name: Fetch dependencies
+        run: |
+          pnpm install --frozen-lockfile
+
+      - name: Perform release
+        run: |
+          pnpm release --increment ${{ github.event.inputs.increment }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
