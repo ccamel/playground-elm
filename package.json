@@ -55,6 +55,7 @@
   },
   "devDependencies": {
     "@parcel/transformer-elm": "2.10.1",
+    "bulma": "^0.9.4",
     "elm": "^0.19.1",
     "elm-analyse": "^0.16.5",
     "elm-format": "^0.8.7",
