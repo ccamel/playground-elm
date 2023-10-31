@@ -5,9 +5,11 @@ import App.Models exposing (Model)
 import App.Pages exposing (pageDescription, pageHash, pageName, pageSrc, pageView, pages)
 import App.Routing exposing (Route(..), nextPage, prevPage)
 import Browser
-import Html exposing (Html, a, div, footer, h1, h2, h3, hr, i, img, li, nav, p, section, span, text, ul)
-import Html.Attributes exposing (alt, attribute, class, href, id, src, style, title, type_)
+import Html exposing (Html, a, br, div, figure, footer, h1, h2, h3, hr, i, img, li, nav, p, section, span, strong, text, ul)
+import Html.Attributes exposing (alt, attribute, class, href, id, src, style, target, title, type_)
 import Html.Events exposing (onClick)
+import Page.Common exposing (onClickNotPropagate)
+import Browser exposing (UrlRequest(..))
 
 
 
@@ -25,141 +27,116 @@ view model =
     in
     { title = "playground-elm"
     , body =
-        [ div []
-            [ div [ class "navbar navbar-inverse bg-inverse" ]
-                -- nav bar
-                [ div [ class "container d-flex" ]
-                    [ a
-                        [ Html.Attributes.classList
-                            [ ( "breadcrumb", True )
-                            , ( "animated", True )
-                            , ( "fadeOut", prev |> exists |> not )
-                            , ( "fadeIn", prev |> exists )
-                            ]
-                        , style "cursor"
-                            (if prev |> exists then
-                                "cursor"
+        [ navbarPart model
+        , forkmeRibbon
+        , content model
+        , footerPart model
+        ]
+    }
 
-                             else
-                                "default"
-                            )
-                        , href ("#" ++ (prev |> Maybe.map pageHash |> Maybe.withDefault ""))
-                        , onClick (prev |> Maybe.map GoToPage |> Maybe.withDefault GoToHome)
-                        ]
-                        [ i [ class "fa fa-caret-left", attribute "aria-hidden" "true" ] [] ]
-                    , nav [ class "breadcrumb" ]
-                        [ a [ class "breadcrumb-item", href "#", onClick GoToHome ]
-                            [ text "playground-elm" ]
-                        , span [ class "breadcrumb-item active" ]
-                            [ text (hash model.route) ]
-                        ]
-                    , a
-                        [ Html.Attributes.classList
-                            [ ( "breadcrumb", True )
-                            , ( "animated", True )
-                            , ( "fadeOut", next |> exists |> not )
-                            , ( "fadeIn", next |> exists )
-                            ]
-                        , style "cursor"
-                            (if next |> exists then
-                                "cursor"
 
-                             else
-                                "default"
-                            )
-                        , href ("#" ++ (next |> Maybe.map pageHash |> Maybe.withDefault ""))
-                        , onClick (next |> Maybe.map GoToPage |> Maybe.withDefault GoToHome)
-                        ]
-                        [ i [ class "fa fa-caret-right", attribute "aria-hidden" "true" ] [] ]
-                    ]
-
-                -- "fork me" ribbon
-                , a [ href "https://github.com/ccamel/playground-elm" ]
-                    [ img
-                        [ alt "Fork me on GitHub"
-                        , attribute "data:data-canonical-src" "https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png"
-                        , src "https://camo.githubusercontent.com/38ef81f8aca64bb9a64448d0d70f1308ef5341ab/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6461726b626c75655f3132313632312e706e67"
-                        , attribute "style" "position: absolute; top: 0; right: 0; border: 0;"
-                        ]
-                        []
-                    , text ""
-                    ]
+{-| the html elements for the navigation bar
+-}
+navbarPart : Model -> Html Msg
+navbarPart _ =
+    nav
+        [ class "navbar"
+        ]
+        [ div
+            [ class "container"
+            ]
+            [ div
+                [ class "navbar-brand"
                 ]
-
-            -- preamble
-            , section [ class "jumbotron text-center" ]
-                [ div [ class "container" ]
-                    [ h1 [ class "jumbotron-heading" ]
-                        [ i [ class "fa fa-quote-left text-muted", style "padding-right" "1em" ] []
-                        , span []
-                            [ text "playground"
-                            , text " "
-                            , span [ class "elm-pipe" ] [ text "|" ]
-                            , span [ class "elm-gt" ] [ text ">" ]
-                            , text " "
-                            , a [ href "http://elm-lang.org/" ] [ text "elm" ]
-                            ]
-                        , i [ class "fa fa-quote-right text-muted", style "padding-left" "1em" ] []
-                        ]
-                    , div [ style "float" "right" ]
-                        [ a
-                            [ attribute "aria-controls" "collapseExample"
-                            , attribute "aria-expanded" "true"
-                            , attribute "data-toggle" "collapse"
-                            , title "toggle the summary"
-                            , type_ "button"
-                            , attribute "data-target" "#summary"
-                            , href "."
-                            ]
-                            [ i [ class "fa fa-bars" ] [] ]
-                        ]
-                    , p [ class "lead text-muted collapse.show collapse show", id "summary" ]
-                        [ p []
-                            [ text "My playground I use for playing with fancy and exciting technologies." ]
-                        , p [] [ text "§" ]
-                        , p []
-                            [ text "This one's for "
-                            , a [ href "http://elm-lang.org/" ] [ text "elm" ]
-                            , text " and "
-                            , a [ href "https://getbootstrap.com/" ] [ text "bootstrap" ]
-                            ]
-                        ]
+                [ a
+                    [ class "navbar-item"
+                    , href "#"
                     ]
-                ]
-
-            -- content
-            , div [ id (contentId model.route), class "demo-content" ]
-                [ content model
-                ]
-
-            -- footer
-            , footer [ class "footer" ]
-                [ div [ class "container" ]
-                    [ ul [ class "text-center" ]
-                        [ li [ class "text-muted" ]
-                            [ text "© 2017-2021 Christophe Camel - MIT License" ]
-                        , li [ class "text-muted" ] [ text "  |  " ]
-                        , li [ class "text-muted" ] [ text (String.append "v" model.flags.version) ]
-                        , li [ class "text-muted" ] [ text "  |  " ]
-                        , li []
-                            [ a [ href "https://github.com/ccamel" ]
-                                [ i [ class "fa fa-github fa-2x" ]
-                                    []
-                                ]
-                            ]
-                        , li [ class "text-muted" ] [ text "  |  " ]
-                        , li []
-                            [ a [ href "https://www.linkedin.com/in/christophe-camel" ]
-                                [ i [ class "fa fa-linkedin-square fa-2x" ]
-                                    []
-                                ]
-                            ]
+                    [ span []
+                        [ text "playground"
+                        , text " "
+                        , span [ class "elm-pipe" ] [ text "|" ]
+                        , span [ class "elm-gt" ] [ text ">" ]
+                        , text " "
+                        , a [ href "http://elm-lang.org/" ] [ text "elm" ]
                         ]
                     ]
                 ]
             ]
         ]
-    }
+
+
+{-| the html elements for the footer
+-}
+footerPart : Model -> Html Msg
+footerPart _ =
+    footer
+        [ class "footer" ]
+        [ div
+            [ class "container"
+            ]
+            [ div
+                [ class "content has-text-centered"
+                ]
+                [ div
+                    [ class "soc"
+                    ]
+                    [ a
+                        [ href "https://github.com/ccamel"
+                        ]
+                        [ i
+                            [ class "fa fa-github fa-lg"
+                            , attribute "aria-hidden" "true"
+                            ]
+                            []
+                        ]
+                    , a
+                        [ href "https://linkedin.com/in/christophe-camel/"
+                        ]
+                        [ i
+                            [ class "fa fa-linkedin fa-lg"
+                            , attribute "aria-hidden" "true"
+                            ]
+                            []
+                        ]
+                    , a
+                        [ href "https://twitter.com/7h3_360l355_d3v"
+                        ]
+                        [ i
+                            [ class "fa fa-twitter fa-lg"
+                            , attribute "aria-hidden" "true"
+                            ]
+                            []
+                        ]
+                    ]
+                , p []
+                    [ strong []
+                        [ text "playground-elm" ]
+                    , text " | "
+                    , a [ href "https://github.com/ccamel" ]
+                        [ text "© 2017-2023 Christophe Camel" ]
+                    , text " | "
+                    , a [ href "https://github.com/ccamel/playground-elm/blob/main/LICENSE" ]
+                        [ text "MIT License" ]
+                    , text "."
+                    , br [] []
+                    ]
+                ]
+            ]
+        ]
+
+
+forkmeRibbon : Html msg
+forkmeRibbon =
+    a [ href "https://github.com/ccamel/playground-elm" ]
+        [ div
+            [ attribute "arial-label" "Fork me on GitHub"
+            , attribute "role" "img"
+            , class "forkme-ribbon"
+            ]
+            []
+        , text ""
+        ]
 
 
 {-| the html elements for the content part of the view
@@ -177,32 +154,116 @@ content model =
             notFoundView
 
 
-{-| the home page displaying all available pages as "album" entries
+{-| the home page displaying all available pages as "cards" entries
 -}
 homePage : Model -> Html Msg
 homePage model =
-    div [ class "text-muted" ]
-        [ div [ class "container" ]
-            [ hr [] []
-            , div [ class "row" ] (pages |> List.map (pageCard model))
+    div []
+        [ div
+            [ class "section"
+            ]
+            [ div
+                [ class "container" ]
+                [ div
+                    [ class "columns"
+                    ]
+                    [ div
+                        [ class "column has-text-centered"
+                        ]
+                        [ h1
+                            [ class "title is-1"
+                            , style "color" "ghostwhite"
+                            ]
+                            [ i [ class "fa fa-quote-left text-muted", style "padding-right" ".5em" ] []
+                            , text "playground"
+                            , text " "
+                            , span [ class "elm-pipe" ] [ text "|" ]
+                            , span [ class "elm-gt" ] [ text ">" ]
+                            , text " "
+                            , a [ href "http://elm-lang.org/" ] [ text "elm" ]
+                            , i [ class "fa fa-quote-right text-muted", style "padding-left" ".5em" ] []
+                            ]
+                        , br []
+                            []
+                        , h2
+                            [ class "subtitle is-3"
+                            , style "color" "ghostwhite"
+                            ]
+                            [ text "My playground I use for playing with fancy and exciting technologies." ]
+                        , br []
+                            []
+                        ]
+                    ]
+                ]
+            ]
+        , div [ class "section" ]
+            [ div [ class "container" ]
+                [ div
+                    [ class "row columns is-multiline"
+                    ]
+                    (pages |> List.map (pageCard model))
+                ]
             ]
         ]
 
 
 pageCard : Model -> Page -> Html Msg
 pageCard _ page =
-    div [ class "col-sm-3" ]
-        [ div [ class "card animated fadeInUp" ]
-            [ div [ class "card-block" ]
-                [ h3 [ class "card-title" ]
-                    [ i [ class "fa fa-square", attribute "aria-hidden" "true" ] []
-                    , text (pageName page)
+    div
+        [ class "column is-4"
+        ]
+        [ div
+            [ class "card large is-cursor-pointer"
+            , onClick (GoToPage page)
+            ]
+            [ div
+                [ class "card-image cover-image is-overflow-hidden"
+                ]
+                [ figure
+                    [ class "image"
                     ]
-                , p [ class "card-text" ]
-                    [ pageDescription page ]
-                , a [ href ("#" ++ pageHash page), onClick (GoToPage page) ] [ text "» Go" ]
-                , span [ style "padding-left" "15px" ] [] -- FIXME: not pretty
-                , linkToGitHub page
+                    [ img
+                        [ src "https://images.unsplash.com/photo-1687851898832-650714860119?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80"
+                        , alt "Image"
+                        ]
+                        []
+                    ]
+                ]
+            , div
+                [ class "card-content"
+                ]
+                [ div
+                    [ class "media"
+                    ]
+                    [ div
+                        [ class "media-content"
+                        ]
+                        [ p
+                            [ class "title is-4 no-padding"
+                            ]
+                            [ page |> pageName |> text ]
+                        , p []
+                            [ span
+                                [ class "title is-6"
+                                ]
+                                [ linkToGitHub page ]
+                            ]
+                        ]
+                    ]
+                , div
+                    [ class "content"
+                    ]
+                    [ pageDescription page
+                    ]
+                ]
+            , footer
+                [ class "card-footer has-background-white-bis"
+                ]
+                [ a
+                    [ href "#"
+                    , class "card-footer-item p-5 has-text-grey is-uppercase is-text-wide-1"
+                    ]
+                    [ text "Play" ]
                 ]
             ]
         ]
@@ -230,7 +291,7 @@ notFoundView =
 
 {-| returns the html anchor ('a') that denotes a link to the code source of the given page.
 -}
-linkToGitHub : Page -> Html a
+linkToGitHub : Page -> Html Msg
 linkToGitHub page =
     let
         url =
@@ -239,7 +300,16 @@ linkToGitHub page =
         link =
             url ++ pageSrc page
     in
-    a [ href link ] [ text "» Source" ]
+    a
+        [ href "#"
+        , onClickNotPropagate (LinkClicked (External link))
+        ]
+        [ i
+            [ class "fa fa-github "
+            , attribute "aria-hidden" "true"
+            ]
+            [ text " source" ]
+        ]
 
 
 contentId : Route -> String

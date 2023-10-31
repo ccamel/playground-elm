@@ -50,7 +50,7 @@ info =
     , hash = "asteroids"
     , description = Markdown.toHtml [ Attributes.class "info" ] """
 
-A simple Asteroidcs clone in [Elm](https://elm-lang.org/).
+A simple Asteroids clone in [Elm](https://elm-lang.org/).
        """
     , srcRel = "Page/Asteroids.elm"
     }
