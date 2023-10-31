@@ -1,9 +1,8 @@
 "use strict";
 
+import "bulma/css/bulma.min.css";
 import "./fonts/font.css";
 import "tether/dist/css/tether.css";
-import "bootstrap/dist/js/bootstrap.bundle.js";
-import "bootstrap/dist/css/bootstrap.css";
 import "elm-canvas/elm-canvas.js";
 import "font-awesome/css/font-awesome.css";
 import "animate.css/animate.css";
