@@ -7,7 +7,7 @@ import App.Routing exposing (Route(..), nextPage, prevPage)
 import Browser exposing (UrlRequest(..))
 import Html exposing (Html, a, br, div, figure, footer, h1, h2, h3, hr, i, img, li, nav, p, section, span, strong, text, ul)
 import Html.Attributes exposing (alt, attribute, class, href, id, src, style, target, title, type_)
-import Html.Events exposing (onClick)
+import Html.Events exposing (on, onClick)
 import Page.Common exposing (onClickNotPropagate)
 
 
@@ -26,10 +26,26 @@ view model =
     in
     { title = "playground-elm"
     , body =
-        [ navbarPart model
-        , forkmeRibbon
-        , content model
-        , footerPart model
+        [ section
+            [ class "hero is-fullheight"
+            ]
+            [ div
+                [ class "hero-head"
+                ]
+                [ navbarPart model
+                , forkmeRibbon
+                ]
+            , div
+                [ class "hero-body"
+                ]
+                [ content model
+                ]
+            , div
+                [ class "hero-footer"
+                ]
+                [ footerPart model
+                ]
+            ]
         ]
     }
 
@@ -50,6 +66,7 @@ navbarPart _ =
                 [ a
                     [ class "navbar-item"
                     , href "#"
+                    , onClick GoToHome
                     ]
                     [ span []
                         [ text "playground"
@@ -268,21 +285,34 @@ pageCard _ page =
 
 {-| the special not found view displayed when routing has found no matching
 -}
-notFoundView : Html msg
+notFoundView : Html Msg
 notFoundView =
-    div [ class "container" ]
-        [ hr [] []
-        , div [ class "text-muted" ]
-            [ div [ class "container" ]
-                [ div [ class "row" ]
-                    [ div [ class "col-sm-12 text-center" ]
-                        [ i [ class "fa fa-exclamation-triangle" ] []
-                        , h2 [] [ text "404" ]
-                        , text "not found"
-                        ]
-                    ]
-                ]
+    div
+        [ class "container has-text-centered"
+        ]
+        [ h1
+            [ class "is-size-1 has-text-weight-bold has-text-primary"
             ]
+            [ text "404" ]
+        , p
+            [ class "is-size-5 has-text-weight-medium"
+            ]
+            [ span
+                [ class "has-text-danger"
+                ]
+                [ text "Opps!" ]
+            , text " Page not found."
+            ]
+        , p
+            [ class "is-size-6 mb-2"
+            ]
+            [ text "The page you’re looking for doesn’t exist." ]
+        , a
+            [ href "#"
+            , class "button is-primary"
+            , onClick GoToHome
+            ]
+            [ text "Go Home" ]
         ]
 
 

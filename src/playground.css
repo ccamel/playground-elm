@@ -17,7 +17,7 @@ input::placeholder {
   color: antiquewhite;
 }
 
-.navbar {
+.hero .navbar {
   background-color: var(--card-bg);
 }
 
