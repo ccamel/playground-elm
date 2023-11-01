@@ -41,6 +41,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN }}
 
       - name: Install pnpm
         uses: pnpm/action-setup@v2
@@ -61,4 +62,4 @@ jobs:
         run: |
           pnpm release --increment ${{ github.event.inputs.increment }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
