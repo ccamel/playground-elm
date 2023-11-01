@@ -8,6 +8,7 @@ import Browser exposing (UrlRequest(..))
 import Html exposing (Html, a, br, div, figure, footer, h1, h2, h3, hr, i, img, li, nav, p, section, span, strong, text, ul)
 import Html.Attributes exposing (alt, attribute, class, href, id, src, style, target, title, type_)
 import Html.Events exposing (on, onClick)
+import List.Extra exposing (groupsOf)
 import Page.Common exposing (onClickNotPropagate)
 
 
@@ -172,6 +173,16 @@ content model =
 -}
 homePage : Model -> Html Msg
 homePage model =
+    let
+        groupedPages : List (List Page)
+        groupedPages =
+            groupsOf 3 pages
+
+        columnDiv : List Page -> Html Msg
+        columnDiv items =
+            div [ class "columns" ]
+                (List.map (pageCard model) items)
+    in
     div []
         [ div
             [ class "section"
@@ -212,11 +223,10 @@ homePage model =
             ]
         , div [ class "section" ]
             [ div [ class "container" ]
-                [ div
-                    [ class "row columns is-multiline"
-                    ]
-                    (pages |> List.map (pageCard model))
-                ]
+                (List.map
+                    (div [ class "columns" ] << List.map (pageCard model))
+                    groupedPages
+                )
             ]
         ]
 
