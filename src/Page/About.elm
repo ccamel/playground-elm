@@ -152,7 +152,24 @@ view _ =
                         , p [ class "has-text-light" ]
                             [ text "As much as possible, provides a useful and functional content." ]
                         ]
-                    
+                    , div
+                        [ class "column is-6"
+                        ]
+                        [ h4
+                            [ class "title is-4 has-text-white"
+                            ]
+                            [ i
+                                [ attribute "aria-hidden" "true"
+                                , class "fa fa-arrows-alt-v"
+                                ]
+                                []
+                            , text " Scalable"
+                            ]
+                        , p [ class "has-text-light" ]
+                            [ text "The structure of the playground is designed to easily accommodate additional examples and showcases." ]
+                        , p [ class "has-text-light" ]
+                            [ text " Contributors can effortlessly expand the repository, ensuring it remains a relevant and up-to-date resource for learners and enthusiasts." ]
+                        ]
                     ]
                 ]
             ]
