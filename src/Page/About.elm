@@ -16,7 +16,7 @@ info =
     , hash = "about"
     , description = Markdown.toHtml [ class "info" ] """
 
-A very simple and minimal showcase that is used to lay the foundations of the navigation/routing (*and to test that the whole site works correctly*)
+A very simple and minimal showcase that is used to lay the foundations of the navigation/routing (*and to test that the whole site works correctly*).
        """
     , srcRel = "Page/About.elm"
     }
