@@ -8,6 +8,7 @@ import "elm-canvas/elm-canvas.js";
 import "font-awesome/css/font-awesome.css";
 import "animate.css/animate.css";
 import "./playground.css";
+import "./about.css";
 import "./calc.css";
 import "./lissajous.css";
 import "./digital-clock.css";

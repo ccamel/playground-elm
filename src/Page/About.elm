@@ -1,6 +1,6 @@
 module Page.About exposing (Model, Msg, info, init, subscriptions, update, view)
 
-import Html exposing (Html, a, div, h2, hr, i, p, text)
+import Html exposing (Html, a, div, h2, h3, h4, hr, i, p, section, span, text)
 import Html.Attributes exposing (attribute, class, href, style)
 import Markdown
 import Page.Common
@@ -65,60 +65,94 @@ subscriptions _ =
 
 view : Model -> Html Msg
 view _ =
-    div [ class "container" ]
-        [ hr [] []
-        , p [ class "text-muted" ]
-            [ text "The purpose of this playground is to "
-            , i []
-                [ text "explore" ]
-            , text ", "
-            , i []
-                [ text "study" ]
-            , text " and "
-            , i []
-                [ text "assess" ]
-            , text " the "
-            , a [ href "http://elm-lang.org/" ]
-                [ text "elm language" ]
-            , text " — a delightful language for reliable webapps."
+    div
+        [ class "container"
+        ]
+        [ div [ class "section is-medium has-text-centered" ]
+            [ h2
+                [ class "title is-size-2-desktop has-text-white"
+                ]
+                [ span []
+                    [ text "playground"
+                    , text " "
+                    , span [ class "elm-pipe" ] [ text "|" ]
+                    , span [ class "elm-gt" ] [ text ">" ]
+                    , text " "
+                    , a [ href "http://elm-lang.org/" ] [ text "elm" ]
+                    ]
+                ]
+            , h3
+                [ class "subtitle has-text-white"
+                ]
+                [ text "Explore, study and assess the "
+                , a [ href "http://elm-lang.org/" ] [ text "elm language" ]
+                , text " a delightful language for reliable webapps."
+                ]
             ]
-        , p [ class "text-muted" ]
-            [ text "The showcases are intended to be:" ]
-        , div [ class "row", style "padding-top" "2em" ]
-            [ div [ class "col-lg-4" ]
-                [ i [ attribute "aria-hidden" "true", class "fa fa-child fa-3x iconic" ]
-                    []
-                , h2 [ style "padding-top" "1em" ]
-                    [ text "» simple" ]
-                , p []
-                    [ text "Fairly simple and understandable. Every showcase is implemented in a single elm file."
-                    ]
+        , div
+            [ class "columns is-centered about"
+            ]
+            [ div
+                [ class "column is-9"
                 ]
-            , div [ class "col-lg-4" ]
-                [ i [ attribute "aria-hidden" "true", class "fa fa-search fa-3x iconic" ]
-                    []
-                , h2 [ style "padding-top" "1em" ]
-                    [ text "» exploratory" ]
-                , p []
-                    [ text "Highlight some aspects of the "
-                    , a [ href "http://elm-lang.org/" ]
-                        [ text "elm" ]
-                    , text " language, like immutability, reactiveness, performance and interoperability with other JS libraries."
+                [ div
+                    [ class "columns"
                     ]
-                , p []
-                    [ text "Explore some architectural/design patterns around reactive static/serverless "
-                    , a [ href "https://en.wikipedia.org/wiki/Single-page_application" ]
-                        [ text "SPA" ]
-                    , text "."
+                    [ div
+                        [ class "column is-6"
+                        ]
+                        [ h4
+                            [ class "title is-4 has-text-white"
+                            ]
+                            [ i
+                                [ attribute "aria-hidden" "true"
+                                , class "fa fa-child"
+                                ]
+                                []
+                            , text " Simple"
+                            ]
+                        , p [ class "has-text-light" ]
+                            [ text "Fairly simple and understandable. Every showcase is implemented in a single elm file." ]
+                        ]
+                    , div
+                        [ class "column is-6"
+                        ]
+                        [ h4
+                            [ class "title is-4 has-text-white"
+                            ]
+                            [ i
+                                [ attribute "aria-hidden" "true"
+                                , class "fa fa-search"
+                                ]
+                                []
+                            , text " Exploratory"
+                            ]
+                        , p [ class "has-text-light" ]
+                            [ text "Highlight some aspects of the elm language, like immutability, reactiveness, performance and interoperability with other JS libraries." ]
+                        , p [ class "has-text-light" ]
+                            [ text "Explore some architectural/design patterns around reactive static/serverless SPA." ]
+                        ]
                     ]
-                ]
-            , div [ class "col-lg-4" ]
-                [ i [ attribute "aria-hidden" "true", class "fa fa-futbol-o fa-3x iconic" ]
-                    []
-                , h2 [ style "padding-top" "1em" ]
-                    [ text "» playable" ]
-                , p []
-                    [ text "As much as possible, provides a useful and functional content."
+                , div
+                    [ class "columns"
+                    ]
+                    [ div
+                        [ class "column is-6"
+                        ]
+                        [ h4
+                            [ class "title is-4 has-text-white"
+                            ]
+                            [ i
+                                [ attribute "aria-hidden" "true"
+                                , class "fa fa-futbol-o"
+                                ]
+                                []
+                            , text " Playable"
+                            ]
+                        , p [ class "has-text-light" ]
+                            [ text "As much as possible, provides a useful and functional content." ]
+                        ]
+                    
                     ]
                 ]
             ]
