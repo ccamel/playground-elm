@@ -58,6 +58,9 @@ devDependencies:
   elm-review:
     specifier: ^2.10.3
     version: 2.10.3
+  github-fork-ribbon-css:
+    specifier: ^0.2.3
+    version: 0.2.3
   node-elm-compiler:
     specifier: ^5.0.6
     version: 5.0.6
@@ -3285,6 +3288,10 @@ packages:
     resolution: {integrity: sha512-5FvPJP/70WkIprlUZ33bm4UAaFdjcLkJLpWft1BeZKqwR0uhhNGoKwlUaPtVb4LxCSQ++erHapRak9kWGj+FCA==}
     dependencies:
       git-up: 7.0.0
+    dev: true
+
+  /github-fork-ribbon-css@0.2.3:
+    resolution: {integrity: sha512-cmGBV4sivRwmnteSOkqMjN2cnP5/J1SU5aDCVYsBWHmDokZ/JjwGEkduCxY9IULHdCPpw1WSk5Cy8N1LF6jOEw==}
     dev: true
 
   /glob-parent@5.1.2:
