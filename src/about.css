@@ -1,0 +1,3 @@
+.about .columns:not(:last-child) {
+    margin-bottom: 3.75rem;
+}
