@@ -2,12 +2,12 @@ module App.View exposing (view)
 
 import App.Messages exposing (Msg(..), Page)
 import App.Models exposing (Model)
-import App.Pages exposing (pageDescription, pageHash, pageName, pageSrc, pageView, pages)
-import App.Routing exposing (Route(..), nextPage, prevPage)
+import App.Pages exposing (pageDescription, pageName, pageSrc, pageView, pages)
+import App.Routing exposing (Route(..))
 import Browser exposing (UrlRequest(..))
-import Html exposing (Html, a, br, div, figure, footer, h1, h2, h3, hr, i, img, li, nav, p, section, span, strong, text, ul)
-import Html.Attributes exposing (alt, attribute, class, href, id, src, style, target, title, type_)
-import Html.Events exposing (on, onClick)
+import Html exposing (Html, a, br, div, figure, footer, h1, h2, i, img, nav, p, section, span, strong, text)
+import Html.Attributes exposing (alt, attribute, class, href, src, style, title)
+import Html.Events exposing (onClick)
 import List.Extra exposing (groupsOf)
 import Page.Common exposing (onClickNotPropagate)
 
@@ -18,13 +18,6 @@ import Page.Common exposing (onClickNotPropagate)
 
 view : Model -> Browser.Document Msg
 view model =
-    let
-        prev =
-            prevPage model.route pages
-
-        next =
-            nextPage model.route pages
-    in
     { title = "playground-elm"
     , body =
         [ section
@@ -173,16 +166,6 @@ content model =
 -}
 homePage : Model -> Html Msg
 homePage model =
-    let
-        groupedPages : List (List Page)
-        groupedPages =
-            groupsOf 3 pages
-
-        columnDiv : List Page -> Html Msg
-        columnDiv items =
-            div [ class "columns" ]
-                (List.map (pageCard model) items)
-    in
     div []
         [ div
             [ class "section"
@@ -225,7 +208,7 @@ homePage model =
             [ div [ class "container" ]
                 (List.map
                     (div [ class "columns" ] << List.map (pageCard model))
-                    groupedPages
+                    (groupsOf 3 pages)
                 )
             ]
         ]
@@ -234,7 +217,7 @@ homePage model =
 pageCard : Model -> Page -> Html Msg
 pageCard _ page =
     div
-        [ class "column is-4"
+        [ class "home column is-4"
         ]
         [ div
             [ class "card large is-cursor-pointer"
@@ -347,39 +330,3 @@ linkToGitHub page =
             ]
             [ text " source" ]
         ]
-
-
-contentId : Route -> String
-contentId route =
-    case route of
-        Home ->
-            "home"
-
-        Page p ->
-            pageHash p
-
-        NotFoundRoute ->
-            "?"
-
-
-hash : Route -> String
-hash route =
-    case route of
-        Home ->
-            "home"
-
-        Page p ->
-            pageHash p
-
-        NotFoundRoute ->
-            ""
-
-
-exists : Maybe a -> Bool
-exists m =
-    case m of
-        Just _ ->
-            True
-
-        Nothing ->
-            False

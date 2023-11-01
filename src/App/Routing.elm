@@ -1,4 +1,4 @@
-module App.Routing exposing (Route(..), nextPage, prevPage, toRoute)
+module App.Routing exposing (Route(..), toRoute)
 
 import App.Messages exposing (Page(..))
 import Page.About
@@ -69,45 +69,3 @@ toRoute basePath url =
     { url | path = String.replace basePath "" url.path }
         |> parse matchRoute
         |> Maybe.withDefault NotFoundRoute
-
-
-{-| returns the next page for the given route, if any
--}
-nextPage : Route -> List Page -> Maybe Page
-nextPage aroute pages =
-    case aroute of
-        Page page ->
-            case pages of
-                a :: b :: rest ->
-                    if a == page then
-                        Just b
-
-                    else
-                        nextPage aroute (b :: rest)
-
-                _ ->
-                    Nothing
-
-        _ ->
-            Nothing
-
-
-{-| returns the previous page for the given route, if any
--}
-prevPage : Route -> List Page -> Maybe Page
-prevPage aroute pages =
-    case aroute of
-        Page page ->
-            case pages of
-                a :: b :: rest ->
-                    if b == page then
-                        Just a
-
-                    else
-                        prevPage aroute (b :: rest)
-
-                _ ->
-                    Nothing
-
-        _ ->
-            Nothing

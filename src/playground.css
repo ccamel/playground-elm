@@ -8,13 +8,7 @@ body {
 }
 
 .box {
-
   background: var(--card-bg);
-}
-
-
-input::placeholder {
-  color: antiquewhite;
 }
 
 .hero .navbar {
@@ -41,17 +35,17 @@ input::placeholder {
   z-index: 40;
 }
 
-.card {
+.home .card {
   overflow: hidden;
   background: ghostwhite;
   color: var(--bg);
 }
 
-.card-content {
+.home .card-content {
   height: 240px;
 }
 
-.card.large {
+.home .card.large {
   border-radius: 5px;
 }
 
@@ -62,7 +56,7 @@ input::placeholder {
   -webkit-transform: scale(1.1);
 }
 
-.card:hover .cover-image img {
+.home .card:hover .cover-image img {
   cursor: pointer;
   transform: scale(1.2);
   -webkit-transform: scale(1.2);
