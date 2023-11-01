@@ -24,7 +24,7 @@ info =
     , hash = "calc"
     , description = Markdown.toHtml [ class "info" ] """
 
-A very simple and basic calculator
+A very simple and basic calculator.
        """
     , srcRel = "Page/Calc.elm"
     }

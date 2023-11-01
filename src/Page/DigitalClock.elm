@@ -26,7 +26,7 @@ info =
     , hash = "digital-clock"
     , description = Markdown.toHtml [ class "info" ] """
 
-A demo rendering a digital clock in [SVG](https://fr.wikipedia.org/wiki/Scalable_Vector_Graphics)
+A demo rendering a digital clock in [SVG](https://fr.wikipedia.org/wiki/Scalable_Vector_Graphics).
        """
     , srcRel = "Page/DigitalClock.elm"
     }
