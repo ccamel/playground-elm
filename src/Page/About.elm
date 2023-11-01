@@ -1,7 +1,7 @@
 module Page.About exposing (Model, Msg, info, init, subscriptions, update, view)
 
-import Html exposing (Html, a, div, h2, h3, h4, hr, i, p, section, span, text)
-import Html.Attributes exposing (attribute, class, href, style)
+import Html exposing (Html, a, div, h2, h3, h4, i, p, span, text)
+import Html.Attributes exposing (attribute, class, href)
 import Markdown
 import Page.Common
 
