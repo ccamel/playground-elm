@@ -4,12 +4,11 @@ import App.Messages exposing (Msg(..), Page)
 import App.Models exposing (Model)
 import App.Pages exposing (pageDescription, pageHash, pageName, pageSrc, pageView, pages)
 import App.Routing exposing (Route(..), nextPage, prevPage)
-import Browser
+import Browser exposing (UrlRequest(..))
 import Html exposing (Html, a, br, div, figure, footer, h1, h2, h3, hr, i, img, li, nav, p, section, span, strong, text, ul)
 import Html.Attributes exposing (alt, attribute, class, href, id, src, style, target, title, type_)
 import Html.Events exposing (onClick)
 import Page.Common exposing (onClickNotPropagate)
-import Browser exposing (UrlRequest(..))
 
 
 
@@ -128,15 +127,13 @@ footerPart _ =
 
 forkmeRibbon : Html msg
 forkmeRibbon =
-    a [ href "https://github.com/ccamel/playground-elm" ]
-        [ div
-            [ attribute "arial-label" "Fork me on GitHub"
-            , attribute "role" "img"
-            , class "forkme-ribbon"
-            ]
-            []
-        , text ""
+    a
+        [ class "github-fork-ribbon right-top"
+        , href "https://github.com/ccamel/playground-elm"
+        , attribute "data-ribbon" "Fork me on GitHub"
+        , title "Fork me on GitHub"
         ]
+        [ text "Fork me on GitHub" ]
 
 
 {-| the html elements for the content part of the view
