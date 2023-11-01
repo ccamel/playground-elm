@@ -1,67 +1,61 @@
-.calc {
-  width: 400px;
-  border-style: solid;
-  border-width: 1px;
-  border-color: #e8e8e8;
-  border-radius: 10px;
-  background-color: #f7f7f7;
-  padding: 10px;
-}
-
 .calc .display {
   border-radius: 7px;
   background-color: #eee;
-  margin: 0px 15px 15px 0px;
 }
-.calc .lcd {
+
+.calc .input {
   font-family: "Roboto Mono", monospace;
   text-align: right;
   font-size: 21px;
-}
-
-input.lcd {
   border: none;
   background-color: transparent;
 }
 
-.calc .tag {
+.has-flex-centered {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tags-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.fixed-tag {
+  height: 1.5em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.15rem 0;
   font-size: 10px;
+  background-color: #eee;
 }
 
-.calc .buttons {
-  padding-bottom: 0.5em;
-}
-
-.calc button {
-  width: 60px;
-}
-
-.digit button {
+.calc .digit .button {
   background-color: #757575;
   color: #fff;
 }
 
-.operator button {
+.calc .operator .button {
   background-color: #e3f2fd;
   color: #1565c0;
 }
 
-.clear button {
-  background-color: #ffebee;
-  color: #b71c1c;
-}
-
-.memory button {
+.calc .memory .button {
   background-color: #e8f5e9;
   color: #4caf50;
 }
 
-.dot button {
+.calc .dot .button {
   background-color: #757575;
   color: #fff;
 }
 
-.result button {
+.calc .result .button {
   background-color: #e0e0e0;
   color: #000;
 }

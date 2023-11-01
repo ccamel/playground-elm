@@ -2,8 +2,8 @@ module Page.Calc exposing (Model, Msg(..), Op(..), State(..), Token(..), info, i
 
 import Basics.Extra exposing (flip)
 import Browser.Events
-import Html exposing (Html, div, hr, input, p, text)
-import Html.Attributes exposing (attribute, class, type_, value)
+import Html exposing (Html, div, h2, input, text)
+import Html.Attributes exposing (attribute, class, disabled, type_, value)
 import Html.Events exposing (onClick)
 import Json.Decode as Json
 import List exposing (drop, foldl, take)
@@ -459,33 +459,55 @@ subscriptions _ =
 
 view : Model -> Html Msg
 view model =
-    div [ class "container animated flipInX" ]
-        [ hr [] []
-        , p [ class "text-muted" ]
-            [ text "A very simple and basic calculator." ]
-        , div [ class "calc" ]
-            [ -- display
-              div [ class "row display" ]
-                [ div [ class "col-11" ]
-                    [ input [ class "lcd", attribute "readOnly" "", type_ "Text", value (display model) ]
-                        []
+    div [ class "container" ]
+        [ div [ class "columns" ]
+            [ div [ class "column has-text-centered" ]
+                [ h2
+                    [ class "subtitle is-5 has-text-white"
                     ]
-                , div []
+                    [ text "A very simple and basic calculator." ]
+                ]
+            ]
+        , div
+            [ class "columns is-centered" ]
+            [ div
+                [ class "column is-one-third" ]
+                [ div
+                    [ class "card p-4 has-background-grey-lighter"
+                    ]
+                    [ calc model
+                    ]
+                ]
+            ]
+        ]
+
+
+calc : Model -> Html Msg
+calc model =
+    div [ class "calc" ]
+        [ -- display
+          div [ class "columns is-gapless display is-mobile" ]
+            [ div [ class "column is-11" ]
+                [ input [ class "input", attribute "readOnly" "", type_ "Text", value (display model) ]
+                    []
+                ]
+            , div [ class "column is-1 has-flex-centered" ]
+                [ div [ class "tags-container" ]
                     [ renderMemoryTag model
                     , renderOperatorTag model
                     ]
                 ]
-
-            -- buttons
-            , div [ class "row buttons" ]
-                [ button (Digit 7) model, button (Digit 8) model, button (Digit 9) model, button (Operator Plus) model, button Clear model ]
-            , div [ class "row buttons" ]
-                [ button (Digit 4) model, button (Digit 5) model, button (Digit 6) model, button (Operator Minus) model, button MS model ]
-            , div [ class "row buttons" ]
-                [ button (Digit 1) model, button (Digit 2) model, button (Digit 3) model, button (Operator Multiply) model, button MR model ]
-            , div [ class "row buttons" ]
-                [ button Dot model, button (Digit 0) model, button (Operator Result) model, button (Operator Divide) model, button MC model ]
             ]
+
+        -- buttons
+        , div [ class "columns is-mobile" ]
+            [ button (Digit 7) model, button (Digit 8) model, button (Digit 9) model, button (Operator Plus) model, button Clear model ]
+        , div [ class "columns is-mobile" ]
+            [ button (Digit 4) model, button (Digit 5) model, button (Digit 6) model, button (Operator Minus) model, button MS model ]
+        , div [ class "columns is-mobile" ]
+            [ button (Digit 1) model, button (Digit 2) model, button (Digit 3) model, button (Operator Multiply) model, button MR model ]
+        , div [ class "columns is-mobile" ]
+            [ button Dot model, button (Digit 0) model, button (Operator Result) model, button (Operator Divide) model, button MC model ]
         ]
 
 
@@ -520,7 +542,7 @@ accept model token =
 
 renderMemoryTag : Model -> Html Msg
 renderMemoryTag model =
-    div [ class "tag" ]
+    div [ class "fixed-tag" ]
         [ text
             (model.memory
                 |> Maybe.map (\_ -> "M")
@@ -531,7 +553,7 @@ renderMemoryTag model =
 
 renderOperatorTag : Model -> Html Msg
 renderOperatorTag model =
-    div [ class "tag" ]
+    div [ class "fixed-tag" ]
         [ model.operators
             |> List.head
             |> Maybe.map
@@ -572,19 +594,12 @@ display model =
 button : Token -> Model -> Html Msg
 button token model =
     let
-        disabled =
-            if accept model token then
-                ""
-
-            else
-                " disabled"
-
         render txt style =
-            div [ class style ]
+            div [ class <| "column px-1 py-0  " ++ style ]
                 [ Html.button
-                    [ type_ "button"
-                    , class ("btn" ++ disabled)
-                    , onClick (Emitted token)
+                    [ class "button is-fullwidth"
+                    , onClick <| Emitted token
+                    , disabled <| not <| accept model token
                     ]
                     [ text txt
                     ]
@@ -592,34 +607,34 @@ button token model =
     in
     case token of
         Clear ->
-            render "C" "clear col-2 push-1"
+            render "C" "clear is-2"
 
         Digit d ->
-            render (fromInt d) "digit col-2"
+            render (fromInt d) "digit is-2"
 
         Operator Plus ->
-            render "+" "operator col-2 push-1"
+            render "+" "operator is-4"
 
         Operator Minus ->
-            render "-" "operator col-2 push-1"
+            render "-" "operator is-4"
 
         Operator Multiply ->
-            render "x" "operator col-2 push-1"
+            render "x" "operator is-4"
 
         Operator Divide ->
-            render "/" "operator col-2 push-1"
+            render "/" "operator is-4"
 
         Operator Result ->
-            render "=" "result col-2"
+            render "=" "result is-2"
 
         MR ->
-            render "MR" "memory col-2 push-1"
+            render "MR" "memory is-2"
 
         MC ->
-            render "MC" "memory col-2 push-1"
+            render "MC" "memory is-2"
 
         MS ->
-            render "MS" "memory col-2 push-1"
+            render "MS" "memory is-2"
 
         Dot ->
-            render "." "dot col-2"
+            render "." "dot is-2"
