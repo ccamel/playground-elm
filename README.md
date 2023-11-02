@@ -8,6 +8,7 @@
 [![ELM](https://img.shields.io/badge/elm-0.19.1-blue.svg?style=flat&logo=elm)](http://elm-lang.org/)
 [![Boostrap](https://img.shields.io/badge/bootstrap-4.0.1-orange.svg?style=flat&logo=bootstrap)](https://getbootstrap.com/)
 [![pnpm](https://img.shields.io/badge/pnpm-%234a4a4a.svg?style=flat&logo=pnpm&logoColor=f69220)](https://pnpm.io)
+[![git3moji](https://img.shields.io/badge/gitmoji-%20😜%20😍-FFDD67.svg?style=flat-square)](https://gitmoji.carloscuesta.me)
 [![StackShare](https://img.shields.io/badge/tech-stack-0690fa.svg?style=flat&logo=stackshare)](https://stackshare.io/ccamel/playground-elm)
 [![Demo](https://img.shields.io/badge/play-demo!-b30059.svg?style=flat)](https://ccamel.github.io/playground-elm/)
 
