@@ -10,6 +10,7 @@ import Html.Attributes exposing (alt, attribute, class, href, src, style, title)
 import Html.Events exposing (onClick)
 import List.Extra exposing (groupsOf)
 import Page.Common exposing (onClickNotPropagate)
+import List.Extra exposing (greedyGroupsOf)
 
 
 
@@ -208,7 +209,7 @@ homePage model =
             [ div [ class "container" ]
                 (List.map
                     (div [ class "columns" ] << List.map (pageCard model))
-                    (groupsOf 3 pages)
+                    (greedyGroupsOf 3 pages)
                 )
             ]
         ]
