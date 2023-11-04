@@ -6,7 +6,7 @@ import Color exposing (rgb255, toCssString)
 import ColorPicker
 import GraphicSVG exposing (LineType, Shape, Stencil, circle, filled, fixedwidth, group, line, move, openPolygon, outlined, rect, rotate, solid)
 import GraphicSVG.Widget as Widget
-import Html exposing (Html, a, br, button, div, hr, input, p, span, text)
+import Html exposing (Html, a, br, button, div, h2, hr, input, p, span, text)
 import Html.Attributes exposing (attribute, class, href, id, name, size, step, style, type_, value)
 import Html.Events exposing (onInput)
 import List exposing (concat, concatMap, filterMap, indexedMap, map, range)
@@ -302,15 +302,33 @@ constants =
 
 view : Model -> Html Msg
 view model =
-    div [ class "container animated flipInX" ]
-        [ hr [] []
-        , Markdown.toHtml [ class "info" ] """
+    div [ class "container" ]
+        [ div [ class "columns" ]
+            [ div [ class "column has-text-centered" ]
+                [ h2
+                    [ class "subtitle is-5 has-text-white"
+                    ]
+                    [ Markdown.toHtml [ class "info" ] """
 ##### Animated [Lissajous figures](https://en.wikipedia.org/wiki/Lissajous_curve) using [Scalable Vector Graphics](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) (SVG).
-                    """
-        , br [] []
-        , div [ class "row display" ]
+                    """ ]
+                ]
+            ]
+        , div
+            [ class "columns is-centered has-background-light" ]
+            [ div
+                [ class "column is-three-quarters" ]
+                [ lissajou model
+                ]
+            ]
+        ]
+
+
+lissajou : Model -> Html Msg
+lissajou model =
+    div [ class "columns is-align-items-center" ]
+        [ div [ class "display column is-half" ]
             [ -- canvas for the lissajous
-              div [ id "lissajous-scope col-sm-6", style "width" (toPixels constants.width), style "height" (toPixels constants.height) ]
+              div [ id "lissajous-scope" ]
                 [ Widget.view model.widgetState
                     (concat
                         [ [ backgroundForm (rgb255 0 0 0)
@@ -357,10 +375,12 @@ view model =
                         ]
                     )
                 ]
-            , div [ class "description col-sm-6" ]
+            ]
+        , div [ class "content" ]
+            [ div [ class "description column" ]
                 [ p []
                     [ text "You can "
-                    , if model.started then
+                    , if not model.started then
                         a [ class "action", href "", onClickNotPropagate Start ] [ text "start" ]
 
                       else
@@ -376,7 +396,7 @@ view model =
                         , text (fromInt constants.width)
                         , text " sin("
                         , input
-                            [ class "input-number"
+                            [ class "input input-number"
                             , name "a-parameter"
                             , type_ "number"
                             , size 1
@@ -386,7 +406,7 @@ view model =
                             []
                         , text "t + "
                         , input
-                            [ class "input-number"
+                            [ class "input input-number"
                             , name "phase"
                             , type_ "number"
                             , size 1
@@ -401,7 +421,7 @@ view model =
                         , text (fromInt constants.width)
                         , text " sin("
                         , input
-                            [ class "input-number"
+                            [ class "input input-number"
                             , name "b-parameter"
                             , type_ "number"
                             , size 1
@@ -444,10 +464,9 @@ view model =
                         [ button
                             [ attribute "aria-expanded" "false"
                             , attribute "aria-haspopup" "true"
-                            , class "btn btn-light dropdown-toggle"
+                            , class "button btn-light dropdown-toggle"
                             , attribute "data-toggle" "dropdown"
                             , id "dropdownForegroundColorPickerButton"
-                            , type_ "button"
                             ]
                             [ span
                                 [ class "color-tag"
@@ -466,7 +485,7 @@ view model =
                 , p [ class "form-inline" ]
                     [ text "The afterglow effect is "
                     , input
-                        [ class "input-number"
+                        [ class "input input-number"
                         , name "afterglow"
                         , type_ "number"
                         , size 3
@@ -479,7 +498,7 @@ view model =
                 , p []
                     [ text "The animation consists in shifting the phase by "
                     , input
-                        [ class "input-number"
+                        [ class "input input-number"
                         , name "phase-velocity"
                         , type_ "number"
                         , size 3
@@ -490,7 +509,7 @@ view model =
                     , a [ href "https://en.wikipedia.org/wiki/Revolutions_per_minute" ] [ text "rev/min" ]
                     , text ". The resolution is "
                     , input
-                        [ class "input-number"
+                        [ class "input input-number"
                         , name "curve-resolution"
                         , type_ "number"
                         , size 4

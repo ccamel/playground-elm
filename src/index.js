@@ -1,13 +1,14 @@
 "use strict";
 
+import "bulma/css/bulma.min.css";
+import "github-fork-ribbon-css/gh-fork-ribbon.css";
 import "./fonts/font.css";
 import "tether/dist/css/tether.css";
-import "bootstrap/dist/js/bootstrap.bundle.js";
-import "bootstrap/dist/css/bootstrap.css";
 import "elm-canvas/elm-canvas.js";
 import "font-awesome/css/font-awesome.css";
 import "animate.css/animate.css";
 import "./playground.css";
+import "./about.css";
 import "./calc.css";
 import "./lissajous.css";
 import "./digital-clock.css";
