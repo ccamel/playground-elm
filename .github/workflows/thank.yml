@@ -1,0 +1,50 @@
+name: Give thanks
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches: [main]
+
+jobs:
+  give-thanks:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Find changed dependencies
+        id: changed-dependencies
+        uses: tj-actions/changed-files@v39.1.2
+        with:
+          files: |
+            elm.json
+
+      - name: Give thanks!
+        if: steps.changed-dependencies.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          #!/bin/bash
+
+          elm_json='elm.json'
+
+          if [ ! -f "$elm_json" ]; then
+              echo "❌ File not found: $elm_json\n" >&2
+              exit 1
+          fi
+
+          jq -r '.dependencies.direct + .dependencies.indirect + .["test-dependencies"].direct + .["test-dependencies"].indirect | keys[]' "$elm_json" | while read -r repo; do
+              gh api -X PUT "user/starred/$repo" --silent
+
+              if [ $? -eq 0 ]; then
+                  echo "⭐️ Starred repository: $repo"
+              else
+                  echo "❌ Failed to star repository $repo ($?).)" >&2
+              fi
+          done
+
+          echo "🎉 All repositories have been processed."
+        env:
+          GITHUB_TOKEN: ${{ secrets.STAR_TOKEN }}
