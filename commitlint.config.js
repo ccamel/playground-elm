@@ -89,6 +89,6 @@ module.exports = {
         ":zap:",
       ],
     ],
-    "header-max-length": [2, "always", 75],
+    "header-max-length": [2, "always", 85],
   },
 };
