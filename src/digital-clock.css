@@ -55,8 +55,4 @@ a.selected {
 .color-tag {
   width: 1rem;
   height: 1rem;
-  margin-right: 5px;
-  display: inline-block;
-  top: 4px;
-  position: relative;
 }
