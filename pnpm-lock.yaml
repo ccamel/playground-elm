@@ -65,8 +65,8 @@ devDependencies:
     specifier: ^2.10.2
     version: 2.10.2
   posthtml-expressions:
-    specifier: ^1.11.2
-    version: 1.11.2
+    specifier: ^1.11.3
+    version: 1.11.3
   prettier:
     specifier: ^3.1.0
     version: 3.1.0
@@ -4976,8 +4976,8 @@ packages:
       source-map-js: 1.0.2
     dev: true
 
-  /posthtml-expressions@1.11.2:
-    resolution: {integrity: sha512-kexAB4Jd2bgT+J2LN5NL1LtJA0aOHDVO+Hyz4DucsI6TkB02AgTKmIZNicZk/88NmVPVYZe2SV7N7ZAOR0p7vQ==}
+  /posthtml-expressions@1.11.3:
+    resolution: {integrity: sha512-S75Sp3UUoOQJV2vtubJOuv6u/R9hqJE62rgihOTxKCTog68A5OIRNBoIWLKMVD8VJ8l0vQaIEKzWZ4Vm3ht5hw==}
     engines: {node: '>=10'}
     dependencies:
       fclone: 1.0.11
