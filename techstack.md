@@ -1,7 +1,8 @@
 <!--
---- Readme.md Snippet without images Start ---
+&lt;--- Readme.md Snippet without images Start ---&gt;
 ## Tech Stack
 ccamel/playground-elm is built on the following main stack:
+
 - [jQuery](http://jquery.com/) – Javascript UI Libraries
 - [Bootstrap](http://getbootstrap.com/) – Front-End Frameworks
 - [JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript) – Languages
@@ -13,11 +14,13 @@ ccamel/playground-elm is built on the following main stack:
 - [GitHub Actions](https://github.com/features/actions) – Continuous Integration
 
 Full tech stack [here](/techstack.md)
---- Readme.md Snippet without images End ---
 
---- Readme.md Snippet with images Start ---
+&lt;--- Readme.md Snippet without images End ---&gt;
+
+&lt;--- Readme.md Snippet with images Start ---&gt;
 ## Tech Stack
 ccamel/playground-elm is built on the following main stack:
+
 - <img width='25' height='25' src='https://img.stackshare.io/service/1021/lxEKmMnB_400x400.jpg' alt='jQuery'/> [jQuery](http://jquery.com/) – Javascript UI Libraries
 - <img width='25' height='25' src='https://img.stackshare.io/service/1101/C9QJ7V3X.png' alt='Bootstrap'/> [Bootstrap](http://getbootstrap.com/) – Front-End Frameworks
 - <img width='25' height='25' src='https://img.stackshare.io/service/1209/javascript.jpeg' alt='JavaScript'/> [JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript) – Languages
@@ -29,14 +32,15 @@ ccamel/playground-elm is built on the following main stack:
 - <img width='25' height='25' src='https://img.stackshare.io/service/11563/actions.png' alt='GitHub Actions'/> [GitHub Actions](https://github.com/features/actions) – Continuous Integration
 
 Full tech stack [here](/techstack.md)
---- Readme.md Snippet with images End ---
+
+&lt;--- Readme.md Snippet with images End ---&gt;
 -->
 <div align="center">
 
 # Tech Stack File
 ![](https://img.stackshare.io/repo.svg "repo") [ccamel/playground-elm](https://github.com/ccamel/playground-elm)![](https://img.stackshare.io/public_badge.svg "public")
 <br/><br/>
-|22<br/>Tools used|11/13/23 <br/>Report generated|
+|23<br/>Tools used|12/14/23 <br/>Report generated|
 |------|------|
 </div>
 
@@ -137,7 +141,7 @@ Full tech stack [here](/techstack.md)
   <br>
   <sub><a href="https://prettier.io/">Prettier</a></sub>
   <br>
-  <sub>v3.1.0</sub>
+  <sub>v3.1.1</sub>
 </td>
 
 <td align='center'>
@@ -151,9 +155,17 @@ Full tech stack [here](/techstack.md)
 </tr>
 </table>
 
-## Other (1)
+## Other (2)
 <table><tr>
   <td align='center'>
+  <img width='36' height='36' src='https://img.stackshare.io/service/2270/no-img-open-source.png' alt='HTML'>
+  <br>
+  <sub><a href="http://">HTML</a></sub>
+  <br>
+  <sub></sub>
+</td>
+
+<td align='center'>
   <img width='36' height='36' src='https://img.stackshare.io/service/4631/default_c2062d40130562bdc836c13dbca02d318205a962.png' alt='Shell'>
   <br>
   <sub><a href="https://en.wikipedia.org/wiki/Shell_script">Shell</a></sub>
@@ -174,7 +186,7 @@ Full tech stack [here](/techstack.md)
 |[file-loader](https://www.npmjs.com/file-loader)|v6.2.0|08/20/23|dependabot[bot] |MIT|N/A|
 |[font-awesome](https://www.npmjs.com/font-awesome)|v4.7.0|07/25/17|Chris Camel |OFL-1.1,MIT|N/A|
 |[popper.js](https://www.npmjs.com/popper.js)|v1.16.1|08/11/23|dependabot[bot] |MIT|N/A|
-|[release-it](https://www.npmjs.com/release-it)|v17.0.0|11/13/23|dependabot[bot] |MIT|N/A|
+|[release-it](https://www.npmjs.com/release-it)|v17.0.1|12/11/23|dependabot[bot] |MIT|N/A|
 |[resolve-url-loader](https://www.npmjs.com/resolve-url-loader)|v5.0.0|08/20/23|dependabot[bot] |MIT|N/A|
 |[rimraf](https://www.npmjs.com/rimraf)|v5.0.5|09/27/23|dependabot[bot] |ISC|N/A|
 |[style-loader](https://www.npmjs.com/style-loader)|v3.3.3|08/20/23|dependabot[bot] |MIT|N/A|
@@ -184,4 +196,4 @@ Full tech stack [here](/techstack.md)
 <br/>
 <div align='center'>
 
-Generated via [Stack File](https://github.com/apps/stack-file)
+Generated via [Stack File](https://github.com/marketplace/stack-file)
