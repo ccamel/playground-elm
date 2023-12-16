@@ -2,7 +2,7 @@ module Page.Calc exposing (Model, Msg(..), Op(..), State(..), Token(..), info, i
 
 import Basics.Extra exposing (flip)
 import Browser.Events
-import Html exposing (Html, div, h2, input, text)
+import Html exposing (Html, div, h2, h3, input, text)
 import Html.Attributes exposing (attribute, class, disabled, type_, value)
 import Html.Events exposing (onClick)
 import Json.Decode as Json
@@ -460,14 +460,18 @@ subscriptions _ =
 view : Model -> Html Msg
 view model =
     div [ class "container" ]
-        [ div [ class "columns" ]
-            [ div [ class "column has-text-centered" ]
-                [ h2
-                    [ class "subtitle is-5 has-text-white"
-                    ]
-                    [ text "A very simple and basic calculator." ]
-                ]
-            ]
+        [ div [ class "section is-small has-text-centered" ]
+            [ h2
+                            [ class "title is-size-2-desktop has-text-link-dark"
+                            ]
+                            [ text info.name
+                            ]
+                        , h3
+                            [ class "subtitle has-text-white"
+                            ]
+                            [ text "A very simple and basic calculator"
+                            ]
+                        ]
         , div
             [ class "columns is-centered" ]
             [ div

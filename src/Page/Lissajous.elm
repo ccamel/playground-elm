@@ -6,7 +6,7 @@ import Color exposing (rgb255, toCssString)
 import ColorPicker
 import GraphicSVG exposing (LineType, Shape, Stencil, circle, filled, fixedwidth, group, line, move, openPolygon, outlined, rect, rotate, solid)
 import GraphicSVG.Widget as Widget
-import Html exposing (Html, a, button, div, h2, i, input, p, span, text)
+import Html exposing (Html, a, button, div, h2, h3, i, input, p, span, text)
 import Html.Attributes exposing (attribute, class, classList, href, id, name, size, step, style, type_, value)
 import Html.Events exposing (onInput)
 import List exposing (concat, concatMap, filterMap, indexedMap, map, range)
@@ -311,28 +311,27 @@ constants =
 view : Model -> Html Msg
 view model =
     div [ class "container" ]
-        [ div [ class "columns" ]
-            [ div [ class "column has-text-centered" ]
-                [ h2
-                    [ class "subtitle is-5 has-text-white"
-                    ]
-                    [ Markdown.toHtml [ class "info" ] """
-##### Animated [Lissajous figures](https://en.wikipedia.org/wiki/Lissajous_curve) using [Scalable Vector Graphics](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) (SVG).
-                    """ ]
+        [ div [ class "section is-small has-text-centered" ]
+            [ h2
+                [ class "title is-size-2-desktop has-text-link-dark"
                 ]
+                [ text info.name
+                ]
+            , Markdown.toHtml [ class "info subtitle has-text-white" ] """### Animated [Lissajous figures](https://en.wikipedia.org/wiki/Lissajous_curve) using [Scalable Vector Graphics](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) (SVG).
+                                                                """
             ]
         , div
-            [ class "columns is-centered has-background-light" ]
+            [ class "columns is-centered" ]
             [ div
                 [ class "column is-three-quarters" ]
-                [ lissajou model
+                [ lissajouComponent model
                 ]
             ]
         ]
 
 
-lissajou : Model -> Html Msg
-lissajou model =
+lissajouComponent : Model -> Html Msg
+lissajouComponent model =
     div
         [ class "columns is-align-items-center"
         , onClickNotPropagate (ShowForegroundColorPicker False)
@@ -388,7 +387,7 @@ lissajou model =
                 ]
             ]
         , div [ class "content" ]
-            [ div [ class "description column" ]
+            [ div [ class "description column has-text-white" ]
                 [ p []
                     [ text "You can "
                     , if not model.started then
@@ -407,7 +406,7 @@ lissajou model =
                         , text (fromInt constants.width)
                         , text " sin("
                         , input
-                            [ class "input input-number"
+                            [ class "input input-number is-small has-background-white"
                             , name "a-parameter"
                             , type_ "number"
                             , size 1
@@ -417,7 +416,7 @@ lissajou model =
                             []
                         , text "t + "
                         , input
-                            [ class "input input-number"
+                            [ class "input input-number is-small has-background-white"
                             , name "phase"
                             , type_ "number"
                             , size 1
@@ -432,7 +431,7 @@ lissajou model =
                         , text (fromInt constants.width)
                         , text " sin("
                         , input
-                            [ class "input input-number"
+                            [ class "input input-number is-small has-background-white"
                             , name "b-parameter"
                             , type_ "number"
                             , size 1
@@ -462,41 +461,37 @@ lissajou model =
                         [ a [ class clazz, href "", onClickNotPropagate (Batch [ SetAParemeter (fromInt pa), SetBParameter (fromInt pb) ]) ]
                             [ text (interpolate "({0},{1})" ([ pa, pb ] |> map fromInt))
                             ]
+                        , text " "
                         ]
                   in
                   p [] <|
-                    (text "You can also try some examples of Lissajouss figures with δ = π/2:"
+                    (text "You can also try some examples of Lissajouss figures with δ = π/2: "
                         :: concatMap link deltas
                     )
-                , p [ class "is-flex is-align-items-center" ]
-                    [ text "The color for the plot is"
-                    , span
-                        [ classList [ ( "dropdown", True ), ( "is-active", model.foregroundColorPickerVisible ) ]
-                        , style "display" "inline-block"
-                        , onClickNotPropagate (ShowForegroundColorPicker (not model.foregroundColorPickerVisible))
-                        ]
-                        [ span
-                            [ class "dropdown-trigger"
+                , p [ ]
+                    [ text "The color for the plot is "
+                    , span [
+                        classList [ ( "is-active", model.foregroundColorPickerVisible ) ]
+                        , class "dropdown is-inline-block"
+                    ]
+                        [ a
+                            [ class "action dropdown-trigger"
+                            , href "#"
+                            , onClickNotPropagate (ShowForegroundColorPicker (not model.foregroundColorPickerVisible))
                             ]
-                            [ button
-                                [ class "button"
-                                , attribute "aria-haspopup" "true"
-                                , attribute "aria-controls" "dropdown-menu"
+                            [ span
+                                [ class "color-tag is-inline-block mx-2"
+                                , style "background-color" (toCssString model.curveStyle.color)
                                 ]
-                                [ span
-                                    [ class "color-tag"
-                                    , style "background-color" (toCssString model.curveStyle.color)
+                                []
+                            , span
+                                [ class "icon is-small"
+                                ]
+                                [ i
+                                    [ classList [ ( "fa", True ), ( "fa-angle-down", not model.foregroundColorPickerVisible ), ( "fa-angle-up", model.foregroundColorPickerVisible ) ]
+                                    , attribute "aria-hidden" "true"
                                     ]
                                     []
-                                , span
-                                    [ class "icon is-small"
-                                    ]
-                                    [ i
-                                        [ class "fa fa-angle-down"
-                                        , attribute "aria-hidden" "true"
-                                        ]
-                                        []
-                                    ]
                                 ]
                             ]
                         , div
@@ -511,12 +506,13 @@ lissajou model =
                                 ]
                             ]
                         ]
+                    , text " "
                     , text " (click to change)."
                     ]
                 , p []
                     [ text "The afterglow effect is "
                     , input
-                        [ class "input input-number"
+                        [ class "input input-number is-small has-background-white"
                         , name "afterglow"
                         , type_ "number"
                         , size 3
@@ -529,7 +525,7 @@ lissajou model =
                 , p []
                     [ text "The animation consists in shifting the phase by "
                     , input
-                        [ class "input input-number"
+                        [ class "input input-number is-small has-background-white"
                         , name "phase-velocity"
                         , type_ "number"
                         , size 3
@@ -540,7 +536,7 @@ lissajou model =
                     , a [ href "https://en.wikipedia.org/wiki/Revolutions_per_minute" ] [ text "rev/min" ]
                     , text ". The resolution is "
                     , input
-                        [ class "input input-number"
+                        [ class "input input-number is-small is-normal has-background-white"
                         , name "curve-resolution"
                         , type_ "number"
                         , size 4

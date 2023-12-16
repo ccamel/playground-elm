@@ -36,7 +36,7 @@ view model =
                 [ content model
                 ]
             , div
-                [ class "hero-footer"
+                [ class "hero-foot"
                 ]
                 [ footerPart model
                 ]
@@ -82,7 +82,7 @@ navbarPart _ =
 footerPart : Model -> Html Msg
 footerPart _ =
     footer
-        [ class "footer" ]
+        [ class "footer py-5" ]
         [ div
             [ class "container"
             ]

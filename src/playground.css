@@ -50,8 +50,12 @@ body {
 }
 
 .cover-image img {
-  transition: transform 1s, filter 2s ease-in-out;
-  -webkit-transition: transform 1s, filter 2s ease-in-out;
+  transition:
+    transform 1s,
+    filter 2s ease-in-out;
+  -webkit-transition:
+    transform 1s,
+    filter 2s ease-in-out;
   transform: scale(1.1);
   -webkit-transform: scale(1.1);
 }
@@ -81,7 +85,7 @@ body {
 
 .footer p,
 strong {
-  color: ghostwhite
+  color: ghostwhite;
 }
 
 .footer a:hover {
@@ -90,5 +94,5 @@ strong {
 
 .soc .fa {
   color: ghostwhite;
-  margin: 10px
+  margin: 10px;
 }
