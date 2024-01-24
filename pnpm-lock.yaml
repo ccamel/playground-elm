@@ -38,8 +38,8 @@ dependencies:
 
 devDependencies:
   '@parcel/transformer-elm':
-    specifier: 2.10.2
-    version: 2.10.2(@parcel/core@2.10.2)(elm@0.19.1)
+    specifier: 2.11.0
+    version: 2.11.0(@parcel/core@2.11.0)(elm@0.19.1)
   elm:
     specifier: ^0.19.1
     version: 0.19.1
@@ -1110,14 +1110,14 @@ packages:
       - '@parcel/core'
     dev: true
 
-  /@parcel/transformer-elm@2.10.2(@parcel/core@2.10.2)(elm@0.19.1):
-    resolution: {integrity: sha512-uzhaAd0XaLrhoWbGgCnaAImfCdoaSrNyIo+MO/lT3uY04xxAgfA7ekKFyeQgU1oe2Q7XKLmTARRHgMaqGDSOBA==}
-    engines: {node: '>= 12.0.0', parcel: ^2.10.2}
+  /@parcel/transformer-elm@2.11.0(@parcel/core@2.11.0)(elm@0.19.1):
+    resolution: {integrity: sha512-fFUjvg0SlqDfEhOgyV9QcUGMc84MszKEr1/3TZWf1Dm6DCH5fa7rrBr4JCN1WJkfxj/+yx3uGsfkZzcvd1WCGQ==}
+    engines: {node: '>= 12.0.0', parcel: ^2.11.0}
     peerDependencies:
       elm: ^0.19.1-5
     dependencies:
-      '@parcel/diagnostic': 2.10.2
-      '@parcel/plugin': 2.10.2(@parcel/core@2.10.2)
+      '@parcel/diagnostic': 2.11.0
+      '@parcel/plugin': 2.11.0(@parcel/core@2.11.0)
       command-exists: 1.2.9
       cross-spawn: 7.0.3
       elm: 0.19.1
