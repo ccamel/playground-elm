@@ -2,7 +2,7 @@ repo_name: ccamel/playground-elm
 report_id: 80c9b39e0b3264f986dda5986b8903db
 version: 0.1
 repo_type: Public
-timestamp: '2024-01-05T08:46:36+00:00'
+timestamp: '2024-02-29T18:42:34+00:00'
 requested_by: dependabot[bot]
 provider: github
 branch: main
@@ -133,7 +133,7 @@ tools:
   last_updated_by: dependabot[bot]
   last_updated_on: 2023-11-02 06:40:39.000000000 Z
 - name: Prettier
-  description: 'Prettier is an opinionated code formatter. '
+  description: Prettier is an opinionated code formatter.
   website_url: https://prettier.io/
   version: 3.1.1
   license: MIT
