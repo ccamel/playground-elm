@@ -38,8 +38,8 @@ dependencies:
 
 devDependencies:
   '@parcel/transformer-elm':
-    specifier: 2.11.0
-    version: 2.11.0(@parcel/core@2.11.0)(elm@0.19.1)
+    specifier: 2.12.0
+    version: 2.12.0(@parcel/core@2.12.0)(elm@0.19.1)
   elm:
     specifier: ^0.19.1
     version: 0.19.1
@@ -1168,14 +1168,14 @@ packages:
       - '@swc/helpers'
     dev: true
 
-  /@parcel/transformer-elm@2.11.0(@parcel/core@2.11.0)(elm@0.19.1):
-    resolution: {integrity: sha512-fFUjvg0SlqDfEhOgyV9QcUGMc84MszKEr1/3TZWf1Dm6DCH5fa7rrBr4JCN1WJkfxj/+yx3uGsfkZzcvd1WCGQ==}
-    engines: {node: '>= 12.0.0', parcel: ^2.11.0}
+  /@parcel/transformer-elm@2.12.0(@parcel/core@2.12.0)(elm@0.19.1):
+    resolution: {integrity: sha512-qqVTsP860FghYTLBrJkrFKD7qbNUq/EqUCofFKLWgWSrMXfzTmsNwMCOStTF4NyclLWcC9KBVjNU+fGS5I519Q==}
+    engines: {node: '>= 12.0.0', parcel: ^2.12.0}
     peerDependencies:
       elm: ^0.19.1-5
     dependencies:
-      '@parcel/diagnostic': 2.11.0
-      '@parcel/plugin': 2.11.0(@parcel/core@2.11.0)
+      '@parcel/diagnostic': 2.12.0
+      '@parcel/plugin': 2.12.0(@parcel/core@2.12.0)
       command-exists: 1.2.9
       cross-spawn: 7.0.3
       elm: 0.19.1
@@ -1185,6 +1185,7 @@ packages:
       terser: 5.19.2
     transitivePeerDependencies:
       - '@parcel/core'
+      - '@swc/helpers'
     dev: true
 
   /@parcel/transformer-html@2.12.0(@parcel/core@2.12.0):
