@@ -18,7 +18,7 @@ jobs:
 
       - name: Find changed dependencies
         id: changed-dependencies
-        uses: tj-actions/changed-files@v44.0.1
+        uses: tj-actions/changed-files@v44.3.0
         with:
           files: |
             elm.json
