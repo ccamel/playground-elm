@@ -62,7 +62,7 @@
     "elm-format": "^0.8.7",
     "elm-hot": "^1.1.6",
     "elm-json": "^0.2.13",
-    "elm-review": "^2.11.1",
+    "elm-review": "^2.11.2",
     "node-elm-compiler": "^5.0.6",
     "parcel": "^2.11.0",
     "posthtml-expressions": "^1.11.3",
