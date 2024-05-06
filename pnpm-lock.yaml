@@ -56,8 +56,8 @@ devDependencies:
     specifier: ^0.2.13
     version: 0.2.13
   elm-review:
-    specifier: ^2.11.1
-    version: 2.11.1
+    specifier: ^2.11.2
+    version: 2.11.2
   node-elm-compiler:
     specifier: ^5.0.6
     version: 5.0.6
@@ -2632,8 +2632,8 @@ packages:
       binwrap: 0.2.3
     dev: true
 
-  /elm-review@2.11.1:
-    resolution: {integrity: sha512-mJJN7QmqlV7HcaLigsiap6X3/7o9idA3bg3h7228iokUmBccpBquakPaShM8BZ/wDYtWg53sevSaFpGniEujFA==}
+  /elm-review@2.11.2:
+    resolution: {integrity: sha512-FhZ/m59C9CPWgn34/yvGUoCsSmXDnFFR2GfmuFbcnRwcn2aybsOUav5ET2lXs+4V1zZMRTG6In8cCUooAhwHVg==}
     engines: {node: '>=10.0.0'}
     hasBin: true
     dependencies:
