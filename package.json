@@ -67,7 +67,7 @@
     "parcel": "^2.11.0",
     "posthtml-expressions": "^1.11.3",
     "prettier": "^3.2.5",
-    "release-it": "^17.2.1",
+    "release-it": "^17.3.0",
     "resolve-url-loader": "^5.0.0",
     "rimraf": "^5.0.7"
   }
