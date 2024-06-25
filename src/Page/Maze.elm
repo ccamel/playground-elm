@@ -8,11 +8,13 @@ import Html exposing (Html, a, button, div, hr, i, input, span, text)
 import Html.Attributes exposing (attribute, class, classList, href, id, name, style, title, type_, value)
 import Html.Events exposing (onInput)
 import Json.Encode exposing (Value, encode, int, list, object, string)
+import Lib.Html exposing (onClickNotPropagate)
+import Lib.Page
+import Lib.String exposing (strToIntWithMinMax)
 import List exposing (map, range, repeat)
 import List.Extra exposing (last, splitAt)
 import Markdown
 import Maybe exposing (withDefault)
-import Page.Common exposing (onClickNotPropagate, strToIntWithMinMax)
 import Random exposing (Seed, initialSeed, step)
 import Random.List exposing (shuffle)
 import String exposing (fromInt, padLeft)
@@ -25,7 +27,7 @@ import Time exposing (Posix, every, posixToMillis)
 -- PAGE INFO
 
 
-info : Page.Common.PageInfo Msg
+info : Lib.Page.PageInfo Msg
 info =
     { name = "maze"
     , hash = "maze"

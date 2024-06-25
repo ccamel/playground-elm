@@ -8,7 +8,9 @@ import Html.Events exposing (onInput)
 import List exposing (map, member)
 import Markdown
 import Maybe exposing (withDefault)
-import Page.Common exposing (classList, strToIntWithMinMax)
+import Lib.Page
+import Lib.Html exposing (classList)
+import Lib.String exposing ( strToIntWithMinMax)
 import String exposing (fromInt, padLeft)
 import String.Interpolate exposing (interpolate)
 import Svg exposing (Svg, circle, g, path, svg)
@@ -20,7 +22,7 @@ import Time exposing (Posix, Zone, every, toHour, toMinute, toSecond, utc)
 -- PAGE INFO
 
 
-info : Page.Common.PageInfo Msg
+info : Lib.Page.PageInfo Msg
 info =
     { name = "digital-clock"
     , hash = "digital-clock"

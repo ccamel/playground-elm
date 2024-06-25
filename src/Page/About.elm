@@ -3,14 +3,14 @@ module Page.About exposing (Model, Msg, info, init, subscriptions, update, view)
 import Html exposing (Html, a, div, h2, h3, h4, i, p, span, text)
 import Html.Attributes exposing (attribute, class, href)
 import Markdown
-import Page.Common
+import Lib.Page
 
 
 
 -- PAGE INFO
 
 
-info : Page.Common.PageInfo Msg
+info : Lib.Page.PageInfo Msg
 info =
     { name = "about"
     , hash = "about"

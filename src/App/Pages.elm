@@ -6,7 +6,7 @@ import Html exposing (Html)
 import Page.About
 import Page.Asteroids
 import Page.Calc
-import Page.Common exposing (PageInfo)
+import Lib.Page exposing (PageInfo)
 import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
@@ -24,7 +24,7 @@ to the view and the subscriptions.
 This way, it becomes easy to add new pages without changing the code everywhere.
 -}
 type alias PageSpec =
-    { info : Page.Common.PageInfo Msg
+    { info : PageInfo Msg
     , view : Model -> Html Msg
     , subscriptions : Model -> Sub Msg
     }

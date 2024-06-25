@@ -9,7 +9,7 @@ import Json.Decode as Json
 import List exposing (drop, foldl, take)
 import Markdown
 import Maybe exposing (withDefault)
-import Page.Common
+import Lib.Page
 import Result exposing (toMaybe)
 import String exposing (fromFloat, fromInt)
 
@@ -18,7 +18,7 @@ import String exposing (fromFloat, fromInt)
 -- PAGE INFO
 
 
-info : Page.Common.PageInfo Msg
+info : Lib.Page.PageInfo Msg
 info =
     { name = "calc"
     , hash = "calc"

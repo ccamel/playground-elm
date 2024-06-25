@@ -8,8 +8,7 @@ import Browser exposing (UrlRequest(..))
 import Html exposing (Html, a, br, div, figure, footer, h1, h2, i, img, nav, p, section, span, strong, text)
 import Html.Attributes exposing (alt, attribute, class, href, src, style, title)
 import Html.Events exposing (onClick)
-import List.Extra exposing (groupsOf)
-import Page.Common exposing (onClickNotPropagate)
+import Lib.Html exposing (onClickNotPropagate)
 import List.Extra exposing (greedyGroupsOf)
 
 

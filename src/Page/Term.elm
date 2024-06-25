@@ -2,8 +2,8 @@ port module Page.Term exposing (Model, Msg(..), info, init, subscriptions, updat
 
 import Html exposing (Html, div, hr, p, text)
 import Html.Attributes exposing (class)
+import Lib.Page
 import Markdown
-import Page.Common
 import Term exposing (Term)
 import Term.ANSI exposing (defaultFormat)
 
@@ -12,7 +12,7 @@ import Term.ANSI exposing (defaultFormat)
 -- PAGE INFO
 
 
-info : Page.Common.PageInfo Msg
+info : Lib.Page.PageInfo Msg
 info =
     { name = "term"
     , hash = "term"

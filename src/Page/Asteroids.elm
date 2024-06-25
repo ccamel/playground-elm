@@ -22,7 +22,7 @@ import List exposing (concat, foldl, length, singleton)
 import List.Extra exposing (uniquePairs)
 import Markdown
 import Maybe
-import Page.Common exposing (Frames, addFrame, createFrames, fpsText)
+import Lib.Frame exposing (Frames, addFrame, createFrames, fpsText)
 import Particle exposing (directionDegrees, leftPixels, topPixels)
 import Pixels exposing (Pixels, PixelsPerSecond, PixelsPerSecondSquared, inPixels, pixels, pixelsPerSecond, pixelsPerSecondSquared)
 import Point2d exposing (Point2d, translateBy, xCoordinate, yCoordinate)
@@ -38,13 +38,13 @@ import Task
 import Time
 import Tuple exposing (first)
 import Vector2d exposing (Vector2d, scaleTo)
-
+import Lib.Page
 
 
 -- PAGE INFO
 
 
-info : Page.Common.PageInfo Msg
+info : Lib.Page.PageInfo Msg
 info =
     { name = "asteroids"
     , hash = "asteroids"

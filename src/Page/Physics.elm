@@ -14,10 +14,13 @@ import Html exposing (Html, a, br, button, div, hr, input, label, p, text)
 import Html.Attributes exposing (attribute, checked, class, classList, for, href, id, style, type_)
 import Html.Events exposing (onClick)
 import Html.Events.Extra.Mouse as Mouse exposing (Button(..))
+import Lib.Frame exposing (Frames, addFrame, createFrames, fpsText)
+import Lib.Gfx exposing (withAlpha)
+import Lib.Html exposing (onClickNotPropagate)
+import Lib.Page
 import List exposing (head, length)
 import Markdown
 import Maybe exposing (withDefault)
-import Page.Common exposing (Frames, addFrame, createFrames, fpsText, onClickNotPropagate, withAlpha)
 import String exposing (fromInt)
 import Vector2 exposing (Index(..), Vector2, map2)
 
@@ -26,7 +29,7 @@ import Vector2 exposing (Index(..), Vector2, map2)
 -- PAGE INFO
 
 
-info : Page.Common.PageInfo Msg
+info : Lib.Page.PageInfo Msg
 info =
     { name = "physics-engine"
     , hash = "physics-engine"

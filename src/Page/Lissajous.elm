@@ -6,13 +6,17 @@ import Color exposing (rgb255, toCssString)
 import ColorPicker
 import GraphicSVG exposing (LineType, Shape, Stencil, circle, filled, fixedwidth, group, line, move, openPolygon, outlined, rect, rotate, solid)
 import GraphicSVG.Widget as Widget
-import Html exposing (Html, a, button, div, h2, h3, i, input, p, span, text)
+import Html exposing (Html, a, div, h2, i, input, p, span, text)
 import Html.Attributes exposing (attribute, class, classList, href, id, name, size, step, style, type_, value)
 import Html.Events exposing (onInput)
+import Lib.Array exposing (BoundedArray, appendToBoundedArray, createBoundedArray, resizeBoundedArray)
+import Lib.Frame exposing (Frames, addFrame, createFrames, fpsText, resetFrames)
+import Lib.Html exposing (onClickNotPropagate)
+import Lib.Page
+import Lib.String exposing (strToFloatWithMinMax, strToIntWithMinMax)
 import List exposing (concat, concatMap, filterMap, indexedMap, map, range)
 import Markdown
 import Maybe
-import Page.Common exposing (BoundedArray, Frames, addFrame, appendToBoundedArray, createBoundedArray, createFrames, fpsText, onClickNotPropagate, resetFrames, resizeBoundedArray, strToFloatWithMinMax, strToIntWithMinMax)
 import Round
 import String exposing (fromFloat, fromInt)
 import String.Interpolate exposing (interpolate)
@@ -23,7 +27,7 @@ import Task
 -- PAGE INFO
 
 
-info : Page.Common.PageInfo Msg
+info : Lib.Page.PageInfo Msg
 info =
     { name = "lissajous"
     , hash = "lissajous"
@@ -468,12 +472,12 @@ lissajouComponent model =
                     (text "You can also try some examples of Lissajouss figures with δ = π/2: "
                         :: concatMap link deltas
                     )
-                , p [ ]
+                , p []
                     [ text "The color for the plot is "
-                    , span [
-                        classList [ ( "is-active", model.foregroundColorPickerVisible ) ]
+                    , span
+                        [ classList [ ( "is-active", model.foregroundColorPickerVisible ) ]
                         , class "dropdown is-inline-block"
-                    ]
+                        ]
                         [ a
                             [ class "action dropdown-trigger"
                             , href "#"
