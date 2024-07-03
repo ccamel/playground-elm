@@ -2,14 +2,14 @@ module App.View exposing (view)
 
 import App.Messages exposing (Msg(..), Page)
 import App.Models exposing (Model)
-import App.Pages exposing (pageDescription, pageName, pageSrc, pageView, pages)
+import App.Pages exposing (pageDescription, pageGithubLink, pageHash, pageName, pageView, pages)
 import App.Routing exposing (Route(..))
 import Browser exposing (UrlRequest(..))
-import Html exposing (Html, a, br, div, figure, footer, h1, h2, i, img, nav, p, section, span, strong, text)
-import Html.Attributes exposing (alt, attribute, class, href, src, style, title)
+import Html exposing (Html, a, article, br, div, footer, h1, h2, h3, hr, i, img, p, section, span, strong, text)
+import Html.Attributes exposing (attribute, class, href, src, title)
 import Html.Events exposing (onClick)
-import Lib.Html exposing (onClickNotPropagate)
-import List.Extra exposing (greedyGroupsOf)
+import Lib.Html exposing (classList, onClickNotPropagate)
+import List exposing (intersperse)
 
 
 
@@ -20,60 +20,37 @@ view : Model -> Browser.Document Msg
 view model =
     { title = "playground-elm"
     , body =
-        [ section
-            [ class "hero is-fullheight"
+        [ forkmeRibbon
+        , section
+            [ classList [ ( "hero", True ), ( "is-medium", isHomePage model ), ( "is-small", not (isHomePage model) ) ]
             ]
             [ div
-                [ class "hero-head"
-                ]
-                [ navbarPart model
-                , forkmeRibbon
-                ]
-            , div
                 [ class "hero-body"
                 ]
-                [ content model
-                ]
-            , div
-                [ class "hero-foot"
-                ]
-                [ footerPart model
+                [ div
+                    [ class "container has-text-centered"
+                    ]
+                    [ h1 [ class "title pb-5" ]
+                        [ i [ class "quote-left fa fa-quote-left text-muted pr-4" ] []
+                        , span [ class "break" ] []
+                        , text "playground"
+                        , span [ class "elm-pipe pl-1" ] [ text "|" ]
+                        , span [ class "elm-gt pr-1" ] [ text ">" ]
+                        , a [ href "http://elm-lang.org/" ] [ text "elm" ]
+                        , span [ class "break" ] []
+                        , i [ class "quote-right fa fa-quote-right text-muted pl-4" ] []
+                        ]
+                    , h2
+                        [ class "subtitle"
+                        ]
+                        [ text "A playground for fancy web experiences with Elm" ]
+                    ]
                 ]
             ]
+        , contentPart model
+        , footerPart model
         ]
     }
-
-
-{-| the html elements for the navigation bar
--}
-navbarPart : Model -> Html Msg
-navbarPart _ =
-    nav
-        [ class "navbar"
-        ]
-        [ div
-            [ class "container"
-            ]
-            [ div
-                [ class "navbar-brand"
-                ]
-                [ a
-                    [ class "navbar-item"
-                    , href "#"
-                    , onClick GoToHome
-                    ]
-                    [ span []
-                        [ text "playground"
-                        , text " "
-                        , span [ class "elm-pipe" ] [ text "|" ]
-                        , span [ class "elm-gt" ] [ text ">" ]
-                        , text " "
-                        , a [ href "http://elm-lang.org/" ] [ text "elm" ]
-                        ]
-                    ]
-                ]
-            ]
-        ]
 
 
 {-| the html elements for the footer
@@ -81,21 +58,20 @@ navbarPart _ =
 footerPart : Model -> Html Msg
 footerPart _ =
     footer
-        [ class "footer py-5" ]
+        [ class "footer has-background-black-bis" ]
         [ div
             [ class "container"
             ]
             [ div
                 [ class "content has-text-centered"
                 ]
-                [ div
-                    [ class "soc"
-                    ]
+                [ p
+                    []
                     [ a
                         [ href "https://github.com/ccamel"
                         ]
                         [ i
-                            [ class "fa fa-github fa-lg"
+                            [ class "fa fa-github-square fa-2x"
                             , attribute "aria-hidden" "true"
                             ]
                             []
@@ -104,7 +80,7 @@ footerPart _ =
                         [ href "https://linkedin.com/in/christophe-camel/"
                         ]
                         [ i
-                            [ class "fa fa-linkedin fa-lg"
+                            [ class "fa fa-linkedin-square fa-2x mx-4"
                             , attribute "aria-hidden" "true"
                             ]
                             []
@@ -113,7 +89,7 @@ footerPart _ =
                         [ href "https://twitter.com/7h3_360l355_d3v"
                         ]
                         [ i
-                            [ class "fa fa-twitter fa-lg"
+                            [ class "fa fa-twitter-square fa-2x"
                             , attribute "aria-hidden" "true"
                             ]
                             []
@@ -124,7 +100,7 @@ footerPart _ =
                         [ text "playground-elm" ]
                     , text " | "
                     , a [ href "https://github.com/ccamel" ]
-                        [ text "© 2017-2023 Christophe Camel" ]
+                        [ text "© 2017-2024 Christophe Camel" ]
                     , text " | "
                     , a [ href "https://github.com/ccamel/playground-elm/blob/main/LICENSE" ]
                         [ text "MIT License" ]
@@ -149,184 +125,136 @@ forkmeRibbon =
 
 {-| the html elements for the content part of the view
 -}
-content : Model -> Html Msg
-content model =
+contentPart : Model -> Html Msg
+contentPart model =
     case model.route of
         Home ->
             homePage model
 
         Page page ->
-            pageView page model
+            pagePart page model
 
         NotFoundRoute ->
-            notFoundView
+            notFound
 
 
-{-| the home page displaying all available pages as "cards" entries
--}
 homePage : Model -> Html Msg
 homePage model =
+    section [ class "home-container" ]
+        [ div [ class "container" ]
+            [ div [ class "columns" ]
+                [ div [ class "column is-10 is-offset-1" ]
+                    (pages
+                        |> List.indexedMap (showcase model)
+                        |> intersperse (hr [] [])
+                    )
+                ]
+            ]
+        ]
+
+
+pagePart : Page -> Model -> Html Msg
+pagePart page model =
     div []
-        [ div
-            [ class "section"
-            ]
-            [ div
-                [ class "container" ]
-                [ div
-                    [ class "columns"
-                    ]
-                    [ div
-                        [ class "column has-text-centered"
-                        ]
-                        [ h1
-                            [ class "title is-1"
-                            , style "color" "ghostwhite"
-                            ]
-                            [ i [ class "fa fa-quote-left text-muted", style "padding-right" ".5em" ] []
-                            , text "playground"
-                            , text " "
-                            , span [ class "elm-pipe" ] [ text "|" ]
-                            , span [ class "elm-gt" ] [ text ">" ]
-                            , text " "
-                            , a [ href "http://elm-lang.org/" ] [ text "elm" ]
-                            , i [ class "fa fa-quote-right text-muted", style "padding-left" ".5em" ] []
-                            ]
-                        , br []
-                            []
-                        , h2
-                            [ class "subtitle is-3"
-                            , style "color" "ghostwhite"
-                            ]
-                            [ text "My playground I use for playing with fancy and exciting technologies." ]
-                        , br []
-                            []
-                        ]
-                    ]
+        [ section [ class "home-container" ]
+            [ div [ class "container has-text-centered" ]
+                [ h2 [ class "title showcase-title" ] [ page |> pageName |> text ]
                 ]
-            ]
-        , div [ class "section" ]
-            [ div [ class "container" ]
-                (List.map
-                    (div [ class "columns" ] << List.map (pageCard model))
-                    (greedyGroupsOf 3 pages)
-                )
+            , pageView page model
             ]
         ]
 
 
-pageCard : Model -> Page -> Html Msg
-pageCard _ page =
-    div
-        [ class "home column is-4"
-        ]
-        [ div
-            [ class "card large is-cursor-pointer"
-            , onClick (GoToPage page)
-            ]
-            [ div
-                [ class "card-image cover-image is-overflow-hidden"
-                ]
-                [ figure
-                    [ class "image"
-                    ]
-                    [ img
-                        [ src "https://images.unsplash.com/photo-1687851898832-650714860119?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80"
-                        , alt "Image"
-                        ]
+showcase : Model -> Int -> Page -> Html Msg
+showcase _ num page =
+    div [ class "columns featured-showcase is-multiline" ]
+        [ div [ class "column is-12 showcase" ]
+            [ article [ class "columns featured" ]
+                ([ div [ class "column is-7 showcase-img" ]
+                    [ img [ src "https://placehold.co/480x300" ]
                         []
                     ]
-                ]
-            , div
-                [ class "card-content"
-                ]
-                [ div
-                    [ class "media"
-                    ]
-                    [ div
-                        [ class "media-content"
-                        ]
-                        [ p
-                            [ class "title is-4 no-padding"
+                 , div [ class "column is-5 featured-content va" ]
+                    [ div []
+                        [ h3
+                            [ class "heading showcase-category"
+                            ]
+                            [ text "Category Name" ]
+                        , h1
+                            [ class "title showcase-title"
                             ]
                             [ page |> pageName |> text ]
-                        , p []
-                            [ span
-                                [ class "title is-6"
-                                ]
-                                [ linkToGitHub page ]
+                        , pageDescription page
+                        , br []
+                            []
+                        , a
+                            [ href ("#" ++ pageHash page)
+                            , class "button is-primary mr-4"
+                            , onClick (GoToPage page)
+                            ]
+                            [ text "View demo" ]
+                        , a
+                            [ href (pageGithubLink page)
+                            , class "button is-secondary"
+                            , onClickNotPropagate (LinkClicked (External (pageGithubLink page)))
+                            ]
+                            [ i [ class "fa fa-github mr-2" ] []
+                            , text "Source"
                             ]
                         ]
                     ]
-                , div
-                    [ class "content"
-                    ]
-                    [ pageDescription page
-                    ]
-                ]
-            , footer
-                [ class "card-footer has-background-white-bis"
-                ]
-                [ a
-                    [ href "#"
-                    , class "card-footer-item p-5 has-text-grey is-uppercase is-text-wide-1"
-                    ]
-                    [ text "Play" ]
-                ]
+                 ]
+                    |> (if modBy 2 num == 0 then
+                            List.reverse
+
+                        else
+                            identity
+                       )
+                )
             ]
         ]
 
 
 {-| the special not found view displayed when routing has found no matching
 -}
-notFoundView : Html Msg
-notFoundView =
-    div
-        [ class "container has-text-centered"
-        ]
-        [ h1
-            [ class "is-size-1 has-text-weight-bold has-text-primary"
+notFound : Html Msg
+notFound =
+    section [ class "home-container" ]
+        [ div
+            [ class "container has-text-centered"
             ]
-            [ text "404" ]
-        , p
-            [ class "is-size-5 has-text-weight-medium"
-            ]
-            [ span
-                [ class "has-text-danger"
+            [ h1
+                [ class "is-size-1 has-text-weight-bold"
                 ]
-                [ text "Opps!" ]
-            , text " Page not found."
+                [ text "404" ]
+            , p
+                [ class "is-size-5 has-text-weight-medium"
+                ]
+                [ span
+                    [ class "has-text-danger"
+                    ]
+                    [ text "Opps!" ]
+                , text " Page not found."
+                ]
+            , p
+                [ class "is-size-6 mb-2"
+                ]
+                [ text "The page you’re looking for doesn’t exist." ]
+            , a
+                [ href "#"
+                , class "button"
+                , onClickNotPropagate GoToHome
+                ]
+                [ text "Go Home" ]
             ]
-        , p
-            [ class "is-size-6 mb-2"
-            ]
-            [ text "The page you’re looking for doesn’t exist." ]
-        , a
-            [ href "#"
-            , class "button is-primary"
-            , onClick GoToHome
-            ]
-            [ text "Go Home" ]
         ]
 
 
-{-| returns the html anchor ('a') that denotes a link to the code source of the given page.
--}
-linkToGitHub : Page -> Html Msg
-linkToGitHub page =
-    let
-        url =
-            "https://github.com/ccamel/playground-elm/blob/main/src/"
+isHomePage : Model -> Bool
+isHomePage model =
+    case model.route of
+        Home ->
+            True
 
-        link =
-            url ++ pageSrc page
-    in
-    a
-        [ href "#"
-        , onClickNotPropagate (LinkClicked (External link))
-        ]
-        [ i
-            [ class "fa fa-github "
-            , attribute "aria-hidden" "true"
-            ]
-            [ text " source" ]
-        ]
+        _ ->
+            False

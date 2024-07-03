@@ -1,0 +1,121 @@
+.va {
+  display: flex;
+  align-items: center;
+}
+
+html {
+  font-family: "Nunito Sans", sans-serif;
+  color: white;
+}
+
+a {
+  color: #3b7adf;
+}
+
+a:hover {
+  text-decoration: underline;
+  color: #3b7adf;
+}
+
+hr {
+  background: #24272c;
+}
+
+.hero {
+  background: #060606;
+}
+
+.hero.is-info {
+  background: #212732;
+  color: var(--bulma-body-color);
+}
+
+.title,
+.subtitle {
+  color: white;
+}
+
+.home-container {
+  min-height: 100vh;
+  background: #191b1f;
+  padding-top: 4rem;
+  padding-bottom: 10rem;
+}
+
+.home-container article {
+  padding: 1.5rem;
+}
+
+.home-container .showcase img {
+  border-radius: 6px;
+}
+
+.home-container .showcase .showcase-category {
+  color: #3b7adf;
+}
+
+.showcase-title {
+  font-size: 2.2rem;
+  font-family: "Orbitron", sans-serif;
+}
+
+.home-container .showcase .showcase-excerpt {
+  line-height: 1.5rem;
+  letter-spacing: 0.03rem;
+  font-size: 1.2rem;
+  font-family: "IBM Plex Serif", serif;
+  color: #92a3ab;
+}
+
+.home-container .showcase .featured .featured-image img {
+  height: 380px;
+}
+::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #efefef;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d5d5d5;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #c4c4c4;
+}
+
+.elm-pipe {
+  color: #60b5cc;
+  font-weight: bold;
+  font-family: "Share Tech Mono", monospace;
+}
+
+.elm-gt {
+  color: #f0ad00;
+  font-weight: bold;
+  font-family: "Share Tech Mono", monospace;
+}
+
+.break {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .break {
+    display: block;
+  }
+  .quote-left {
+    text-align: left;
+    width: 100%;
+  }
+  .quote-right {
+    text-align: right;
+    width: 100%;
+  }
+}
+
+.no-wrap {
+  white-space: nowrap;
+}

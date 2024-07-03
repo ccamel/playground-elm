@@ -1,12 +1,12 @@
-module App.Pages exposing (PageSpec, pageDescription, pageHash, pageName, pageSrc, pageSubscriptions, pageView, pages)
+module App.Pages exposing (PageSpec, pageDescription, pageGithubLink, pageHash, pageName, pageSubscriptions, pageView, pages)
 
 import App.Messages exposing (Msg(..), Page(..))
 import App.Models exposing (Model)
 import Html exposing (Html)
+import Lib.Page exposing (PageInfo)
 import Page.About
 import Page.Asteroids
 import Page.Calc
-import Lib.Page exposing (PageInfo)
 import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
@@ -124,6 +124,11 @@ pageSrc page =
     pageSpec page
         |> .info
         |> .srcRel
+
+
+pageGithubLink : Page -> String
+pageGithubLink page =
+    "https://github.com/ccamel/playground-elm/blob/main/src/" ++ pageSrc page
 
 
 pageHash : Page -> String
