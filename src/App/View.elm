@@ -158,7 +158,7 @@ pagePart page model =
     div []
         [ section [ class "home-container" ]
             [ div [ class "container has-text-centered" ]
-                [ h2 [ class "title showcase-title" ] [ page |> pageName |> text ]
+                [ h2 [ class "title showcase-title mb-5" ] [ page |> pageName |> text ]
                 ]
             , pageView page model
             ]

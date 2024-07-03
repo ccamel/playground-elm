@@ -1,9 +1,9 @@
 module Page.About exposing (Model, Msg, info, init, subscriptions, update, view)
 
-import Html exposing (Html, a, div, h2, h3, h4, i, p, span, text)
-import Html.Attributes exposing (attribute, class, href)
-import Markdown
+import Html exposing (Html, article, div, h1, img, p, text)
+import Html.Attributes exposing (alt, class, src)
 import Lib.Page
+import Markdown
 
 
 
@@ -65,112 +65,47 @@ subscriptions _ =
 
 view : Model -> Html Msg
 view _ =
+    let
+        content =
+            [ { title = "Simple"
+              , text = "Fairly simple and understandable. Every showcase is implemented in a single elm file."
+              }
+            , { title = "Exploratory"
+              , text = "Highlight some aspects of the elm language, like immutability, reactiveness, performance and interoperability with other JS libraries. Explore some architectural/design patterns around reactive static/serverless SPA."
+              }
+            , { title = "Playable"
+              , text = "As much as possible, provides a useful and functional content."
+              }
+            , { title = "Scalable"
+              , text = "The structure of the playground is designed to easily accommodate additional examples and showcases. Contributors can effortlessly expand the repository, ensuring it remains a relevant and up-to-date resource for learners and enthusiasts."
+              }
+            ]
+    in
     div
         [ class "container"
         ]
-        [ div [ class "section is-medium has-text-centered" ]
-            [ h2
-                [ class "title is-size-2-desktop has-text-white"
-                ]
-                [ span []
-                    [ text "playground"
-                    , text " "
-                    , span [ class "elm-pipe" ] [ text "|" ]
-                    , span [ class "elm-gt" ] [ text ">" ]
-                    , text " "
-                    , a [ href "http://elm-lang.org/" ] [ text "elm" ]
-                    ]
-                ]
-            , h3
-                [ class "subtitle has-text-white"
-                ]
-                [ text "Explore, study and assess the "
-                , a [ href "http://elm-lang.org/" ] [ text "elm language" ]
-                , text " a delightful language for reliable webapps."
-                ]
-            ]
-        , div
-            [ class "columns is-centered about"
-            ]
-            [ div
-                [ class "column is-9"
-                ]
-                [ div
-                    [ class "columns"
-                    ]
-                    [ div
-                        [ class "column is-6"
-                        ]
-                        [ h4
-                            [ class "title is-4 has-text-white"
-                            ]
-                            [ i
-                                [ attribute "aria-hidden" "true"
-                                , class "fa fa-child"
-                                ]
-                                []
-                            , text " Simple"
-                            ]
-                        , p [ class "has-text-light" ]
-                            [ text "Fairly simple and understandable. Every showcase is implemented in a single elm file." ]
-                        ]
-                    , div
-                        [ class "column is-6"
-                        ]
-                        [ h4
-                            [ class "title is-4 has-text-white"
-                            ]
-                            [ i
-                                [ attribute "aria-hidden" "true"
-                                , class "fa fa-search"
-                                ]
-                                []
-                            , text " Exploratory"
-                            ]
-                        , p [ class "has-text-light" ]
-                            [ text "Highlight some aspects of the elm language, like immutability, reactiveness, performance and interoperability with other JS libraries." ]
-                        , p [ class "has-text-light" ]
-                            [ text "Explore some architectural/design patterns around reactive static/serverless SPA." ]
-                        ]
-                    ]
-                , div
-                    [ class "columns"
-                    ]
-                    [ div
-                        [ class "column is-6"
-                        ]
-                        [ h4
-                            [ class "title is-4 has-text-white"
-                            ]
-                            [ i
-                                [ attribute "aria-hidden" "true"
-                                , class "fa fa-futbol-o"
-                                ]
-                                []
-                            , text " Playable"
-                            ]
-                        , p [ class "has-text-light" ]
-                            [ text "As much as possible, provides a useful and functional content." ]
-                        ]
-                    , div
-                        [ class "column is-6"
-                        ]
-                        [ h4
-                            [ class "title is-4 has-text-white"
-                            ]
-                            [ i
-                                [ attribute "aria-hidden" "true"
-                                , class "fa fa-arrows-alt-v"
-                                ]
-                                []
-                            , text " Scalable"
-                            ]
-                        , p [ class "has-text-light" ]
-                            [ text "The structure of the playground is designed to easily accommodate additional examples and showcases." ]
-                        , p [ class "has-text-light" ]
-                            [ text " Contributors can effortlessly expand the repository, ensuring it remains a relevant and up-to-date resource for learners and enthusiasts." ]
-                        ]
-                    ]
+        [ div [ class "columns" ]
+            [ div [ class "column is-10 is-offset-1" ]
+                [ div [ class "columns is-multiline" ]
+                    (content
+                        |> List.map
+                            (\c ->
+                                div [ class "column showcase is-6" ]
+                                    [ article [ class "columns is-multiline" ]
+                                        [ div [ class "column is-12 showcase-img" ]
+                                            [ img [ src "https://placehold.co/480x300", alt "placeholder" ] []
+                                            ]
+                                        , div [ class "column is-12 featured-content" ]
+                                            [ h1 [ class "title showcase-title" ]
+                                                [ text "» "
+                                                , text c.title
+                                                ]
+                                            , p [ class "showcase-excerpt" ] [ text c.text ]
+                                            ]
+                                        ]
+                                    ]
+                            )
+                    )
                 ]
             ]
         ]
