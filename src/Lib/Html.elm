@@ -11,13 +11,12 @@ import Json.Decode as Decode
 import Svg
 
 
-classList : List ( String, Bool ) -> Svg.Attribute msg
-classList list =
-    list
-        |> List.filter Tuple.second
-        |> List.map Tuple.first
-        |> String.join " "
-        |> class
+classList : List (String, Bool) -> Svg.Attribute msg
+classList =
+    List.filter Tuple.second
+        >> List.map Tuple.first
+        >> String.join " "
+        >> class
 
 
 onClickNotPropagate : a -> Html.Attribute a
