@@ -33,7 +33,7 @@ view model =
                     [ h1 [ class "title pb-5" ]
                         [ i [ class "quote-left fa fa-quote-left text-muted pr-4" ] []
                         , span [ class "break" ] []
-                        , text "playground"
+                        , a [ href "#", onClickNotPropagate GoToHome ] [ text "playground" ]
                         , span [ class "elm-pipe pl-1" ] [ text "|" ]
                         , span [ class "elm-gt pr-1" ] [ text ">" ]
                         , a [ href "http://elm-lang.org/" ] [ text "elm" ]
@@ -156,12 +156,18 @@ homePage model =
 pagePart : Page -> Model -> Html Msg
 pagePart page model =
     div []
-        [ section [ class "home-container" ]
-            [ div [ class "container has-text-centered" ]
-                [ h2 [ class "title showcase-title mb-5" ] [ page |> pageName |> text ]
+        [ section [ class "py-6 has-background-black-bis" ]
+            [ div [ class "columns" ]
+                [ div [ class "column is-8 is-offset-2" ]
+                    [ div [ class "content is-medium" ]
+                        [ h2 [ class "title showcase-title mb-5" ] [ page |> pageName |> text ]
+                        , page |> pageDescription
+                        ]
+                    ]
                 ]
-            , pageView page model
             ]
+           ,section [class "py-6 has-background-black-bis"]
+           [pageView page model  ]
         ]
 
 

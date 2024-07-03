@@ -35,22 +35,15 @@ hr {
   color: white;
 }
 
-.home-container {
-  min-height: 100vh;
-  background: #191b1f;
-  padding-top: 4rem;
-  padding-bottom: 10rem;
-}
-
-.home-container article {
+article {
   padding: 1.5rem;
 }
 
-.home-container .showcase img {
+.showcase img {
   border-radius: 6px;
 }
 
-.home-container .showcase .showcase-category {
+.showcase .showcase-category {
   color: #3b7adf;
 }
 
@@ -59,7 +52,7 @@ hr {
   font-family: "Orbitron", sans-serif;
 }
 
-.home-container .showcase .showcase-excerpt {
+.showcase .showcase-excerpt {
   line-height: 1.5rem;
   letter-spacing: 0.03rem;
   font-size: 1.2rem;
@@ -67,7 +60,7 @@ hr {
   color: #92a3ab;
 }
 
-.home-container .showcase .featured .featured-image img {
+.showcase .featured .featured-image img {
   height: 380px;
 }
 ::-webkit-scrollbar {
