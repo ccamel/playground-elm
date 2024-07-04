@@ -116,3 +116,7 @@ article {
 .no-wrap {
   white-space: nowrap;
 }
+
+.color-picker-container .hue-picker {
+  height: 12px !important;
+}

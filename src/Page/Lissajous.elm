@@ -2,12 +2,12 @@ module Page.Lissajous exposing (LineStyle, Model, Msg(..), info, init, subscript
 
 import Array
 import Browser.Events exposing (onAnimationFrameDelta)
-import Color exposing (rgb255, toCssString)
+import Color exposing (rgb255)
 import ColorPicker
 import GraphicSVG exposing (LineType, Shape, Stencil, circle, filled, fixedwidth, group, line, move, openPolygon, outlined, rect, rotate, solid)
 import GraphicSVG.Widget as Widget
-import Html exposing (Html, a, div, h2, i, input, p, span, text)
-import Html.Attributes exposing (attribute, class, classList, href, id, name, size, step, style, type_, value)
+import Html exposing (Html, a, div, input, p, text)
+import Html.Attributes exposing (class, href, id, name, size, step, style, type_, value)
 import Html.Events exposing (onInput)
 import Lib.Array exposing (BoundedArray, appendToBoundedArray, createBoundedArray, resizeBoundedArray)
 import Lib.Frame exposing (Frames, addFrame, createFrames, fpsText, resetFrames)
@@ -314,84 +314,9 @@ constants =
 
 view : Model -> Html Msg
 view model =
-    div [ class "container" ]
-        [ div [ class "section is-small has-text-centered" ]
-            [ h2
-                [ class "title is-size-2-desktop has-text-link-dark"
-                ]
-                [ text info.name
-                ]
-            , Markdown.toHtml [ class "info subtitle has-text-white" ] """### Animated [Lissajous figures](https://en.wikipedia.org/wiki/Lissajous_curve) using [Scalable Vector Graphics](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) (SVG).
-                                                                """
-            ]
-        , div
-            [ class "columns is-centered" ]
-            [ div
-                [ class "column is-three-quarters" ]
-                [ lissajouComponent model
-                ]
-            ]
-        ]
-
-
-lissajouComponent : Model -> Html Msg
-lissajouComponent model =
-    div
-        [ class "columns is-align-items-center"
-        , onClickNotPropagate (ShowForegroundColorPicker False)
-        ]
-        [ div [ class "display column is-half" ]
-            [ -- canvas for the lissajous
-              div [ id "lissajous-scope" ]
-                [ Widget.view model.widgetState
-                    (concat
-                        [ [ backgroundForm (rgb255 0 0 0)
-                          , xAxisForm
-                          , yAxisForm
-                          ]
-                        , model.lissajousStencils.values
-                            |> Array.toList
-                            |> filterMap identity
-                            |> indexedMap
-                                (\i s ->
-                                    let
-                                        length =
-                                            model.lissajousStencils.length
-
-                                        f =
-                                            if length == 0 then
-                                                0.0
-
-                                            else if length == i + 1 then
-                                                1.0
-
-                                            else
-                                                toFloat (i + 1) / toFloat length / 1.5
-
-                                        color =
-                                            model.curveStyle.color |> fadeColor f |> toSvgColor
-
-                                        lineType =
-                                            if length == i + 1 then
-                                                model.curveStyle.lineType
-
-                                            else
-                                                solid 3
-                                    in
-                                    outlined lineType color s
-                                )
-                        , [ fpsText model.ticks
-                                |> GraphicSVG.text
-                                |> fixedwidth
-                                |> filled (Color.rgb255 217 217 217 |> toSvgColor)
-                                |> move ( (constants.height // 2) - (constants.margin + 20) |> toFloat, (constants.width - 20) // 2 |> toFloat )
-                          ]
-                        ]
-                    )
-                ]
-            ]
-        , div [ class "content" ]
-            [ div [ class "description column has-text-white" ]
+    div [ class "columns" ]
+        [ div [ class "column is-8 is-offset-2" ]
+            [ div [ class "content is-medium" ]
                 [ p []
                     [ text "You can "
                     , if not model.started then
@@ -404,47 +329,45 @@ lissajouComponent model =
                     , text " the values to default."
                     ]
                 , p [] [ text "The equations are:" ]
-                , div [ class "equation" ]
-                    [ p []
-                        [ text " •  x = "
-                        , text (fromInt constants.width)
-                        , text " sin("
-                        , input
-                            [ class "input input-number is-small has-background-white"
-                            , name "a-parameter"
-                            , type_ "number"
-                            , size 1
-                            , value (fromInt model.a)
-                            , onInput SetAParemeter
-                            ]
-                            []
-                        , text "t + "
-                        , input
-                            [ class "input input-number is-small has-background-white"
-                            , name "phase"
-                            , type_ "number"
-                            , size 1
-                            , value (Round.round 2 model.p)
-                            , onInput SetPhase
-                            ]
-                            []
-                        , text "°)"
+                , p []
+                    [ text " •  x = "
+                    , text (fromInt constants.width)
+                    , text " sin("
+                    , input
+                        [ class "input input-number is-small is-inline"
+                        , name "a-parameter"
+                        , type_ "number"
+                        , size 1
+                        , value (fromInt model.a)
+                        , onInput SetAParemeter
                         ]
-                    , p []
-                        [ text " •  y = "
-                        , text (fromInt constants.width)
-                        , text " sin("
-                        , input
-                            [ class "input input-number is-small has-background-white"
-                            , name "b-parameter"
-                            , type_ "number"
-                            , size 1
-                            , value (fromInt model.b)
-                            , onInput SetBParameter
-                            ]
-                            []
-                        , text "t)"
+                        []
+                    , text "t + "
+                    , input
+                        [ class "input input-number is-small is-inline"
+                        , name "phase"
+                        , type_ "number"
+                        , size 1
+                        , value (Round.round 2 model.p)
+                        , onInput SetPhase
                         ]
+                        []
+                    , text "°)"
+                    ]
+                , p []
+                    [ text " •  y = "
+                    , text (fromInt constants.width)
+                    , text " sin("
+                    , input
+                        [ class "input input-number is-small is-inline"
+                        , name "b-parameter"
+                        , type_ "number"
+                        , size 1
+                        , value (fromInt model.b)
+                        , onInput SetBParameter
+                        ]
+                        []
+                    , text "t)"
                     ]
                 , let
                     deltas =
@@ -474,35 +397,23 @@ lissajouComponent model =
                     )
                 , p []
                     [ text "The color for the plot is "
-                    , span
+                    , div
                         [ classList [ ( "is-active", model.foregroundColorPickerVisible ) ]
-                        , class "dropdown is-inline-block"
+                        , class "dropdown"
                         ]
-                        [ a
-                            [ class "action dropdown-trigger"
-                            , href "#"
-                            , onClickNotPropagate (ShowForegroundColorPicker (not model.foregroundColorPickerVisible))
-                            ]
-                            [ span
-                                [ class "color-tag is-inline-block mx-2"
-                                , style "background-color" (toCssString model.curveStyle.color)
-                                ]
-                                []
-                            , span
-                                [ class "icon is-small"
-                                ]
-                                [ i
-                                    [ classList [ ( "fa", True ), ( "fa-angle-down", not model.foregroundColorPickerVisible ), ( "fa-angle-up", model.foregroundColorPickerVisible ) ]
-                                    , attribute "aria-hidden" "true"
+                        [ div [ class "dropdown-trigger" ]
+                            [ button [ class "button py-1", ariaHasPopup "true", ariaControls "dropdown-menu", onClickNotPropagate (ShowForegroundColorPicker (not model.foregroundColorPickerVisible)) ]
+                                [ span [ class "p-2 m-0", style "background-color" (toCssString model.curveStyle.color) ] []
+                                , span [ class "icon is-small" ]
+                                    [ i
+                                        [ classList [ ( "fa", True ), ( "fa-angle-down", not model.foregroundColorPickerVisible ), ( "fa-angle-up", model.foregroundColorPickerVisible ) ]
+                                        , attribute "aria-hidden" "true"
+                                        ]
+                                        []
                                     ]
-                                    []
                                 ]
                             ]
-                        , div
-                            [ class "dropdown-menu"
-                            , attribute "aria-labelledby" "dropdownForegroundColorPickerButton"
-                            , attribute "role" "menu"
-                            ]
+                        , div [ class "dropdown-menu", id "dropdown-menu", role "menu" ]
                             [ div [ class "dropdown-content" ]
                                 [ div [ class "dropdown-item" ]
                                     [ ColorPicker.view model.curveStyle.color model.foregroundColorPicker |> Html.map ForegroundColorPickerMsg
@@ -516,7 +427,7 @@ lissajouComponent model =
                 , p []
                     [ text "The afterglow effect is "
                     , input
-                        [ class "input input-number is-small has-background-white"
+                        [ class "input input-number is-small is-inline"
                         , name "afterglow"
                         , type_ "number"
                         , size 3
@@ -529,7 +440,7 @@ lissajouComponent model =
                 , p []
                     [ text "The animation consists in shifting the phase by "
                     , input
-                        [ class "input input-number is-small has-background-white"
+                        [ class "input input-number is-small is-inline"
                         , name "phase-velocity"
                         , type_ "number"
                         , size 3
@@ -540,7 +451,7 @@ lissajouComponent model =
                     , a [ href "https://en.wikipedia.org/wiki/Revolutions_per_minute" ] [ text "rev/min" ]
                     , text ". The resolution is "
                     , input
-                        [ class "input input-number is-small is-normal has-background-white"
+                        [ class "input input-number is-small is-normal is-inline"
                         , name "curve-resolution"
                         , type_ "number"
                         , size 4
@@ -551,8 +462,60 @@ lissajouComponent model =
                         []
                     , text ", which represents the total number of points used to draw the curve (more is better)."
                     ]
+                , lissajouComponent model
                 ]
             ]
+        ]
+
+
+lissajouComponent : Model -> Html Msg
+lissajouComponent model =
+    div [ id "lissajous-scope", style "max-width" (fromInt constants.width ++ "px"), class "mx-auto" ]
+        [ Widget.view model.widgetState
+            (concat
+                [ [ backgroundForm (rgb255 0 0 0)
+                  , xAxisForm
+                  , yAxisForm
+                  ]
+                , model.lissajousStencils.values
+                    |> Array.toList
+                    |> filterMap identity
+                    |> indexedMap
+                        (\i s ->
+                            let
+                                length =
+                                    model.lissajousStencils.length
+
+                                f =
+                                    if length == 0 then
+                                        0.0
+
+                                    else if length == i + 1 then
+                                        1.0
+
+                                    else
+                                        toFloat (i + 1) / toFloat length / 1.5
+
+                                color =
+                                    model.curveStyle.color |> fadeColor f |> toSvgColor
+
+                                lineType =
+                                    if length == i + 1 then
+                                        model.curveStyle.lineType
+
+                                    else
+                                        solid 3
+                            in
+                            outlined lineType color s
+                        )
+                , [ fpsText model.ticks
+                        |> GraphicSVG.text
+                        |> fixedwidth
+                        |> filled (Color.rgb255 217 217 217 |> toSvgColor)
+                        |> move ( (constants.height // 2) - (constants.margin + 20) |> toFloat, (constants.width - 20) // 2 |> toFloat )
+                  ]
+                ]
+            )
         ]
 
 
