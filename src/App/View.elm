@@ -140,7 +140,7 @@ contentPart model =
 
 homePage : Model -> Html Msg
 homePage model =
-    section [ class "home-container" ]
+    section [ class "section" ]
         [ div [ class "container" ]
             [ div [ class "columns" ]
                 [ div [ class "column is-10 is-offset-1" ]
@@ -156,7 +156,7 @@ homePage model =
 pagePart : Page -> Model -> Html Msg
 pagePart page model =
     div []
-        [ section [ class "py-6 has-background-black-bis" ]
+        [ section [ class "section has-background-black-bis" ]
             [ div [ class "columns" ]
                 [ div [ class "column is-8 is-offset-2" ]
                     [ div [ class "content is-medium" ]
@@ -166,8 +166,8 @@ pagePart page model =
                     ]
                 ]
             ]
-           ,section [class "py-6 has-background-black-bis"]
-           [pageView page model  ]
+        , section [ class "section pt-1 has-background-black-bis" ]
+            [ pageView page model ]
         ]
 
 

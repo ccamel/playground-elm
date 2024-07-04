@@ -95,6 +95,10 @@ article {
   display: none;
 }
 
+.is-inline.input {
+  width: 5rem;
+}
+
 @media (max-width: 768px) {
   .break {
     display: block;
