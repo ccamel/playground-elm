@@ -10,6 +10,7 @@ import Html exposing (Html, a, div, input, p, text)
 import Html.Attributes exposing (class, href, id, name, size, step, style, type_, value)
 import Html.Events exposing (onInput)
 import Lib.Array exposing (BoundedArray, appendToBoundedArray, createBoundedArray, resizeBoundedArray)
+import Lib.ColorSelector as ColorSelector
 import Lib.Frame exposing (Frames, addFrame, createFrames, fpsText, resetFrames)
 import Lib.Html exposing (onClickNotPropagate)
 import Lib.Page
@@ -397,30 +398,12 @@ view model =
                     )
                 , p []
                     [ text "The color for the plot is "
-                    , div
-                        [ classList [ ( "is-active", model.foregroundColorPickerVisible ) ]
-                        , class "dropdown"
-                        ]
-                        [ div [ class "dropdown-trigger" ]
-                            [ button [ class "button py-1", ariaHasPopup "true", ariaControls "dropdown-menu", onClickNotPropagate (ShowForegroundColorPicker (not model.foregroundColorPickerVisible)) ]
-                                [ span [ class "p-2 m-0", style "background-color" (toCssString model.curveStyle.color) ] []
-                                , span [ class "icon is-small" ]
-                                    [ i
-                                        [ classList [ ( "fa", True ), ( "fa-angle-down", not model.foregroundColorPickerVisible ), ( "fa-angle-up", model.foregroundColorPickerVisible ) ]
-                                        , attribute "aria-hidden" "true"
-                                        ]
-                                        []
-                                    ]
-                                ]
-                            ]
-                        , div [ class "dropdown-menu", id "dropdown-menu", role "menu" ]
-                            [ div [ class "dropdown-content" ]
-                                [ div [ class "dropdown-item" ]
-                                    [ ColorPicker.view model.curveStyle.color model.foregroundColorPicker |> Html.map ForegroundColorPickerMsg
-                                    ]
-                                ]
-                            ]
-                        ]
+                    , ColorSelector.view
+                        model.foregroundColorPickerVisible
+                        model.curveStyle.color
+                        ShowForegroundColorPicker
+                        model.foregroundColorPicker
+                        ForegroundColorPickerMsg
                     , text " "
                     , text " (click to change)."
                     ]
