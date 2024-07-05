@@ -14,15 +14,16 @@ import Ecs
 import Ecs.Components16
 import Ecs.EntityComponents exposing (foldFromLeft2)
 import Ecs.Singletons6
-import Html exposing (Html, div, hr, p)
+import Html exposing (Html, div, p, text)
 import Html.Attributes as Attributes
 import Keyboard exposing (Key(..), KeyChange(..))
 import Keyboard.Arrows as Keyboard exposing (Direction(..))
-import List exposing (concat, foldl, length, singleton)
+import Lib.Frame exposing (Frames, addFrame, createFrames, fpsText)
+import Lib.Page
+import List exposing (foldl, length, singleton)
 import List.Extra exposing (uniquePairs)
 import Markdown
 import Maybe
-import Lib.Frame exposing (Frames, addFrame, createFrames, fpsText)
 import Particle exposing (directionDegrees, leftPixels, topPixels)
 import Pixels exposing (Pixels, PixelsPerSecond, PixelsPerSecondSquared, inPixels, pixels, pixelsPerSecond, pixelsPerSecondSquared)
 import Point2d exposing (Point2d, translateBy, xCoordinate, yCoordinate)
@@ -33,12 +34,12 @@ import Random.Float exposing (normal)
 import Rectangle2d
 import String exposing (fromFloat, fromInt, join, padLeft)
 import Svg exposing (Svg, g, line, polygon, rect, svg)
-import Svg.Attributes exposing (class, cx, cy, d, fill, fillRule, height, id, opacity, points, rx, ry, stroke, strokeLinecap, strokeWidth, transform, version, viewBox, width, x, x1, x2, y, y1, y2)
+import Svg.Attributes exposing (class, cx, cy, d, fill, fillRule, height, id, opacity, points, rx, ry, stroke, strokeLinecap, strokeWidth, style, transform, version, viewBox, width, x, x1, x2, y, y1, y2)
 import Task
 import Time
 import Tuple exposing (first)
 import Vector2d exposing (Vector2d, scaleTo)
-import Lib.Page
+
 
 
 -- PAGE INFO
@@ -1179,29 +1180,33 @@ subscriptions _ =
 
 view : Model -> Html Msg
 view { world, frames } =
-    div [ Attributes.class "container" ]
-        (concat
-            [ [ hr [] []
-              , p [ Attributes.class "text-muted" ]
-                    [ Markdown.toHtml [ Attributes.class "info" ] """
-  Simple Asteroids clone in [Elm](https://elm-lang.org/).
-
-  **Controls:** `↑` move, `←` rotate left, `→` rotate right, `space` shoot, `s` show bounding boxes.
-  """
-                    ]
-              ]
-            , case world of
-                Just w ->
-                    [ div [ Attributes.class "asteroids" ]
+    let
+        asteroid =
+            div [ Attributes.class "asteroids" ]
+                (case world of
+                    Just w ->
                         [ renderInfos frames w
-                        , renderWorld w
+                        , div [ class "columns is-centered mt-1" ]
+                            [ div [ class "column is-four-fifths" ]
+                                [ renderWorld w
+                                ]
+                            ]
                         ]
-                    ]
 
-                _ ->
-                    []
+                    _ ->
+                        []
+                )
+    in
+    div [ class "columns" ]
+        [ div [ class "column is-8 is-offset-2" ]
+            [ div [ class "content is-medium" ]
+                [ p []
+                    [ text "Controls: ↑ move, ← rotate left, → rotate right, space shoot, s show bounding boxes."
+                    ]
+                , asteroid
+                ]
             ]
-        )
+        ]
 
 
 renderInfos : Frames -> World -> Html.Html Msg
@@ -1217,7 +1222,7 @@ renderInfos frames world =
             Ecs.getSingleton specs.collisions world |> length
     in
     div
-        [ Attributes.style "font-family" "monospace"
+        [ Attributes.class "is-family-monospace is-size-6"
         ]
         [ Html.text ("entities: " ++ (entityCount |> String.fromInt |> padLeft 3 '0'))
         , Html.text " - "
@@ -1240,9 +1245,10 @@ renderWorld world =
     in
     svg
         [ version "1.1"
-        , class "world"
-        , width "640"
-        , height "480"
+        , class "world mx-auto"
+        , width "100%"
+        , style "max-width: 1024px"
+        , height "100%"
         , viewBox (join " " [ "0", "0", fromFloat wPixels, fromFloat hPixels ])
         ]
         [ g
