@@ -397,6 +397,7 @@ view model =
                     (text "You can also try some examples of Lissajouss figures with δ = π/2: "
                         :: concatMap link deltas
                     )
+                , lissajouComponent model
                 , p []
                     [ text "The color for the plot is "
                     , ColorSelector.view
@@ -446,7 +447,6 @@ view model =
                         []
                     , text ", which represents the total number of points used to draw the curve (more is better)."
                     ]
-                , lissajouComponent model
                 ]
             ]
         ]
