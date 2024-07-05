@@ -8,6 +8,7 @@ import Html exposing (Html)
 type alias PageInfo a =
     { name : String
     , hash : String
+    , date : String
     , description : Html a
     , srcRel : String
     }

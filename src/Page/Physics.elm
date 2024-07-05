@@ -33,6 +33,7 @@ info : Lib.Page.PageInfo Msg
 info =
     { name = "physics-engine"
     , hash = "physics-engine"
+    , date = "2020-12-27"
     , description = Markdown.toHtml [ class "info" ] """
 Some physics simulation computed with simple [Verlet](https://en.wikipedia.org/wiki/Verlet_integration)
 integration and rendered using HTML5 canvas.

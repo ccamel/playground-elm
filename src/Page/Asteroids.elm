@@ -48,6 +48,7 @@ info : Lib.Page.PageInfo Msg
 info =
     { name = "asteroids"
     , hash = "asteroids"
+    , date = "2021-01-12"
     , description = Markdown.toHtml [ Attributes.class "info" ] """
 
 A simple Asteroids clone in [Elm](https://elm-lang.org/).

@@ -16,6 +16,7 @@ info : Lib.Page.PageInfo Msg
 info =
     { name = "term"
     , hash = "term"
+    , date = "2021-01-10"
     , description = Markdown.toHtml [ class "info" ] """
 
 A terminal which evaluates `JavaScript` code using elm ports.

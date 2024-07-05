@@ -14,6 +14,7 @@ info : Lib.Page.PageInfo Msg
 info =
     { name = "about"
     , hash = "about"
+    , date = "2020-10-11"
     , description = Markdown.toHtml [ class "info" ] """
 
 A very simple and minimal showcase that is used to lay the foundations of the navigation/routing (*and to test that the whole site works correctly*).

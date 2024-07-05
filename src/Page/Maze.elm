@@ -31,6 +31,7 @@ info : Lib.Page.PageInfo Msg
 info =
     { name = "maze"
     , hash = "maze"
+    , date = "2020-12-19"
     , description = Markdown.toHtml [ class "info" ] """
 
 A maze generator using a [recursive backtracking](https://en.wikipedia.org/wiki/Maze_generation_algorithm#Recursive_backtracker) algorithm.

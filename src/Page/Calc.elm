@@ -22,6 +22,7 @@ info : Lib.Page.PageInfo Msg
 info =
     { name = "calc"
     , hash = "calc"
+    , date = "2020-10-11"
     , description = Markdown.toHtml [ class "info" ] """
 
 A very simple and basic calculator.

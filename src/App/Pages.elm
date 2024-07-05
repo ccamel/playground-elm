@@ -1,4 +1,4 @@
-module App.Pages exposing (PageSpec, pageDescription, pageGithubLink, pageHash, pageName, pageSubscriptions, pageView, pages)
+module App.Pages exposing (PageSpec, pageDate, pageDescription, pageGithubLink, pageHash, pageName, pageSubscriptions, pageView, pages)
 
 import App.Messages exposing (Msg(..), Page(..))
 import App.Models exposing (Model)
@@ -68,6 +68,7 @@ toSpec info aPageView aPageSubscriptions pageMsg modelExtractor =
     { info =
         { name = info.name
         , hash = info.hash
+        , date = info.date
         , description = Html.map pageMsg info.description
         , srcRel = info.srcRel
         }
@@ -136,6 +137,13 @@ pageHash page =
     pageSpec page
         |> .info
         |> .hash
+
+
+pageDate : Page -> String
+pageDate page =
+    pageSpec page
+        |> .info
+        |> .date
 
 
 pageView : Page -> Model -> Html Msg

@@ -32,6 +32,7 @@ info : Lib.Page.PageInfo Msg
 info =
     { name = "lissajous"
     , hash = "lissajous"
+    , date = "2020-11-15"
     , description = Markdown.toHtml [ class "info" ] """
 Animated [Lissajous figures](https://en.wikipedia.org/wiki/Lissajous_curve).
 

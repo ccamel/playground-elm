@@ -10,6 +10,7 @@ import Html.Attributes exposing (attribute, class, href, src, title)
 import Html.Events exposing (onClick)
 import Lib.Html exposing (classList, onClickNotPropagate)
 import List exposing (intersperse)
+import App.Pages exposing (pageDate)
 
 
 
@@ -145,6 +146,8 @@ homePage model =
             [ div [ class "columns" ]
                 [ div [ class "column is-10 is-offset-1" ]
                     (pages
+                        |> List.sortBy pageDate
+                        |> List.reverse
                         |> List.indexedMap (showcase model)
                         |> intersperse (hr [] [])
                     )
@@ -185,7 +188,7 @@ showcase _ num page =
                         [ h3
                             [ class "heading showcase-category"
                             ]
-                            [ text "Category Name" ]
+                            [ page |> pageDate |> text ]
                         , h1
                             [ class "title showcase-title"
                             ]

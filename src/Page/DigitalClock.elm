@@ -26,6 +26,7 @@ info : Lib.Page.PageInfo Msg
 info =
     { name = "digital-clock"
     , hash = "digital-clock"
+    , date = "2020-12-19"
     , description = Markdown.toHtml [ class "info" ] """
 
 A demo rendering a digital clock in [SVG](https://fr.wikipedia.org/wiki/Scalable_Vector_Graphics).
