@@ -2,14 +2,14 @@ module Page.Calc exposing (Model, Msg(..), Op(..), State(..), Token(..), info, i
 
 import Basics.Extra exposing (flip)
 import Browser.Events
-import Html exposing (Html, div, h2, h3, input, text)
+import Html exposing (Html, div, input, span, text)
 import Html.Attributes exposing (attribute, class, disabled, type_, value)
 import Html.Events exposing (onClick)
 import Json.Decode as Json
+import Lib.Page
 import List exposing (drop, foldl, take)
 import Markdown
 import Maybe exposing (withDefault)
-import Lib.Page
 import Result exposing (toMaybe)
 import String exposing (fromFloat, fromInt)
 
@@ -459,46 +459,26 @@ subscriptions _ =
 
 view : Model -> Html Msg
 view model =
-    div [ class "container" ]
-        [ div [ class "section is-small has-text-centered" ]
-            [ h2
-                            [ class "title is-size-2-desktop has-text-link-dark"
-                            ]
-                            [ text info.name
-                            ]
-                        , h3
-                            [ class "subtitle has-text-white"
-                            ]
-                            [ text "A very simple and basic calculator"
-                            ]
-                        ]
-        , div
-            [ class "columns is-centered" ]
-            [ div
-                [ class "column is-one-third" ]
-                [ div
-                    [ class "card p-4 has-background-grey-lighter"
-                    ]
-                    [ calc model
-                    ]
-                ]
+    div [ class "columns is-centered" ]
+        [ div [ class "column is-one-third" ]
+            [ calc model
             ]
         ]
 
 
 calc : Model -> Html Msg
 calc model =
-    div [ class "calc" ]
+    div [ class "pl-5 pb-5 has-background-grey-dark br-10" ]
         [ -- display
-          div [ class "columns is-gapless display is-mobile" ]
-            [ div [ class "column is-11" ]
-                [ input [ class "input", attribute "readOnly" "", type_ "Text", value (display model) ]
+          div [ class "columns is-mobile" ]
+            [ div [ class "column is-11 control has-icons-right" ]
+                [ input [ class "input has-text-right is-family-monospace", attribute "readOnly" "", type_ "Text", value (display model) ]
                     []
-                ]
-            , div [ class "column is-1 has-flex-centered" ]
-                [ div [ class "tags-container" ]
-                    [ renderMemoryTag model
-                    , renderOperatorTag model
+                , span []
+                    [ span [ class "icon is-right is-size-7" ]
+                        [ renderMemoryTag model
+                        ]
+                    , span [ class "icon is-right is-size-7 mt-3" ] [ renderOperatorTag model ]
                     ]
                 ]
             ]
@@ -546,41 +526,37 @@ accept model token =
 
 renderMemoryTag : Model -> Html Msg
 renderMemoryTag model =
-    div [ class "fixed-tag" ]
-        [ text
-            (model.memory
-                |> Maybe.map (\_ -> "M")
-                |> withDefault " "
-            )
-        ]
+    text
+        (model.memory
+            |> Maybe.map (\_ -> "M")
+            |> withDefault " "
+        )
 
 
 renderOperatorTag : Model -> Html Msg
 renderOperatorTag model =
-    div [ class "fixed-tag" ]
-        [ model.operators
-            |> List.head
-            |> Maybe.map
-                (\token ->
-                    case token of
-                        Plus ->
-                            "+"
+    model.operators
+        |> List.head
+        |> Maybe.map
+            (\token ->
+                case token of
+                    Plus ->
+                        "+"
 
-                        Minus ->
-                            "-"
+                    Minus ->
+                        "-"
 
-                        Multiply ->
-                            "x"
+                    Multiply ->
+                        "x"
 
-                        Divide ->
-                            "/"
+                    Divide ->
+                        "/"
 
-                        Result ->
-                            "="
-                )
-            |> withDefault " "
-            |> text
-        ]
+                    Result ->
+                        "="
+            )
+        |> withDefault " "
+        |> text
 
 
 display : Model -> String
@@ -598,10 +574,10 @@ display model =
 button : Token -> Model -> Html Msg
 button token model =
     let
-        render txt style =
-            div [ class <| "column px-1 py-0  " ++ style ]
+        render txt divStyle buttonStyle =
+            div [ class <| "column p-1 " ++ divStyle ]
                 [ Html.button
-                    [ class "button is-fullwidth"
+                    [ class <| "button is-fullwidth " ++ buttonStyle
                     , onClick <| Emitted token
                     , disabled <| not <| accept model token
                     ]
@@ -611,34 +587,34 @@ button token model =
     in
     case token of
         Clear ->
-            render "C" "clear is-2"
+            render "C" "clear is-2" "is-warning"
 
         Digit d ->
-            render (fromInt d) "digit is-2"
+            render (fromInt d) "digit is-2" ""
 
         Operator Plus ->
-            render "+" "operator is-4"
+            render "+" "operator is-4" "is-info"
 
         Operator Minus ->
-            render "-" "operator is-4"
+            render "-" "operator is-4" "is-info"
 
         Operator Multiply ->
-            render "x" "operator is-4"
+            render "x" "operator is-4" "is-info"
 
         Operator Divide ->
-            render "/" "operator is-4"
+            render "/" "operator is-4" "is-info"
 
         Operator Result ->
-            render "=" "result is-2"
+            render "=" "result is-2" "is-link"
 
         MR ->
-            render "MR" "memory is-2"
+            render "MR" "memory is-2" "is-success"
 
         MC ->
-            render "MC" "memory is-2"
+            render "MC" "memory is-2" "is-success"
 
         MS ->
-            render "MS" "memory is-2"
+            render "MS" "memory is-2" "is-success"
 
         Dot ->
-            render "." "dot is-2"
+            render "." "dot is-2" ""

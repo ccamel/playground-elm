@@ -120,3 +120,7 @@ article {
 .color-picker-container .hue-picker {
   height: 12px !important;
 }
+
+.br-10 {
+  border-radius: 10px;
+}
