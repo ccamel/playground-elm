@@ -2,19 +2,20 @@ module Page.DigitalClock exposing (Figure(..), Model, Msg(..), Segment(..), info
 
 import Color exposing (Color, rgb255, toCssString)
 import ColorPicker
-import Html exposing (Html, button, div, hr, input, p, span, text)
-import Html.Attributes exposing (attribute, class, name, size, style, type_, value)
+import Html exposing (Html, div, input, p, text)
+import Html.Attributes exposing (class, name, size, style, type_, value)
 import Html.Events exposing (onInput)
+import Lib.ColorSelector as ColorSelector
+import Lib.Html exposing (svgClassList)
+import Lib.Page
+import Lib.String exposing (strToIntWithMinMax)
 import List exposing (map, member)
 import Markdown
 import Maybe exposing (withDefault)
-import Lib.Page
-import Lib.Html exposing (classList)
-import Lib.String exposing ( strToIntWithMinMax)
 import String exposing (fromInt, padLeft)
 import String.Interpolate exposing (interpolate)
 import Svg exposing (Svg, circle, g, path, svg)
-import Svg.Attributes as SvgAtt exposing (cx, cy, d, height, id, r, transform, viewBox, width)
+import Svg.Attributes as SvgAtt exposing (cx, cy, d, height, r, transform, version, viewBox, width)
 import Time exposing (Posix, Zone, every, toHour, toMinute, toSecond, utc)
 
 
@@ -46,6 +47,7 @@ type alias Model =
     , tilt : Int
     , refreshInterval : Int -- in ms
     , colorPicker : ColorPicker.State
+    , colorPickerVisible : Bool
     , color : Color
     }
 
@@ -63,6 +65,7 @@ initialModel =
     , tilt = -12
     , refreshInterval = 500
     , colorPicker = ColorPicker.empty
+    , colorPickerVisible = False
     , color = rgb255 0 200 0
     }
 
@@ -82,6 +85,7 @@ type Msg
     | SetTilt String
     | SetRefreshInterval String
     | ColorPickerMsg ColorPicker.Msg
+    | ShowColorPicker Bool
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -120,6 +124,9 @@ update msg model =
             , Cmd.none
             )
 
+        ShowColorPicker b ->
+            ( { model | colorPickerVisible = b }, Cmd.none )
+
         ColorPickerMsg msgPicker ->
             let
                 ( state, color ) =
@@ -148,69 +155,53 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    div [ class "container animated flipInX" ]
-        [ hr [] []
-        , div [ class "description" ]
-            [ p []
-                [ text "Here is the current time." ]
-            ]
-        , digitalClock model
-        , div [ class "description" ]
-            [ div [ class "form-inline" ]
-                [ text "You can adjust some display settings if you wish. The space between digit is "
-                , input
-                    [ class "input-number"
-                    , name "space-x"
-                    , type_ "number"
-                    , size 3
-                    , value (fromInt model.spaceX)
-                    , onInput SetSpaceX
-                    ]
-                    []
-                , text ", the tilt is "
-                , input
-                    [ class "input-number"
-                    , name "tilt"
-                    , type_ "number"
-                    , size 3
-                    , value (fromInt model.tilt)
-                    , onInput SetTilt
-                    ]
-                    []
-                , text ", the color used for the lcd is "
-                , div []
-                    [ button
-                        [ attribute "aria-expanded" "false"
-                        , attribute "aria-haspopup" "true"
-                        , class "btn btn-light dropdown-toggle"
-                        , attribute "data-toggle" "dropdown"
-                        , id "dropdownColorPickerButton"
-                        , type_ "button"
+    div [ class "columns" ]
+        [ div [ class "column is-8 is-offset-2" ]
+            [ div [ class "content is-medium" ]
+                [ p []
+                    [ text "Here is the current time." ]
+                , digitalClock model
+                , p []
+                    [ text "You can adjust some display settings if you wish. The space between digit is "
+                    , input
+                        [ class "input input-number is-small is-inline"
+                        , name "space-x"
+                        , type_ "number"
+                        , size 1
+                        , value (fromInt model.spaceX)
+                        , onInput SetSpaceX
                         ]
-                        [ span
-                            [ class "color-tag"
-                            , style "background-color" (toCssString model.color)
-                            ]
-                            []
+                        []
+                    , text ", the tilt is "
+                    , input
+                        [ class "input input-number is-small is-inline"
+                        , name "tilt"
+                        , type_ "number"
+                        , size 1
+                        , value (fromInt model.tilt)
+                        , onInput SetTilt
                         ]
-                    , div
-                        [ attribute "aria-labelledby" "dropdownColorPickerButton"
-                        , class "dropdown-menu"
+                        []
+                    , text ", the color used for the lcd is "
+                    , ColorSelector.view
+                        model.colorPickerVisible
+                        model.color
+                        ShowColorPicker
+                        model.colorPicker
+                        ColorPickerMsg
+                    , text " (click to change)"
+                    , text ", and the refresh interval is "
+                    , input
+                        [ class "input input-number is-small is-inline"
+                        , name "refresh-interval"
+                        , type_ "number"
+                        , size 1
+                        , value (fromInt model.refreshInterval)
+                        , onInput SetRefreshInterval
                         ]
-                        [ ColorPicker.view model.color model.colorPicker |> Html.map ColorPickerMsg ]
+                        []
+                    , text "."
                     ]
-                , text " (click to change)"
-                , text ", and the refresh interval is "
-                , input
-                    [ class "input-number"
-                    , name "refresh-interval"
-                    , type_ "number"
-                    , size 3
-                    , value (fromInt model.refreshInterval)
-                    , onInput SetRefreshInterval
-                    ]
-                    []
-                , text "."
                 ]
             ]
         ]
@@ -465,7 +456,7 @@ figureSvgView fig =
                     member seg segments
             in
             segmentSvgView
-                [ classList
+                [ svgClassList
                     [ ( "lit", lit )
                     , ( "unlit", not lit )
                     ]
@@ -502,21 +493,22 @@ digitalClock model =
         styles =
             Svg.style []
                 [ text <| interpolate """
-                    #digital-clock-display .lit {
+                    .digital-clock .lit {
                       fill: {0};
                     }
 
-                    #digital-clock-display .unlit {
+                    .digital-clock .unlit {
                       fill: #1e1f1d;
                     }
                  """ [ toCssString model.color ]
                 ]
     in
-    div [ class "wrapper" ]
+    div [ class "digital-clock br-15 mb-4 px-3 py-1 has-background-black", style "max-width" "450px" ]
         [ svg
-            [ id "digital-clock-display"
-            , width "450"
-            , height "96"
+            [ version "1.1"
+            , width "100%"
+            , height "100%"
+            , SvgAtt.style "max-width: 450px"
             , viewBox "0 0 450 96"
             ]
             (styles
