@@ -37,18 +37,11 @@ resetFrames =
 fps : Frames -> Maybe Float
 fps frames =
     if frames.length > 1 then
-        frames.values
-            |> foldl (+) 0
-            |> (\f ->
-                    toFloat frames.length
-                        / f
-                        |> (\v ->
-                                1000.0
-                                    * v
-                                    |> Just
-                           )
-               )
-
+        let
+            totalTime = foldl (+) 0 frames.values
+            averageTime = totalTime / 1000.0 / toFloat frames.length
+        in
+        Just (1.0 / averageTime)
     else
         Nothing
 
