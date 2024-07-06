@@ -82,6 +82,7 @@ module.exports = {
         ":truck:",
         ":twisted_rightwards_arrows:",
         ":whale:",
+        ":wastebasket:",
         ":wheel-of-dharma:",
         ":wheelchair:",
         ":white_check_mark:",
