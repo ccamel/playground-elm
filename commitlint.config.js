@@ -77,6 +77,7 @@ module.exports = {
         ":sparkles:",
         ":speech_balloon:",
         ":tada:",
+        ":technologist:",
         ":tractor:",
         ":triangular_flag_on_post:",
         ":truck:",
