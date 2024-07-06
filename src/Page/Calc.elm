@@ -476,10 +476,10 @@ calc model =
                 [ input [ class "input has-text-right is-family-monospace", attribute "readOnly" "", type_ "Text", value (display model) ]
                     []
                 , span []
-                    [ span [ class "icon is-right is-size-7" ]
+                    [ span [ class "icon is-right is-size-7  mt-2 mr-2" ]
                         [ renderMemoryTag model
                         ]
-                    , span [ class "icon is-right is-size-7 mt-3" ] [ renderOperatorTag model ]
+                    , span [ class "icon is-right is-size-7  mt-5 mr-2" ] [ renderOperatorTag model ]
                     ]
                 ]
             ]
