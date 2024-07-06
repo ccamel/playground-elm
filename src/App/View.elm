@@ -2,7 +2,7 @@ module App.View exposing (view)
 
 import App.Messages exposing (Msg(..), Page)
 import App.Models exposing (Model)
-import App.Pages exposing (pageDescription, pageGithubLink, pageHash, pageName, pageView, pages)
+import App.Pages exposing (pageDate, pageDescription, pageGithubLink, pageHash, pageName, pageView, pages)
 import App.Routing exposing (Route(..))
 import Browser exposing (UrlRequest(..))
 import Html exposing (Html, a, article, br, div, footer, h1, h2, h3, hr, i, img, p, section, span, strong, text)
@@ -10,7 +10,8 @@ import Html.Attributes exposing (attribute, class, href, src, title)
 import Html.Events exposing (onClick)
 import Lib.Html exposing (classList, onClickNotPropagate)
 import List exposing (intersperse)
-import App.Pages exposing (pageDate)
+import String.Interpolate exposing (interpolate)
+import Html.Attributes exposing (width)
 
 
 
@@ -180,7 +181,7 @@ showcase _ num page =
         [ div [ class "column is-12 showcase" ]
             [ article [ class "columns featured" ]
                 ([ div [ class "column is-7 showcase-img" ]
-                    [ img [ src "https://placehold.co/480x300" ]
+                    [ img [ src <| interpolate "/{0}.png" [ pageHash page ], width 450 ]
                         []
                     ]
                  , div [ class "column is-5 featured-content va" ]
