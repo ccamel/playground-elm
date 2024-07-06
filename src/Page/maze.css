@@ -1,0 +1,94 @@
+.centered-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.maze {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.maze .maze-row {
+  display: flex;
+  width: 100%;
+}
+
+.maze div.cell {
+  flex: 1;
+  width: auto;
+  max-width: 1.1em;
+  height: 1.1em;
+  border-style: solid;
+  border-width: 1px;
+  margin: 0;
+  padding: 1px;
+  color: black;
+  text-align: center;
+  line-height: 0.8em;
+  background-color: white;
+  overflow: hidden;
+}
+
+.maze .cell.up {
+  border-top-style: none;
+}
+
+.maze .cell.right {
+  border-right-style: none;
+}
+
+.maze .cell.down {
+  border-bottom-style: none;
+}
+
+.maze .cell.left {
+  border-left-style: none;
+}
+
+.maze .cell.wall {
+  background-color: #565e60;
+}
+
+.maze .cell.path {
+  background-color: white;
+  -webkit-transition: background-color 1000ms linear;
+  -ms-transition: background-color 1000ms linear;
+  transition: background-color 1000ms linear;
+}
+
+.maze .cell.exploring {
+  background-color: #7cadfb;
+}
+
+.maze .cell.backtracked {
+  background-color: lightgray;
+}
+
+.maze .cell.enclosure-wall-up {
+  border-top-width: 2px;
+}
+
+.maze .cell.enclosure-wall-right {
+  border-right-width: 2px;
+}
+
+.maze .cell.enclosure-wall-down {
+  border-bottom-width: 2px;
+}
+
+.maze .cell.enclosure-wall-left {
+  border-left-width: 2px;
+}
+
+.maze .cell.entrance {
+  border-left: none;
+}
+
+.maze .cell.exit {
+  border-right: none;
+}
