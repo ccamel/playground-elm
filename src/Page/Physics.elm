@@ -37,8 +37,7 @@ info =
     , hash = "physics-engine"
     , date = "2020-12-27"
     , description = Markdown.toHtml [ class "info" ] """
-Some physics simulation computed with simple [Verlet](https://en.wikipedia.org/wiki/Verlet_integration)
-integration and rendered using HTML5 canvas.
+Very simple physics engine using [Verlet Integration](https://en.wikipedia.org/wiki/Verlet_integration) algorithm and rendered through an HTML5 canvas.
        """
     , srcRel = "Page/Physics.elm"
     }
@@ -960,6 +959,13 @@ Click on the left button of the mouse to interact with the simulation.
         """
                 , controlView model
                 , simulationView model
+                , Markdown.toHtml [ class "mt-2" ] """
+💡 Demonstrates how [elm](https://elm-lang.org/) can deal with some basic mathematical and physical calculations, as well as basic rendering of objects in an HTML canvas,
+using elementary functions from the fantastic [joakin/elm-canvas](https://package.elm-lang.org/packages/joakin/elm-canvas/latest/) package.
+                """
+                , Markdown.toHtml [ class "mt-2" ] """
+ℹ️ Implementation is inspired from [Making a Verlet Physics Engine in Javascript](https://anuraghazra.github.io/blog/making-a-verlet-physics-engine-in-javascript).
+                """
                 ]
             ]
         ]

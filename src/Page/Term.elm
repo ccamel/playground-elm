@@ -112,6 +112,7 @@ view model =
             [ div [ class "content is-medium" ]
                 [ Markdown.toHtml [ class "mb-2" ] """
 The purpose of this playground is to show interoperability between [Elm](https://elm-lang.org/) environment and `JavaScript` through [ports](https://guide.elm-lang.org/interop/ports.html).
+A basic terminal ([wsowens/term](https://github.com/wsowens/term)) is used to evaluate `JavaScript` code.
 """
                 , p [ class "text-muted" ]
                     [ text "Type some javascript code in the terminal below:"
