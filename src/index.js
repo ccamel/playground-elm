@@ -1,5 +1,3 @@
-"use strict";
-
 import "bulma/css/bulma.min.css";
 import "github-fork-ribbon-css/gh-fork-ribbon.css";
 import "./fonts/font.css";
