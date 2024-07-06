@@ -1,18 +1,20 @@
 module Page.Maze exposing (Cells, InitializingCtx, Maze, MazeState(..), Model, Msg(..), Side(..), Sides, VisitedCell, info, init, subscriptions, update, view)
 
 import Array exposing (Array, get, initialize, set)
+import Basics.Extra exposing (flip)
 import File.Download as Download
 import FormatNumber exposing (format)
 import FormatNumber.Locales exposing (Decimals(..), Locale, usLocale)
-import Html exposing (Html, a, button, div, hr, i, input, span, text)
-import Html.Attributes exposing (attribute, class, classList, href, id, name, style, title, type_, value)
+import Html exposing (Html, button, div, i, label, option, p, select, span, text)
+import Html.Attributes exposing (attribute, class, classList, disabled, selected, title, type_, value)
 import Html.Events exposing (onInput)
 import Json.Encode exposing (Value, encode, int, list, object, string)
+import Lib.Html exposing (onClickNotPropagate)
+import Lib.Page
 import List exposing (map, range, repeat)
 import List.Extra exposing (last, splitAt)
 import Markdown
 import Maybe exposing (withDefault)
-import Page.Common exposing (onClickNotPropagate, strToIntWithMinMax)
 import Random exposing (Seed, initialSeed, step)
 import Random.List exposing (shuffle)
 import String exposing (fromInt, padLeft)
@@ -25,10 +27,11 @@ import Time exposing (Posix, every, posixToMillis)
 -- PAGE INFO
 
 
-info : Page.Common.PageInfo Msg
+info : Lib.Page.PageInfo Msg
 info =
     { name = "maze"
     , hash = "maze"
+    , date = "2020-12-19"
     , description = Markdown.toHtml [ class "info" ] """
 
 A maze generator using a [recursive backtracking](https://en.wikipedia.org/wiki/Maze_generation_algorithm#Recursive_backtracker) algorithm.
@@ -317,8 +320,6 @@ type Msg
     | StopAutoGeneration
     | Steps Int -- number of steps (relative)
     | Reset
-    | SetWidth String
-    | SetHeight String
     | SetDimension ( Int, Int )
     | Download
 
@@ -383,26 +384,6 @@ update msg model =
         Reset ->
             ( initialModelWithMazeSize model.maze.width model.maze.height, Cmd.none )
 
-        SetWidth s ->
-            ( case strToIntWithMinMax s maxDimensionsMaze.minW maxDimensionsMaze.maxW of
-                Just width ->
-                    initialModelWithMazeSize width model.maze.height
-
-                Nothing ->
-                    model
-            , Cmd.none
-            )
-
-        SetHeight s ->
-            ( case strToIntWithMinMax s maxDimensionsMaze.minH maxDimensionsMaze.maxH of
-                Just height ->
-                    initialModelWithMazeSize model.maze.width height
-
-                Nothing ->
-                    model
-            , Cmd.none
-            )
-
         SetDimension ( w, h ) ->
             let
                 width =
@@ -436,28 +417,23 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    div [ class "container animated flipInX" ]
-        [ hr [] []
-        , Markdown.toHtml [ class "info" ] """
-##### Maze generator
-
-The generation use a [recursive backtracking](https://en.wikipedia.org/wiki/Maze_generation_algorithm#Recursive_backtracker)
-algorithm.
-
-You can control the generation process with the control buttons below.
-         """
-        , controlView model
-        , mazeView model.maze
+    div [ class "columns" ]
+        [ div [ class "column is-8 is-offset-2" ]
+            [ div [ class "content is-medium" ]
+                [ p []
+                    [ text "You can control the generation process with the control buttons below." ]
+                , controlView model
+                , mazeView model.maze
+                ]
+            ]
         ]
 
 
 mazeView : Maze -> Html Msg
 mazeView maze =
-    div [ class "row maze-wrapper" ]
-        [ div [ class "mx-auto" ]
-            [ div [ class "maze" ]
-                (rowsView maze)
-            ]
+    div [ class "mt-2 is-align-items-center" ]
+        [ div [ class "maze " ]
+            (rowsView maze)
         ]
 
 
@@ -473,206 +449,136 @@ rowsView maze =
 
 controlView : Model -> Html Msg
 controlView model =
-    let
-        state =
-            model.maze.state
-    in
-    div [ class "control" ]
-        [ div [ class "row" ]
-            [ div [ class "mx-auto" ]
-                [ div [ attribute "aria-label" "Maze toolbar", class "btn-toolbar", attribute "role" "toolbar" ]
-                    [ div [ attribute "aria-label" "Generation controls", class "btn-group mr-4  btn-group-sm", attribute "role" "group" ]
-                        [ button
-                            [ class "btn btn-danger"
-                            , type_ "button"
-                            , title "reset the maze"
-                            , onClickNotPropagate Reset
-                            ]
-                            [ i [ class "fa fa-repeat" ] [] ]
-                        , button
-                            [ classList [ ( "btn btn-secondary", True ), ( "disabled", List.isEmpty model.memento ) ]
-                            , type_ "button"
-                            , title "make 5 steps backward"
-                            , onClickNotPropagate (Steps -5)
-                            ]
-                            [ i [ class "fa fa-fast-backward" ] [] ]
-                        , button
-                            [ classList [ ( "btn btn-secondary", True ), ( "disabled", List.isEmpty model.memento ) ]
-                            , type_ "button"
-                            , title "make one step backward"
-                            , onClickNotPropagate (Steps -1)
-                            ]
-                            [ i [ class "fa fa-step-backward" ] [] ]
-                        , button
-                            [ classList [ ( "btn btn-secondary", True ), ( "disabled", model.auto || (state == Ready) ) ]
-                            , type_ "button"
-                            , title "generate the maze"
-                            , onClickNotPropagate StartAutoGeneration
-                            ]
-                            [ i [ class "fa fa-play" ] [] ]
-                        , button
-                            [ classList [ ( "btn btn-secondary", True ), ( "disabled", not model.auto || (state == Ready) ) ]
-                            , type_ "button"
-                            , title "stop the generation"
-                            , onClickNotPropagate StopAutoGeneration
-                            ]
-                            [ i [ class "fa fa-pause" ] [] ]
-                        , button
-                            [ classList [ ( "btn btn-secondary", True ), ( "disabled", model.auto || (state == Ready) ) ]
-                            , type_ "button"
-                            , title "make one step"
-                            , onClickNotPropagate (Steps 1)
-                            ]
-                            [ i [ class "fa fa-step-forward" ] [] ]
-                        , button
-                            [ classList [ ( "btn btn-secondary", True ), ( "disabled", model.auto || (state == Ready) ) ]
-                            , type_ "button"
-                            , title "make 5 steps"
-                            , onClickNotPropagate (Steps 5)
-                            ]
-                            [ i [ class "fa fa-fast-forward" ] [] ]
-                        ]
-                    , div [ attribute "aria-label" "Import/Export controls", class "btn-group mr-4", attribute "role" "group" ]
-                        [ a
-                            [ class "btn btn-info"
-                            , attribute "role" "button"
-                            , title "Export the maze state to JSON"
-                            , href "."
-                            , onClickNotPropagate Download
-                            ]
-                            [ i [ class "fa fa-download" ] [] ]
-                        ]
-                    , div [ attribute "aria-label" "Maze dimensions", class "btn-group mr-2", attribute "role" "group" ]
-                        [ div [ class "input-group mr-2" ]
-                            [ span
-                                [ class "input-group-addon"
-                                , id "btnMazeWidth"
-                                ]
-                                [ text "width" ]
-                            , input
-                                [ class "form-control input-number t4"
-                                , attribute "aria-describedby" "btnMazeWidth"
-                                , name "maze-w"
-                                , type_ "number"
-                                , value (fromInt model.maze.width)
-                                , onInput SetWidth
-                                ]
-                                []
-                            ]
-                        , div [ class "input-group" ]
-                            [ span
-                                [ class "input-group-addon"
-                                , id "btnMazeHeight"
-                                ]
-                                [ text "height" ]
-                            , input
-                                [ class "form-control input-number t4"
-                                , attribute "aria-describedby" "btnMazeHeight"
-                                , name "maze-h"
-                                , type_ "number"
-                                , value (fromInt model.maze.height)
-                                , onInput SetHeight
-                                ]
-                                []
-                            ]
-                        , div [ class "dropdown" ]
-                            [ button
-                                [ attribute "aria-expanded" "false"
-                                , attribute "aria-haspopup" "true"
-                                , class "btn btn-info dropdown-toggle"
-                                , attribute "data-toggle" "dropdown"
-                                , id "dropdownMazeDimensions"
-                                , type_ "button"
-                                ]
-                                [ text "Samples" ]
-                            , div [ attribute "aria-labelledby" "dropdownMazeDimensions", class "dropdown-menu" ]
-                                ([ ( 20, 15 ), ( 40, 1 ), ( 3, 20 ), ( 5, 5 ), ( 15, 15 ), ( 50, 50 ) ]
-                                    |> map
-                                        (\( w, h ) ->
-                                            a
-                                                [ classList
-                                                    [ ( "dropdown-item", True )
-                                                    , ( "selected", ( w, h ) == ( model.maze.width, model.maze.height ) )
-                                                    ]
-                                                , onClickNotPropagate (SetDimension ( w, h ))
-                                                , href "#"
-                                                ]
-                                                [ text <| fromInt w ++ " x " ++ fromInt h ]
-                                        )
-                                )
-                            ]
-                        ]
+    div []
+        [ div [ class "buttons has-addons is-centered are-small" ]
+            [ button
+                [ class "button is-danger"
+                , type_ "button"
+                , title "reset the maze"
+                , onClickNotPropagate Reset
+                ]
+                [ span [ class "icon is-small" ] [ i [ class "fa fa-repeat" ] [] ] ]
+            , button
+                [ class "button"
+                , disabled (model.auto || List.isEmpty model.memento)
+                , type_ "button"
+                , title "make 5 steps backward"
+                , onClickNotPropagate (Steps -5)
+                ]
+                [ span [ class "icon is-small" ] [ i [ class "fa fa-fast-backward" ] [] ] ]
+            , button
+                [ class "button"
+                , disabled (model.auto || List.isEmpty model.memento)
+                , type_ "button"
+                , title "make one step backward"
+                , onClickNotPropagate (Steps -1)
+                ]
+                [ span [ class "icon is-small" ] [ i [ class "fa fa-step-backward" ] [] ] ]
+            , button
+                [ class "button is-success"
+                , disabled (model.auto || (model.maze.state == Ready))
+                , type_ "button"
+                , title "generate the maze"
+                , onClickNotPropagate StartAutoGeneration
+                ]
+                [ span [ class "icon is-small" ] [ i [ class "fa fa-play" ] [] ] ]
+            , button
+                [ class "button"
+                , disabled (not model.auto || (model.maze.state == Ready))
+                , type_ "button"
+                , title "stop the generation"
+                , onClickNotPropagate StopAutoGeneration
+                ]
+                [ span [ class "icon is-small" ] [ i [ class "fa fa-pause" ] [] ] ]
+            , button
+                [ class "button"
+                , disabled (model.auto || (model.maze.state == Ready))
+                , type_ "button"
+                , title "make one step"
+                , onClickNotPropagate (Steps 1)
+                ]
+                [ span [ class "icon is-small" ] [ i [ class "fa fa-step-forward" ] [] ] ]
+            , button
+                [ class "button"
+                , disabled (model.auto || (model.maze.state == Ready))
+                , type_ "button"
+                , title "make one step"
+                , onClickNotPropagate (Steps 5)
+                ]
+                [ span [ class "icon is-small" ] [ i [ class "fa fa-fast-forward" ] [] ] ]
+            , button
+                [ class "button is-info ml-4"
+                , type_ "button"
+                , title "export the maze state to JSON"
+                , onClickNotPropagate Download
+                ]
+                [ span [ class "icon is-small" ] [ i [ class "fa fa-download" ] [] ] ]
+            , div [ class "select is-info is-small ml-4" ]
+                [ let
+                    defaultSize =
+                        ( 20, 15 )
+
+                    sizes =
+                        Array.fromList [ defaultSize, ( 40, 1 ), ( 3, 20 ), ( 5, 5 ), ( 15, 15 ), ( 50, 50 ) ]
+                  in
+                  select
+                    [ onInput
+                        (String.toInt
+                            >> Maybe.andThen (flip Array.get sizes)
+                            >> Maybe.withDefault defaultSize
+                            >> SetDimension
+                        )
                     ]
+                    (sizes
+                        |> Array.indexedMap
+                            (\i ( w, h ) ->
+                                option
+                                    [ selected (( w, h ) == ( model.maze.width, model.maze.height ))
+                                    , value <| fromInt i
+                                    ]
+                                    [ text <| fromInt w ++ " x " ++ fromInt h ]
+                            )
+                        |> Array.toList
+                    )
                 ]
             ]
-        , div [ class "row" ]
-            [ div [ class "mx-auto" ]
-                [ div [ attribute "aria-label" "States", class "btn-group mr-2 states", attribute "role" "group" ]
-                    [ div [ class "input-group mr-2" ]
-                        [ span
-                            [ class "input-group-addon monotyped"
-                            , id "btnMazeState"
-                            ]
-                            [ text "state" ]
-                        , input
-                            [ class "form-control input-text t7 monotyped"
-                            , attribute "readonly" ""
-                            , attribute "aria-describedby" "btnMazeState"
-                            , name "maze-state"
-                            , type_ "text"
-                            , value (stateString model.maze)
-                            ]
-                            []
-                        ]
-                    , div [ class "input-group mr-2" ]
-                        [ span
-                            [ class "input-group-addon monotyped"
-                            , id "btnMazeProgress"
-                            ]
-                            [ text "progress" ]
-                        , let
-                            pString =
-                                progressString model.maze
+        , progressView model
+        ]
 
-                            pText =
-                                pString ++ "%"
-                          in
-                          div [ class "progress form-control", style "width" "150px" ]
-                            [ div
-                                [ attribute "aria-valuemax" "100"
-                                , attribute "aria-valuemin" "0"
-                                , attribute "aria-valuenow" pString
-                                , class "progress-bar progress-bar-striped bg-info"
-                                , classList [ ( "progress-bar-animated", model.maze.state /= Ready ) ]
-                                , attribute "role" "progressbar"
-                                , attribute "style" (interpolate "width: {0};" [ pText ])
-                                ]
-                                [ div [ class "progression" ]
-                                    [ text (pText |> padLeft 6 ' ') ]
-                                ]
-                            ]
-                        ]
-                    , div [ class "input-group mr-2" ]
-                        [ span
-                            [ class "input-group-addon monotyped"
-                            , id "btnMazeSteps"
-                            ]
-                            [ text "steps" ]
-                        , input
-                            [ class "form-control input-text t9 monotyped"
-                            , attribute "readonly" ""
-                            , attribute "aria-describedby" "btnMazeSteps"
-                            , name "maze-steps"
-                            , type_ "text"
-                            , value <|
-                                interpolate "{0}/{1}"
-                                    [ currentSteps model.maze |> fromInt |> padLeft 5 ' '
-                                    , totalSteps model.maze |> fromInt |> padLeft 5 ' '
-                                    ]
-                            ]
-                            []
-                        ]
+
+progressView : Model -> Html Msg
+progressView model =
+    let
+        progressValue =
+            progressString model.maze
+
+        progressText =
+            progressValue ++ "%"
+
+        progressLabel =
+            interpolate "{0}/{1}"
+                [ currentSteps model.maze |> fromInt |> padLeft 5 ' '
+                , totalSteps model.maze |> fromInt |> padLeft 5 ' '
+                ]
+    in
+    div
+        [ class "container"
+        ]
+        [ div
+            [ class "columns is-vcentered"
+            ]
+            [ div
+                [ class "column is-2"
+                ]
+                [ label
+                    [ class "label"
                     ]
+                    [ text progressLabel ]
+                ]
+            , div
+                [ class "column"
+                ]
+                [ Html.progress [ class "progress s-link is-small", value progressValue, Html.Attributes.max "100" ] [ text progressText ]
                 ]
             ]
         ]

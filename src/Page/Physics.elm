@@ -8,17 +8,22 @@ import Canvas.Settings exposing (fill, stroke)
 import Canvas.Settings.Advanced exposing (Transform, transform, translate)
 import Canvas.Settings.Line exposing (lineWidth)
 import Canvas.Settings.Text as TextAlign exposing (align, font)
-import Color exposing (Color, rgb255)
+import Color exposing (Color)
 import Color.Interpolate as Color exposing (interpolate)
-import Html exposing (Html, a, br, button, div, hr, input, label, p, text)
-import Html.Attributes exposing (attribute, checked, class, classList, for, href, id, style, type_)
-import Html.Events exposing (onClick)
+import Dict exposing (Dict)
+import Html exposing (Html, button, div, i, input, label, option, select, span, text)
+import Html.Attributes exposing (checked, class, disabled, selected, title, type_, value)
+import Html.Events exposing (onClick, onInput)
 import Html.Events.Extra.Mouse as Mouse exposing (Button(..))
-import List exposing (head, length)
+import Lib.Frame exposing (Frames, addFrame, createFrames, fpsText)
+import Lib.Gfx exposing (withAlpha)
+import Lib.Html exposing (onClickNotPropagate)
+import Lib.Page
+import List exposing (length)
 import Markdown
 import Maybe exposing (withDefault)
-import Page.Common exposing (Frames, addFrame, createFrames, fpsText, onClickNotPropagate, withAlpha)
 import String exposing (fromInt)
+import Tuple exposing (pair)
 import Vector2 exposing (Index(..), Vector2, map2)
 
 
@@ -26,13 +31,13 @@ import Vector2 exposing (Index(..), Vector2, map2)
 -- PAGE INFO
 
 
-info : Page.Common.PageInfo Msg
+info : Lib.Page.PageInfo Msg
 info =
     { name = "physics-engine"
     , hash = "physics-engine"
+    , date = "2020-12-27"
     , description = Markdown.toHtml [ class "info" ] """
-Some physics simulation computed with simple [Verlet](https://en.wikipedia.org/wiki/Verlet_integration)
-integration and rendered using HTML5 canvas.
+Very simple physics engine using [Verlet Integration](https://en.wikipedia.org/wiki/Verlet_integration) algorithm and rendered through an HTML5 canvas.
        """
     , srcRel = "Page/Physics.elm"
     }
@@ -44,7 +49,7 @@ integration and rendered using HTML5 canvas.
 
 {-| constants
 -}
-constants : { height : number, width : number, physics_iteration : Int, mouse_influence : Float, stickPalette : Float -> Color }
+constants : { height : number, width : number, physicsIteration : Int, mouseInfluence : Float, defaultSimulation : ( String, EntityMaker ), backgroundColor : Color, textColor : Color, stickPalette : Float -> Color }
 constants =
     { -- width of the canvas
       height = 400
@@ -53,10 +58,19 @@ constants =
     , width = 400
 
     -- number of iterations
-    , physics_iteration = 3
+    , physicsIteration = 3
 
     -- radius of the mouse when interacting with the entity
-    , mouse_influence = 10.0
+    , mouseInfluence = 10.0
+
+    -- default simulation
+    , defaultSimulation = ( "necklace", necklaceEntityMaker )
+
+    -- background color
+    , backgroundColor = Color.black
+
+    -- text color
+    , textColor = Color.lightBlue
 
     -- palette used to colorize sticks according to their tension
     , stickPalette = interpolate Color.RGB Color.darkGray Color.lightRed
@@ -74,11 +88,6 @@ type alias Vector2D =
 makeVector2D : ( Float, Float ) -> Vector2D
 makeVector2D ( x, y ) =
     Vector2.from2 x y
-
-
-origin : Vector2D
-origin =
-    makeVector2D ( 0, 0 )
 
 
 getX : Vector2D -> Float
@@ -277,7 +286,7 @@ interactWithEntity mouseState ({ dots, offset } as entity) =
                                     d =
                                         dist dot.pos pos
                                 in
-                                if d < constants.mouse_influence then
+                                if d < constants.mouseInfluence then
                                     { dot
                                         | oldPos = sub pos oldPos |> mult 1.8 |> sub dot.pos
                                     }
@@ -469,14 +478,6 @@ renderStickTension transforms entity { p1Id, p2Id, length } =
 
 type alias EntityMaker =
     () -> Entity
-
-
-emptyEntityMaker : EntityMaker
-emptyEntityMaker () =
-    { dots = Array.empty
-    , sticks = []
-    , offset = origin
-    }
 
 
 {-| Factory witch produces a brand new cloth (with default values).
@@ -706,22 +707,23 @@ necklaceEntityMaker () =
         entity.dots
 
 
-{-| List of available simulations (entities, with associated factory function)
+{-| Dictionary of available simulations (entities, with associated factory function)
 -}
-simulations : List ( String, EntityMaker )
+simulations : Dict String EntityMaker
 simulations =
-    [ ( "pendulum", pendulumEntityMaker )
-    , ( "double pendulum", doublePendulumEntityMaker )
-    , ( "rope", ropeEntityMaker )
-    , ( "necklace", necklaceEntityMaker )
-    , ( "cloth", clothEntityMaker )
-    ]
+    Dict.fromList
+        [ ( "pendulum", pendulumEntityMaker )
+        , ( "double pendulum", doublePendulumEntityMaker )
+        , ( "rope", ropeEntityMaker )
+        , constants.defaultSimulation
+        , ( "cloth", clothEntityMaker )
+        ]
 
 
 updateEntity : Entity -> Entity
 updateEntity entity =
     entity
-        |> updateEntitySticksHelper constants.physics_iteration
+        |> updateEntitySticksHelper constants.physicsIteration
         |> updateEntityDots
         |> updateEntitySticks
 
@@ -833,7 +835,7 @@ init : ( Model, Cmd Msg )
 init =
     let
         ( simulationName, simulationMaker ) =
-            head simulations |> withDefault ( "empty", emptyEntityMaker )
+            constants.defaultSimulation
     in
     ( { entity = simulationMaker ()
       , entityName = simulationName
@@ -859,7 +861,7 @@ type Msg
     | Start
     | Stop
     | Reset
-    | ChangeSimulation String EntityMaker
+    | ChangeSimulation ( String, EntityMaker )
     | ToggleShowDots
     | ToggleShowSticks
     | ToggleShowStickTension
@@ -905,7 +907,7 @@ update msg model =
         Stop ->
             ( { model | started = False }, Cmd.none )
 
-        ChangeSimulation name factory ->
+        ChangeSimulation ( name, factory ) ->
             if name /= model.entityName then
                 ( { model
                     | entity = factory ()
@@ -948,128 +950,147 @@ subscriptions model =
 
 
 view : Model -> Html Msg
-view ({ entity } as model) =
-    div [ class "container animated flipInX" ]
-        [ hr [] []
-        , Markdown.toHtml [ class "info" ] """
-##### Physics Verlet engine (simple)
-
-Using [Verlet Integration](https://en.wikipedia.org/wiki/Verlet_integration) algorithm and rendered through an HTML5 canvas.
-
+view model =
+    div [ class "columns" ]
+        [ div [ class "column is-8 is-offset-2" ]
+            [ div [ class "content is-medium" ]
+                [ Markdown.toHtml [ class "mb-2" ] """
 Click on the left button of the mouse to interact with the simulation.
         """
-        , br [] []
-        , div [ class "row display" ]
-            [ --- canvas for the simulation
-              Canvas.toHtml
-                ( constants.width, constants.height )
-                [ style "display" "block"
-                , Mouse.onDown (\e -> MouseDown e.button (makeVector2D e.offsetPos))
-                , Mouse.onMove (.offsetPos >> makeVector2D >> MouseMove)
-                , Mouse.onUp (\_ -> MouseUp)
+                , controlView model
+                , simulationView model
+                , Markdown.toHtml [ class "mt-2" ] """
+💡 Demonstrates how [elm](https://elm-lang.org/) can deal with some basic mathematical and physical calculations, as well as basic rendering of objects in an HTML canvas,
+using elementary functions from the fantastic [joakin/elm-canvas](https://package.elm-lang.org/packages/joakin/elm-canvas/latest/) package.
+                """
+                , Markdown.toHtml [ class "mt-2" ] """
+ℹ️ Implementation is inspired from [Making a Verlet Physics Engine in Javascript](https://anuraghazra.github.io/blog/making-a-verlet-physics-engine-in-javascript).
+                """
                 ]
-                (List.concat
-                    [ [ shapes [ fill (rgb255 242 242 242) ] [ rect ( 0, 0 ) constants.width constants.height ]
-                      ]
-                    , if model.showSticks then
-                        entity
-                            |> .sticks
-                            |> List.map (renderStick [ apply translate entity.offset ] entity)
+            ]
+        ]
 
-                      else
-                        []
-                    , if model.showStickTension then
-                        entity
-                            |> .sticks
-                            |> List.map (renderStickTension [ apply translate entity.offset ] entity)
 
-                      else
-                        []
-                    , if model.showDots then
-                        entity
-                            |> .dots
-                            |> map (renderDot [ apply translate entity.offset ])
-                            |> toList
+simulationView : Model -> Html Msg
+simulationView ({ entity } as model) =
+    div [ class "responsive-canvas" ]
+        [ Canvas.toHtml
+            ( constants.width, constants.height )
+            [ Mouse.onDown (\e -> MouseDown e.button (makeVector2D e.offsetPos))
+            , Mouse.onMove (.offsetPos >> makeVector2D >> MouseMove)
+            , Mouse.onUp (\_ -> MouseUp)
+            ]
+            (List.concat
+                [ [ shapes [ fill constants.backgroundColor ] [ rect ( 0, 0 ) constants.width constants.height ]
+                  ]
+                , if model.showSticks then
+                    entity
+                        |> .sticks
+                        |> List.map (renderStick [ apply translate entity.offset ] entity)
 
-                      else
-                        []
-                    , [ String.join " "
-                            [ fpsText model.frames
-                            , " - "
-                            , entity.dots |> Array.length |> fromInt
-                            , "dots"
-                            , " - "
-                            , entity.sticks |> length |> fromInt
-                            , "sticks"
-                            ]
-                            |> Canvas.text
-                                [ font { size = 10, family = "serif" }
-                                , align TextAlign.Left
-                                , fill Color.darkBlue
-                                ]
-                                ( 15, 10 )
-                      ]
-                    ]
-                )
-            , div [ class "description col-sm-6" ]
-                [ p []
-                    [ text "You can "
-                    , if model.started then
-                        a [ class "action", href "", onClickNotPropagate Start ] [ text "start" ]
+                  else
+                    []
+                , if model.showStickTension then
+                    entity
+                        |> .sticks
+                        |> List.map (renderStickTension [ apply translate entity.offset ] entity)
 
-                      else
-                        a [ class "action", href "", onClickNotPropagate Stop ] [ text "stop" ]
-                    , text " the simulation. You can also "
-                    , a [ class "action", href "", onClickNotPropagate Reset ] [ text "reset" ]
-                    , text " the values to default."
-                    ]
-                , p []
-                    [ text "You can change the simulated entity: " ]
-                , div [ class "dropdown" ]
-                    [ button
-                        [ attribute "aria-expanded" "false"
-                        , attribute "aria-haspopup" "true"
-                        , class "btn btn-info dropdown-toggle"
-                        , attribute "data-toggle" "dropdown"
-                        , id "dropdownEntitySimulated"
-                        , type_ "button"
+                  else
+                    []
+                , if model.showDots then
+                    entity
+                        |> .dots
+                        |> map (renderDot [ apply translate entity.offset ])
+                        |> toList
+
+                  else
+                    []
+                , [ String.join " "
+                        [ fpsText model.frames
+                        , " - "
+                        , entity.dots |> Array.length |> fromInt
+                        , "dots"
+                        , " - "
+                        , entity.sticks |> length |> fromInt
+                        , "sticks"
                         ]
-                        [ text model.entityName ]
-                    , div [ attribute "aria-labelledby" "dropdownEntitySimulated", class "dropdown-menu" ]
-                        (simulations
-                            |> List.map
-                                (\( name, factory ) ->
-                                    a
-                                        [ classList
-                                            [ ( "dropdown-item", True )
-                                            , ( "selected", name == model.entityName )
-                                            ]
-                                        , onClick (ChangeSimulation name factory)
-                                        , href "#"
-                                        ]
-                                        [ text name ]
+                        |> Canvas.text
+                            [ font { size = 10, family = "serif" }
+                            , align TextAlign.Left
+                            , fill constants.textColor
+                            ]
+                            ( 15, 10 )
+                  ]
+                ]
+            )
+        ]
+
+
+controlView : Model -> Html Msg
+controlView model =
+    div [ class "section" ]
+        [ div [ class "columns is-centered" ]
+            [ div [ class "column is-narrow" ]
+                [ div [ class "buttons has-addons is-centered are-small" ]
+                    [ button
+                        [ class "button is-danger ml-2"
+                        , type_ "button"
+                        , title "reset the simulation"
+                        , onClickNotPropagate Reset
+                        ]
+                        [ span [ class "icon is-small" ] [ i [ class "fa fa-repeat" ] [] ] ]
+                    , button
+                        [ class "button is-success"
+                        , disabled model.started
+                        , type_ "button"
+                        , title "start the simulation"
+                        , onClickNotPropagate Start
+                        ]
+                        [ span [ class "icon is-small" ] [ i [ class "fa fa-play" ] [] ] ]
+                    , button
+                        [ class "button"
+                        , disabled (not model.started)
+                        , type_ "button"
+                        , title "pause the simulation"
+                        , onClickNotPropagate Stop
+                        ]
+                        [ span [ class "icon is-small" ] [ i [ class "fa fa-pause" ] [] ] ]
+                    , div [ class "select is-info is-small ml-4" ]
+                        [ select
+                            [ onInput
+                                (\s ->
+                                    Dict.get s simulations
+                                        |> Maybe.map (pair s)
+                                        |> Maybe.withDefault constants.defaultSimulation
+                                        |> ChangeSimulation
                                 )
-                        )
+                            ]
+                            (simulations
+                                |> Dict.keys
+                                |> List.map
+                                    (\name ->
+                                        option
+                                            [ selected (name == model.entityName)
+                                            , value name
+                                            ]
+                                            [ text name ]
+                                    )
+                            )
+                        ]
                     ]
-                , p []
-                    [ text "You can show/hide the following elements:" ]
-                , div [ class "form-check form-check-inline mb-2" ]
-                    [ input [ class "form-check-input", id "toggleShowDots", type_ "checkbox", checked model.showDots, onClick ToggleShowDots ]
-                        []
-                    , label [ class "form-check-label", for "toggleShowDots" ]
-                        [ text "Show dots" ]
+                ]
+            , div [ class "column is-narrow" ]
+                [ label [ class "checkbox is-inline-flex is-align-items-center ml-4" ]
+                    [ input [ type_ "checkbox", checked model.showDots, onClick ToggleShowDots ] []
+                    , span [ class "is-size-7 ml-2" ] [ text "dots" ]
                     ]
-                , div [ class "form-check form-check-inline mb-2" ]
-                    [ input [ class "form-check-input", id "toggleShowTicks", type_ "checkbox", checked model.showSticks, onClick ToggleShowSticks ]
-                        []
-                    , label [ class "form-check-label", for "toggleShowTicks" ]
-                        [ text "Show sticks" ]
+                , label [ class "checkbox is-inline-flex is-align-items-center ml-4" ]
+                    [ input [ type_ "checkbox", checked model.showSticks, onClick ToggleShowSticks ] []
+                    , span [ class "is-size-7 ml-2" ] [ text "sticks" ]
                     ]
-                , div [ class "form-check form-check-inline mb-2" ]
-                    [ input [ class "form-check-input", id "toggleShowTickTension", type_ "checkbox", checked model.showStickTension, onClick ToggleShowStickTension ]
-                        []
-                    , label [ class "form-check-label", for "toggleShowTickTension" ]
-                        [ text "Show stick tension" ]
+                , label [ class "checkbox is-inline-flex is-align-items-center ml-4" ]
+                    [ input [ type_ "checkbox", checked model.showStickTension, onClick ToggleShowStickTension ] []
+                    , span [ class "is-size-7 ml-2" ] [ text "tension" ]
                     ]
                 ]
             ]

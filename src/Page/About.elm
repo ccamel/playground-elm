@@ -1,22 +1,23 @@
 module Page.About exposing (Model, Msg, info, init, subscriptions, update, view)
 
-import Html exposing (Html, a, div, h2, hr, i, p, text)
-import Html.Attributes exposing (attribute, class, href, style)
+import Html exposing (Html, article, div, h1, img, p, text)
+import Html.Attributes exposing (alt, class, src)
+import Lib.Page
 import Markdown
-import Page.Common
 
 
 
 -- PAGE INFO
 
 
-info : Page.Common.PageInfo Msg
+info : Lib.Page.PageInfo Msg
 info =
     { name = "about"
     , hash = "about"
+    , date = "2020-10-11"
     , description = Markdown.toHtml [ class "info" ] """
 
-A very simple and minimal showcase that is used to lay the foundations of the navigation/routing (*and to test that the whole site works correctly*)
+A very simple and minimal showcase that is used to lay the foundations of the navigation/routing (*and to test that the whole site works correctly*).
        """
     , srcRel = "Page/About.elm"
     }
@@ -65,61 +66,47 @@ subscriptions _ =
 
 view : Model -> Html Msg
 view _ =
-    div [ class "container" ]
-        [ hr [] []
-        , p [ class "text-muted" ]
-            [ text "The purpose of this playground is to "
-            , i []
-                [ text "explore" ]
-            , text ", "
-            , i []
-                [ text "study" ]
-            , text " and "
-            , i []
-                [ text "assess" ]
-            , text " the "
-            , a [ href "http://elm-lang.org/" ]
-                [ text "elm language" ]
-            , text " — a delightful language for reliable webapps."
+    let
+        content =
+            [ { title = "Simple"
+              , text = "Fairly simple and understandable. Every showcase is implemented in a single elm file."
+              }
+            , { title = "Exploratory"
+              , text = "Highlight some aspects of the elm language, like immutability, reactiveness, performance and interoperability with other JS libraries. Explore some architectural/design patterns around reactive static/serverless SPA."
+              }
+            , { title = "Playable"
+              , text = "As much as possible, provides a useful and functional content."
+              }
+            , { title = "Scalable"
+              , text = "The structure of the playground is designed to easily accommodate additional examples and showcases. Contributors can effortlessly expand the repository, ensuring it remains a relevant and up-to-date resource for learners and enthusiasts."
+              }
             ]
-        , p [ class "text-muted" ]
-            [ text "The showcases are intended to be:" ]
-        , div [ class "row", style "padding-top" "2em" ]
-            [ div [ class "col-lg-4" ]
-                [ i [ attribute "aria-hidden" "true", class "fa fa-child fa-3x iconic" ]
-                    []
-                , h2 [ style "padding-top" "1em" ]
-                    [ text "» simple" ]
-                , p []
-                    [ text "Fairly simple and understandable. Every showcase is implemented in a single elm file."
-                    ]
-                ]
-            , div [ class "col-lg-4" ]
-                [ i [ attribute "aria-hidden" "true", class "fa fa-search fa-3x iconic" ]
-                    []
-                , h2 [ style "padding-top" "1em" ]
-                    [ text "» exploratory" ]
-                , p []
-                    [ text "Highlight some aspects of the "
-                    , a [ href "http://elm-lang.org/" ]
-                        [ text "elm" ]
-                    , text " language, like immutability, reactiveness, performance and interoperability with other JS libraries."
-                    ]
-                , p []
-                    [ text "Explore some architectural/design patterns around reactive static/serverless "
-                    , a [ href "https://en.wikipedia.org/wiki/Single-page_application" ]
-                        [ text "SPA" ]
-                    , text "."
-                    ]
-                ]
-            , div [ class "col-lg-4" ]
-                [ i [ attribute "aria-hidden" "true", class "fa fa-futbol-o fa-3x iconic" ]
-                    []
-                , h2 [ style "padding-top" "1em" ]
-                    [ text "» playable" ]
-                , p []
-                    [ text "As much as possible, provides a useful and functional content."
-                    ]
+    in
+    div
+        [ class "container"
+        ]
+        [ div [ class "columns" ]
+            [ div [ class "column is-10 is-offset-1" ]
+                [ div [ class "columns is-multiline" ]
+                    (content
+                        |> List.map
+                            (\c ->
+                                div [ class "column showcase is-6" ]
+                                    [ article [ class "columns is-multiline" ]
+                                        [ div [ class "column is-12 showcase-img" ]
+                                            [ img [ src "https://placehold.co/480x300", alt "placeholder" ] []
+                                            ]
+                                        , div [ class "column is-12 featured-content" ]
+                                            [ h1 [ class "title showcase-title" ]
+                                                [ text "» "
+                                                , text c.title
+                                                ]
+                                            , p [ class "showcase-excerpt" ] [ text c.text ]
+                                            ]
+                                        ]
+                                    ]
+                            )
+                    )
                 ]
             ]
         ]

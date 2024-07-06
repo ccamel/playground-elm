@@ -6,7 +6,7 @@
 [![build-status](https://github.com/ccamel/playground-elm/actions/workflows/build.yml/badge.svg)](https://github.com/ccamel/playground-elm/actions/workflows/build.yml)
 [![quality-grade](https://app.codacy.com/project/badge/Grade/05944c94318b4da3b8f438f8d441d869)](https://app.codacy.com/gh/ccamel/playground-elm/dashboard?branch=main)
 [![ELM](https://img.shields.io/badge/elm-0.19.1-blue.svg?style=flat&logo=elm)](http://elm-lang.org/)
-[![Boostrap](https://img.shields.io/badge/bootstrap-4.0.1-orange.svg?style=flat&logo=bootstrap)](https://getbootstrap.com/)
+<a href="https://bulma.io/"><img height=20px src="https://bulma.io/assets/images/made-with-bulma.png" alt="made with bulma"></a>
 [![pnpm](https://img.shields.io/badge/pnpm-%234a4a4a.svg?style=flat&logo=pnpm&logoColor=f69220)](https://pnpm.io)
 [![git3moji](https://img.shields.io/badge/gitmoji-%20😜%20😍-FFDD67.svg?style=flat-square)](https://gitmoji.carloscuesta.me)
 [![StackShare](https://img.shields.io/badge/tech-stack-0690fa.svg?style=flat&logo=stackshare)](https://stackshare.io/ccamel/playground-elm)
@@ -36,114 +36,18 @@ The showcases are intended to be:
 ## 🍿 Showcases
 
 Visit the :small_blue_diamond: [demo site](https://ccamel.github.io/playground-elm/) and play in your browser.
+
 The demo is a pure [SPA][] (100% clientside application) written in [elm][].
 
-### Calc
+List of showcases:
 
-Calc is a very simple and basic calculator.
-
-<p align="center">
-  <b>Links:</b><br>
-  <a href="https://ccamel.github.io/playground-elm/#calc">Play</a>  |
-  <a href="https://github.com/ccamel/playground-elm/blob/main/src/Page/Calc.elm">Code</a>
-  <br><br>
-  <kbd><img src="doc/assets/showcase-calc.png"></kbd>
-</p>
-
-### Digital clock
-
-Simple digital clock using [SVG][].
-
-💡 Demonstrates some capabilities of [elm][] for displaying [SVG][] content.
-
-<p align="center">
-  <b>Links:</b><br>
-  <a href="https://ccamel.github.io/playground-elm/#digital-clock">Play</a> |
-  <a href="https://github.com/ccamel/playground-elm/blob/main/src/Page/DigitalClock.elm">Code</a>
-  <br><br>
-  <kbd><img src="doc/assets/showcase-digitalclock.png"></kbd>
-</p>
-
-### Lissajous
-
-Animated [Lissajous figures](https://en.wikipedia.org/wiki/Lissajouss_curve) using [SVG][].
-
-💡 Demonstrates how [elm][] can deal with some basic mathematical and handle animated [SVG][] rendering using
-[MacCASOutreach/graphicsvg](https://package.elm-lang.org/packages/MacCASOutreach/graphicsvg/latest/) fantastic library.
-
-<p align="center">
-  <b>Links:</b><br>
-  <a href="https://ccamel.github.io/playground-elm/#lissajous">Play</a> |
-  <a href="https://github.com/ccamel/playground-elm/blob/main/src/Page/Lissajous.elm">Code</a>
-  <br><br>
-  <kbd><img src="doc/assets/showcase-lissajous.png"></kbd>
-</p>
-
-### Maze generator
-
-Maze generator using a [recursive backtracking](https://en.wikipedia.org/wiki/Maze_generation_algorithm#Recursive_backtracker)
-algorithm with control of the generation process.
-
-<p align="center">
-  <b>Links:</b><br>
-  <a href="https://ccamel.github.io/playground-elm/#maze">Play</a> |
-  <a href="https://github.com/ccamel/playground-elm/blob/main/src/Page/Maze.elm">Code</a>
-  <br><br>
-  <kbd><img src="doc/assets/showcase-maze.png"></kbd>
-</p>
-
-### Physics Verlet engine
-
-Very simple physics engine using [Verlet Integration](https://en.wikipedia.org/wiki/Verlet_integration) algorithm and rendered through an HTML5 canvas.
-
-💡 Demonstrates how [elm][] can deal with some basic mathematical and physical calculations, as well as basic rendering of objects in an HTML canvas,
-using elementary functions from the fantastic [joakin/elm-canvas](https://package.elm-lang.org/packages/joakin/elm-canvas/latest/) package.
-
-ℹ️ Implementation is inspired from [Making a Verlet Physics Engine in Javascript](https://anuraghazra.github.io/blog/making-a-verlet-physics-engine-in-javascript).
-
-<p align="center">
-  <b>Links:</b><br>
-  <a href="https://ccamel.github.io/playground-elm/#physics-engine">Play</a> |
-  <a href="https://github.com/ccamel/playground-elm/blob/main/src/Page/Physics.elm">Code</a>
-  <br><br>
-  <kbd><img src="doc/assets/showcase-physics-cloth.png"></kbd>
-</p>
-
-<p align="center">
-  <img src="doc/assets/showcase-physics-necklace.png" width="300">
-</p>
-
-### Term
-
-A basic terminal ([wsowens/term](https://github.com/wsowens/term)) which simply executes Javascript commands.
-
-💡 Shows interoperability between [elm][] environment and JavaScript through [ports](https://guide.elm-lang.org/interop/ports.html).
-
-<p align="center">
-  <b>Links:</b><br>
-  <a href="https://ccamel.github.io/playground-elm/#term">Play</a> |
-  <a href="https://github.com/ccamel/playground-elm/blob/main/src/Page/Term.elm">Code</a>
-  <br><br>
-  <kbd><img src="doc/assets/showcase-term.png"></kbd>
-</p>
-
-### Asteroids Game
-
-Pure and basic [elm][] [Asteroids](https://en.wikipedia.org/wiki/Asteroids_(video_game)) game.
-
-💡 Demonstrates how [elm][] can deal with game development using [SVG][] rendering and the [ECS][] (Entity Component System) pattern provided by the
-awesome [harmboschloo/elm-ecs](https://package.elm-lang.org/packages/harmboschloo/elm-ecs/latest/) package. Moreover, the explosion effects are generated by the
-fantastic [BrianHicks/elm-particle](https://package.elm-lang.org/packages/BrianHicks/elm-particle/latest/) package.
-
-🚧 Under construction. Missing: the management of the collision of the spaceship with the asteroids, the management of the lives, the counting of the points, etc.
-
-<p align="center">
-  <b>Links:</b><br>
-  <a href="https://ccamel.github.io/playground-elm/#asteroids">Play</a> |
-  <a href="https://github.com/ccamel/playground-elm/blob/main/src/Page/Asteroids.elm">Code</a>
-  <br><br>
-  <kbd><img src="doc/assets/showcase-asteroids.png"></kbd>
-</p>
+- _asteroids_: A simple Asteroids clone in [Elm][] using the [ECS](https://en.wikipedia.org/wiki/Entity_component_system) pattern and [SVG](https://fr.wikipedia.org/wiki/Scalable_Vector_Graphics) for rendering.
+- _term_: A terminal which evaluates JavaScript code using elm ports.
+- _physics-engine_: Very simple physics engine using [Verlet Integration](https://en.wikipedia.org/wiki/Verlet_integration) algorithm and rendered through an HTML5 canvas.
+- _maze_: A maze generator using a [recursive backtracking](https://en.wikipedia.org/wiki/Maze_generation_algorithm#Recursive_backtracker) algorithm.
+- _digital-clock_: A demo rendering a digital clock in [SVG](https://fr.wikipedia.org/wiki/Scalable_Vector_Graphics).
+- _lissajous_: Animated [Lissajous](https://en.wikipedia.org/wiki/Lissajous_curve) figures in [SVG](https://fr.wikipedia.org/wiki/Scalable_Vector_Graphics)
+- _calc_: A very simple and basic calculator.
 
 ## 🛠 Building and Running
 
@@ -197,7 +101,7 @@ The publication is launched with the following command:
 pnpm serve
 ```
 
-The site is accessible through the `http://localhost:1234/` endpoint.
+The site is accessible through the `"/` endpoint.
 
 ## 🔋 Technologies
 
@@ -217,7 +121,7 @@ The site is accessible through the `http://localhost:1234/` endpoint.
   - [BrianHicks/elm-particle](https://github.com/BrianHicks/elm-particle)
 
 - [`parceljs`](https://parceljs.org/): Web application bundler
-- [`bootstrap`](https://getbootstrap.com/): Free and open-source CSS framework
+- [`bulma`](https://bulma.io/): The modern CSS framework
 
 ## 📜 License
 
@@ -225,10 +129,8 @@ The site is accessible through the `http://localhost:1234/` endpoint.
 
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fccamel%2Fplayground-elm.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fccamel%2Fplayground-elm?ref=badge_large)
 
-[ecs]: https://en.wikipedia.org/wiki/Entity_component_system
 [elm]: http://elm-lang.org/
 [parceljs]: https://parceljs.org/
 [spa]: https://en.wikipedia.org/wiki/Single-page_application
-[svg]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
 [chris camel]: https://github.com/ccamel
 [mit]: https://tldrlegal.com/license/mit-license

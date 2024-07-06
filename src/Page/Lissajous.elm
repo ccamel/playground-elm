@@ -2,17 +2,22 @@ module Page.Lissajous exposing (LineStyle, Model, Msg(..), info, init, subscript
 
 import Array
 import Browser.Events exposing (onAnimationFrameDelta)
-import Color exposing (rgb255, toCssString)
+import Color exposing (rgb255)
 import ColorPicker
 import GraphicSVG exposing (LineType, Shape, Stencil, circle, filled, fixedwidth, group, line, move, openPolygon, outlined, rect, rotate, solid)
 import GraphicSVG.Widget as Widget
-import Html exposing (Html, a, br, button, div, hr, input, p, span, text)
-import Html.Attributes exposing (attribute, class, href, id, name, size, step, style, type_, value)
+import Html exposing (Html, a, div, input, p, text)
+import Html.Attributes exposing (class, href, id, name, size, step, style, type_, value)
 import Html.Events exposing (onInput)
+import Lib.Array exposing (BoundedArray, appendToBoundedArray, createBoundedArray, resizeBoundedArray)
+import Lib.ColorSelector as ColorSelector
+import Lib.Frame exposing (Frames, addFrame, createFrames, fpsText, resetFrames)
+import Lib.Html exposing (onClickNotPropagate)
+import Lib.Page
+import Lib.String exposing (strToFloatWithMinMax, strToIntWithMinMax)
 import List exposing (concat, concatMap, filterMap, indexedMap, map, range)
 import Markdown
 import Maybe
-import Page.Common exposing (BoundedArray, Frames, addFrame, appendToBoundedArray, createBoundedArray, createFrames, fpsText, onClickNotPropagate, resetFrames, resizeBoundedArray, strToFloatWithMinMax, strToIntWithMinMax, toPixels)
 import Round
 import String exposing (fromFloat, fromInt)
 import String.Interpolate exposing (interpolate)
@@ -23,10 +28,11 @@ import Task
 -- PAGE INFO
 
 
-info : Page.Common.PageInfo Msg
+info : Lib.Page.PageInfo Msg
 info =
     { name = "lissajous"
     , hash = "lissajous"
+    , date = "2020-11-15"
     , description = Markdown.toHtml [ class "info" ] """
 Animated [Lissajous figures](https://en.wikipedia.org/wiki/Lissajous_curve).
 
@@ -76,6 +82,9 @@ type alias Model =
     -- the foreground color picker
     , foregroundColorPicker : ColorPicker.State
 
+    -- the visibility of the foreground color picker
+    , foregroundColorPickerVisible : Bool
+
     -- widget underlying model
     , widgetState : Widget.Model
     }
@@ -107,6 +116,7 @@ init =
       , lissajousStencils = createBoundedArray (initialAfterGlow + 1) (\_ -> Nothing)
       , ticks = createFrames 20 -- initial capacity
       , foregroundColorPicker = ColorPicker.empty
+      , foregroundColorPickerVisible = False
       , widgetState = widgetModel
       }
     , Cmd.map WidgetMessage widgetCmd
@@ -129,6 +139,7 @@ type Msg
     | SetPhase String
     | SetAfterglow String
     | ForegroundColorPickerMsg ColorPicker.Msg
+    | ShowForegroundColorPicker Bool
     | WidgetMessage Widget.Msg
     | Batch (List Msg)
 
@@ -249,6 +260,9 @@ update msg model =
             , Cmd.none
             )
 
+        ShowForegroundColorPicker b ->
+            ( { model | foregroundColorPickerVisible = b }, Cmd.none )
+
         WidgetMessage msgw ->
             let
                 ( widgetModel, widgetCmd ) =
@@ -302,65 +316,12 @@ constants =
 
 view : Model -> Html Msg
 view model =
-    div [ class "container animated flipInX" ]
-        [ hr [] []
-        , Markdown.toHtml [ class "info" ] """
-##### Animated [Lissajous figures](https://en.wikipedia.org/wiki/Lissajous_curve) using [Scalable Vector Graphics](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) (SVG).
-                    """
-        , br [] []
-        , div [ class "row display" ]
-            [ -- canvas for the lissajous
-              div [ id "lissajous-scope col-sm-6", style "width" (toPixels constants.width), style "height" (toPixels constants.height) ]
-                [ Widget.view model.widgetState
-                    (concat
-                        [ [ backgroundForm (rgb255 0 0 0)
-                          , xAxisForm
-                          , yAxisForm
-                          ]
-                        , model.lissajousStencils.values
-                            |> Array.toList
-                            |> filterMap identity
-                            |> indexedMap
-                                (\i s ->
-                                    let
-                                        length =
-                                            model.lissajousStencils.length
-
-                                        f =
-                                            if length == 0 then
-                                                0.0
-
-                                            else if length == i + 1 then
-                                                1.0
-
-                                            else
-                                                toFloat (i + 1) / toFloat length / 1.5
-
-                                        color =
-                                            model.curveStyle.color |> fadeColor f |> toSvgColor
-
-                                        lineType =
-                                            if length == i + 1 then
-                                                model.curveStyle.lineType
-
-                                            else
-                                                solid 3
-                                    in
-                                    outlined lineType color s
-                                )
-                        , [ fpsText model.ticks
-                                |> GraphicSVG.text
-                                |> fixedwidth
-                                |> filled (Color.rgb255 217 217 217 |> toSvgColor)
-                                |> move ( (constants.height // 2) - (constants.margin + 20) |> toFloat, (constants.width - 20) // 2 |> toFloat )
-                          ]
-                        ]
-                    )
-                ]
-            , div [ class "description col-sm-6" ]
+    div [ class "columns" ]
+        [ div [ class "column is-8 is-offset-2" ]
+            [ div [ class "content is-medium" ]
                 [ p []
                     [ text "You can "
-                    , if model.started then
+                    , if not model.started then
                         a [ class "action", href "", onClickNotPropagate Start ] [ text "start" ]
 
                       else
@@ -370,47 +331,45 @@ view model =
                     , text " the values to default."
                     ]
                 , p [] [ text "The equations are:" ]
-                , div [ class "equation" ]
-                    [ p []
-                        [ text " •  x = "
-                        , text (fromInt constants.width)
-                        , text " sin("
-                        , input
-                            [ class "input-number"
-                            , name "a-parameter"
-                            , type_ "number"
-                            , size 1
-                            , value (fromInt model.a)
-                            , onInput SetAParemeter
-                            ]
-                            []
-                        , text "t + "
-                        , input
-                            [ class "input-number"
-                            , name "phase"
-                            , type_ "number"
-                            , size 1
-                            , value (Round.round 2 model.p)
-                            , onInput SetPhase
-                            ]
-                            []
-                        , text "°)"
+                , p []
+                    [ text " •  x = "
+                    , text (fromInt constants.width)
+                    , text " sin("
+                    , input
+                        [ class "input input-number is-small is-inline"
+                        , name "a-parameter"
+                        , type_ "number"
+                        , size 1
+                        , value (fromInt model.a)
+                        , onInput SetAParemeter
                         ]
-                    , p []
-                        [ text " •  y = "
-                        , text (fromInt constants.width)
-                        , text " sin("
-                        , input
-                            [ class "input-number"
-                            , name "b-parameter"
-                            , type_ "number"
-                            , size 1
-                            , value (fromInt model.b)
-                            , onInput SetBParameter
-                            ]
-                            []
-                        , text "t)"
+                        []
+                    , text "t + "
+                    , input
+                        [ class "input input-number is-small is-inline"
+                        , name "phase"
+                        , type_ "number"
+                        , size 1
+                        , value (Round.round 2 model.p)
+                        , onInput SetPhase
                         ]
+                        []
+                    , text "°)"
+                    ]
+                , p []
+                    [ text " •  y = "
+                    , text (fromInt constants.width)
+                    , text " sin("
+                    , input
+                        [ class "input input-number is-small is-inline"
+                        , name "b-parameter"
+                        , type_ "number"
+                        , size 1
+                        , value (fromInt model.b)
+                        , onInput SetBParameter
+                        ]
+                        []
+                    , text "t)"
                     ]
                 , let
                     deltas =
@@ -431,42 +390,29 @@ view model =
                         [ a [ class clazz, href "", onClickNotPropagate (Batch [ SetAParemeter (fromInt pa), SetBParameter (fromInt pb) ]) ]
                             [ text (interpolate "({0},{1})" ([ pa, pb ] |> map fromInt))
                             ]
-                        , text "  " -- add some space, but this is not great
+                        , text " "
                         ]
                   in
                   p [] <|
-                    (text "You can also try some examples of Lissajouss figures with δ = π/2:"
+                    (text "You can also try some examples of Lissajouss figures with δ = π/2: "
                         :: concatMap link deltas
                     )
-                , p [ class "form-inline" ]
-                    [ text "The color for the plot is"
-                    , div []
-                        [ button
-                            [ attribute "aria-expanded" "false"
-                            , attribute "aria-haspopup" "true"
-                            , class "btn btn-light dropdown-toggle"
-                            , attribute "data-toggle" "dropdown"
-                            , id "dropdownForegroundColorPickerButton"
-                            , type_ "button"
-                            ]
-                            [ span
-                                [ class "color-tag"
-                                , style "background-color" (toCssString model.curveStyle.color)
-                                ]
-                                []
-                            ]
-                        , div
-                            [ attribute "aria-labelledby" "dropdownForegroundColorPickerButton"
-                            , class "dropdown-menu"
-                            ]
-                            [ ColorPicker.view model.curveStyle.color model.foregroundColorPicker |> Html.map ForegroundColorPickerMsg ]
-                        ]
+                , lissajouComponent model
+                , p []
+                    [ text "The color for the plot is "
+                    , ColorSelector.view
+                        model.foregroundColorPickerVisible
+                        model.curveStyle.color
+                        ShowForegroundColorPicker
+                        model.foregroundColorPicker
+                        ForegroundColorPickerMsg
+                    , text " "
                     , text " (click to change)."
                     ]
-                , p [ class "form-inline" ]
+                , p []
                     [ text "The afterglow effect is "
                     , input
-                        [ class "input-number"
+                        [ class "input input-number is-small is-inline"
                         , name "afterglow"
                         , type_ "number"
                         , size 3
@@ -479,7 +425,7 @@ view model =
                 , p []
                     [ text "The animation consists in shifting the phase by "
                     , input
-                        [ class "input-number"
+                        [ class "input input-number is-small is-inline"
                         , name "phase-velocity"
                         , type_ "number"
                         , size 3
@@ -490,7 +436,7 @@ view model =
                     , a [ href "https://en.wikipedia.org/wiki/Revolutions_per_minute" ] [ text "rev/min" ]
                     , text ". The resolution is "
                     , input
-                        [ class "input-number"
+                        [ class "input input-number is-small is-normal is-inline"
                         , name "curve-resolution"
                         , type_ "number"
                         , size 4
@@ -503,6 +449,57 @@ view model =
                     ]
                 ]
             ]
+        ]
+
+
+lissajouComponent : Model -> Html Msg
+lissajouComponent model =
+    div [ id "lissajous-scope", style "max-width" (fromInt constants.width ++ "px"), class "mx-auto" ]
+        [ Widget.view model.widgetState
+            (concat
+                [ [ backgroundForm (rgb255 0 0 0)
+                  , xAxisForm
+                  , yAxisForm
+                  ]
+                , model.lissajousStencils.values
+                    |> Array.toList
+                    |> filterMap identity
+                    |> indexedMap
+                        (\i s ->
+                            let
+                                length =
+                                    model.lissajousStencils.length
+
+                                f =
+                                    if length == 0 then
+                                        0.0
+
+                                    else if length == i + 1 then
+                                        1.0
+
+                                    else
+                                        toFloat (i + 1) / toFloat length / 1.5
+
+                                color =
+                                    model.curveStyle.color |> fadeColor f |> toSvgColor
+
+                                lineType =
+                                    if length == i + 1 then
+                                        model.curveStyle.lineType
+
+                                    else
+                                        solid 3
+                            in
+                            outlined lineType color s
+                        )
+                , [ fpsText model.ticks
+                        |> GraphicSVG.text
+                        |> fixedwidth
+                        |> filled (Color.rgb255 217 217 217 |> toSvgColor)
+                        |> move ( (constants.height // 2) - (constants.margin + 20) |> toFloat, (constants.width - 20) // 2 |> toFloat )
+                  ]
+                ]
+            )
         ]
 
 

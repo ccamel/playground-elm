@@ -1,19 +1,17 @@
-"use strict";
-
+import "bulma/css/bulma.min.css";
+import "github-fork-ribbon-css/gh-fork-ribbon.css";
 import "./fonts/font.css";
-import "tether/dist/css/tether.css";
-import "bootstrap/dist/js/bootstrap.bundle.js";
-import "bootstrap/dist/css/bootstrap.css";
 import "elm-canvas/elm-canvas.js";
 import "font-awesome/css/font-awesome.css";
-import "animate.css/animate.css";
 import "./playground.css";
-import "./calc.css";
-import "./lissajous.css";
-import "./digital-clock.css";
-import "./maze.css";
-import "./term.css";
-import "./asteroids.css";
+import "./Page/about.css";
+import "./Page/asteroids.css";
+import "./Page/calc.css";
+import "./Page/digital-clock.css";
+import "./Page/lissajous.css";
+import "./Page/maze.css";
+import "./Page/physics.css";
+import "./Page/term.css";
 
 const { Elm } = require("./Main.elm");
 const basePath = new URL(document.baseURI).pathname;

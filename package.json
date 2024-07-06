@@ -10,7 +10,6 @@
     "elm",
     "web-application",
     "spa",
-    "bootstrap",
     "parcel",
     "svg",
     "demo-site"
@@ -26,7 +25,7 @@
   },
   "engines": {
     "node": "^18.17.1",
-    "pnpm": "^8.3.0"
+    "pnpm": "^9.1.2"
   },
   "targets": {
     "modern": {
@@ -44,27 +43,28 @@
     "elm-json": "elm-json"
   },
   "dependencies": {
-    "animate.css": "^4.1.1",
-    "bootstrap": "^4.6.2",
     "elm-canvas": "^2.2.4",
     "file-loader": "^6.2.0",
     "font-awesome": "^4.7.0",
     "jquery": "^3.7.1",
     "popper.js": "^1.16.1",
     "style-loader": "^4.0.0",
-    "tether": "^2.0.0",
     "url-loader": "^4.1.1"
   },
   "devDependencies": {
+    "@parcel/config-default": "^2.12.0",
     "@parcel/transformer-elm": "2.12.0",
-    "elm": "^0.19.1",
+    "bulma": "^1.0.1",
+    "elm": "0.19.1-5",
     "elm-analyse": "^0.16.5",
     "elm-format": "^0.8.7",
     "elm-hot": "^1.1.6",
     "elm-json": "^0.2.13",
     "elm-review": "^2.12.0",
+    "github-fork-ribbon-css": "^0.2.3",
     "node-elm-compiler": "^5.0.6",
     "parcel": "^2.12.0",
+    "parcel-reporter-static-files-copy": "^1.5.3",
     "posthtml-expressions": "^1.11.3",
     "prettier": "^3.3.2",
     "release-it": "^17.4.0",

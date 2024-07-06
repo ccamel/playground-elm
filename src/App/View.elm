@@ -2,12 +2,16 @@ module App.View exposing (view)
 
 import App.Messages exposing (Msg(..), Page)
 import App.Models exposing (Model)
-import App.Pages exposing (pageDescription, pageHash, pageName, pageSrc, pageView, pages)
-import App.Routing exposing (Route(..), nextPage, prevPage)
-import Browser
-import Html exposing (Html, a, div, footer, h1, h2, h3, hr, i, img, li, nav, p, section, span, text, ul)
-import Html.Attributes exposing (alt, attribute, class, href, id, src, style, title, type_)
+import App.Pages exposing (pageDate, pageDescription, pageGithubLink, pageHash, pageName, pageView, pages)
+import App.Routing exposing (Route(..))
+import Browser exposing (UrlRequest(..))
+import Html exposing (Html, a, article, br, div, footer, h1, h2, h3, hr, i, img, p, section, span, strong, text)
+import Html.Attributes exposing (attribute, class, href, src, title)
 import Html.Events exposing (onClick)
+import Lib.Html exposing (classList, onClickNotPropagate)
+import List exposing (intersperse)
+import String.Interpolate exposing (interpolate)
+import Html.Attributes exposing (width)
 
 
 
@@ -16,263 +20,251 @@ import Html.Events exposing (onClick)
 
 view : Model -> Browser.Document Msg
 view model =
-    let
-        prev =
-            prevPage model.route pages
-
-        next =
-            nextPage model.route pages
-    in
     { title = "playground-elm"
     , body =
-        [ div []
-            [ div [ class "navbar navbar-inverse bg-inverse" ]
-                -- nav bar
-                [ div [ class "container d-flex" ]
-                    [ a
-                        [ Html.Attributes.classList
-                            [ ( "breadcrumb", True )
-                            , ( "animated", True )
-                            , ( "fadeOut", prev |> exists |> not )
-                            , ( "fadeIn", prev |> exists )
-                            ]
-                        , style "cursor"
-                            (if prev |> exists then
-                                "cursor"
-
-                             else
-                                "default"
-                            )
-                        , href ("#" ++ (prev |> Maybe.map pageHash |> Maybe.withDefault ""))
-                        , onClick (prev |> Maybe.map GoToPage |> Maybe.withDefault GoToHome)
-                        ]
-                        [ i [ class "fa fa-caret-left", attribute "aria-hidden" "true" ] [] ]
-                    , nav [ class "breadcrumb" ]
-                        [ a [ class "breadcrumb-item", href "#", onClick GoToHome ]
-                            [ text "playground-elm" ]
-                        , span [ class "breadcrumb-item active" ]
-                            [ text (hash model.route) ]
-                        ]
-                    , a
-                        [ Html.Attributes.classList
-                            [ ( "breadcrumb", True )
-                            , ( "animated", True )
-                            , ( "fadeOut", next |> exists |> not )
-                            , ( "fadeIn", next |> exists )
-                            ]
-                        , style "cursor"
-                            (if next |> exists then
-                                "cursor"
-
-                             else
-                                "default"
-                            )
-                        , href ("#" ++ (next |> Maybe.map pageHash |> Maybe.withDefault ""))
-                        , onClick (next |> Maybe.map GoToPage |> Maybe.withDefault GoToHome)
-                        ]
-                        [ i [ class "fa fa-caret-right", attribute "aria-hidden" "true" ] [] ]
-                    ]
-
-                -- "fork me" ribbon
-                , a [ href "https://github.com/ccamel/playground-elm" ]
-                    [ img
-                        [ alt "Fork me on GitHub"
-                        , attribute "data:data-canonical-src" "https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png"
-                        , src "https://camo.githubusercontent.com/38ef81f8aca64bb9a64448d0d70f1308ef5341ab/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6461726b626c75655f3132313632312e706e67"
-                        , attribute "style" "position: absolute; top: 0; right: 0; border: 0;"
-                        ]
-                        []
-                    , text ""
-                    ]
+        [ forkmeRibbon
+        , section
+            [ classList [ ( "hero", True ), ( "is-medium", isHomePage model ), ( "is-small", not (isHomePage model) ) ]
+            ]
+            [ div
+                [ class "hero-body"
                 ]
-
-            -- preamble
-            , section [ class "jumbotron text-center" ]
-                [ div [ class "container" ]
-                    [ h1 [ class "jumbotron-heading" ]
-                        [ i [ class "fa fa-quote-left text-muted", style "padding-right" "1em" ] []
-                        , span []
-                            [ text "playground"
-                            , text " "
-                            , span [ class "elm-pipe" ] [ text "|" ]
-                            , span [ class "elm-gt" ] [ text ">" ]
-                            , text " "
-                            , a [ href "http://elm-lang.org/" ] [ text "elm" ]
-                            ]
-                        , i [ class "fa fa-quote-right text-muted", style "padding-left" "1em" ] []
-                        ]
-                    , div [ style "float" "right" ]
-                        [ a
-                            [ attribute "aria-controls" "collapseExample"
-                            , attribute "aria-expanded" "true"
-                            , attribute "data-toggle" "collapse"
-                            , title "toggle the summary"
-                            , type_ "button"
-                            , attribute "data-target" "#summary"
-                            , href "."
-                            ]
-                            [ i [ class "fa fa-bars" ] [] ]
-                        ]
-                    , p [ class "lead text-muted collapse.show collapse show", id "summary" ]
-                        [ p []
-                            [ text "My playground I use for playing with fancy and exciting technologies." ]
-                        , p [] [ text "§" ]
-                        , p []
-                            [ text "This one's for "
-                            , a [ href "http://elm-lang.org/" ] [ text "elm" ]
-                            , text " and "
-                            , a [ href "https://getbootstrap.com/" ] [ text "bootstrap" ]
-                            ]
-                        ]
+                [ div
+                    [ class "container has-text-centered"
                     ]
-                ]
-
-            -- content
-            , div [ id (contentId model.route), class "demo-content" ]
-                [ content model
-                ]
-
-            -- footer
-            , footer [ class "footer" ]
-                [ div [ class "container" ]
-                    [ ul [ class "text-center" ]
-                        [ li [ class "text-muted" ]
-                            [ text "© 2017-2021 Christophe Camel - MIT License" ]
-                        , li [ class "text-muted" ] [ text "  |  " ]
-                        , li [ class "text-muted" ] [ text (String.append "v" model.flags.version) ]
-                        , li [ class "text-muted" ] [ text "  |  " ]
-                        , li []
-                            [ a [ href "https://github.com/ccamel" ]
-                                [ i [ class "fa fa-github fa-2x" ]
-                                    []
-                                ]
-                            ]
-                        , li [ class "text-muted" ] [ text "  |  " ]
-                        , li []
-                            [ a [ href "https://www.linkedin.com/in/christophe-camel" ]
-                                [ i [ class "fa fa-linkedin-square fa-2x" ]
-                                    []
-                                ]
-                            ]
+                    [ h1 [ class "title pb-5" ]
+                        [ i [ class "quote-left fa fa-quote-left text-muted pr-4" ] []
+                        , span [ class "break" ] []
+                        , a [ href "#", onClickNotPropagate GoToHome ] [ text "playground" ]
+                        , span [ class "elm-pipe pl-1" ] [ text "|" ]
+                        , span [ class "elm-gt pr-1" ] [ text ">" ]
+                        , a [ href "http://elm-lang.org/" ] [ text "elm" ]
+                        , span [ class "break" ] []
+                        , i [ class "quote-right fa fa-quote-right text-muted pl-4" ] []
                         ]
+                    , h2
+                        [ class "subtitle"
+                        ]
+                        [ text "A playground for fancy web experiences with Elm" ]
                     ]
                 ]
             ]
+        , contentPart model
+        , footerPart model
         ]
     }
 
 
+{-| the html elements for the footer
+-}
+footerPart : Model -> Html Msg
+footerPart _ =
+    footer
+        [ class "footer has-background-black-bis" ]
+        [ div
+            [ class "container"
+            ]
+            [ div
+                [ class "content has-text-centered"
+                ]
+                [ p
+                    []
+                    [ a
+                        [ href "https://github.com/ccamel"
+                        ]
+                        [ i
+                            [ class "fa fa-github-square fa-2x"
+                            , attribute "aria-hidden" "true"
+                            ]
+                            []
+                        ]
+                    , a
+                        [ href "https://linkedin.com/in/christophe-camel/"
+                        ]
+                        [ i
+                            [ class "fa fa-linkedin-square fa-2x mx-4"
+                            , attribute "aria-hidden" "true"
+                            ]
+                            []
+                        ]
+                    , a
+                        [ href "https://twitter.com/7h3_360l355_d3v"
+                        ]
+                        [ i
+                            [ class "fa fa-twitter-square fa-2x"
+                            , attribute "aria-hidden" "true"
+                            ]
+                            []
+                        ]
+                    ]
+                , p []
+                    [ strong []
+                        [ text "playground-elm" ]
+                    , text " | "
+                    , a [ href "https://github.com/ccamel" ]
+                        [ text "© 2017-2024 Christophe Camel" ]
+                    , text " | "
+                    , a [ href "https://github.com/ccamel/playground-elm/blob/main/LICENSE" ]
+                        [ text "MIT License" ]
+                    , text "."
+                    , br [] []
+                    ]
+                ]
+            ]
+        ]
+
+
+forkmeRibbon : Html msg
+forkmeRibbon =
+    a
+        [ class "github-fork-ribbon right-top"
+        , href "https://github.com/ccamel/playground-elm"
+        , attribute "data-ribbon" "Fork me on GitHub"
+        , title "Fork me on GitHub"
+        ]
+        [ text "Fork me on GitHub" ]
+
+
 {-| the html elements for the content part of the view
 -}
-content : Model -> Html Msg
-content model =
+contentPart : Model -> Html Msg
+contentPart model =
     case model.route of
         Home ->
             homePage model
 
         Page page ->
-            pageView page model
+            pagePart page model
 
         NotFoundRoute ->
-            notFoundView
+            notFound
 
 
-{-| the home page displaying all available pages as "album" entries
--}
 homePage : Model -> Html Msg
 homePage model =
-    div [ class "text-muted" ]
+    section [ class "section" ]
         [ div [ class "container" ]
-            [ hr [] []
-            , div [ class "row" ] (pages |> List.map (pageCard model))
+            [ div [ class "columns" ]
+                [ div [ class "column is-10 is-offset-1" ]
+                    (pages
+                        |> List.sortBy pageDate
+                        |> List.reverse
+                        |> List.indexedMap (showcase model)
+                        |> intersperse (hr [] [])
+                    )
+                ]
             ]
         ]
 
 
-pageCard : Model -> Page -> Html Msg
-pageCard _ page =
-    div [ class "col-sm-3" ]
-        [ div [ class "card animated fadeInUp" ]
-            [ div [ class "card-block" ]
-                [ h3 [ class "card-title" ]
-                    [ i [ class "fa fa-square", attribute "aria-hidden" "true" ] []
-                    , text (pageName page)
+pagePart : Page -> Model -> Html Msg
+pagePart page model =
+    div []
+        [ section [ class "section has-background-black-bis" ]
+            [ div [ class "columns" ]
+                [ div [ class "column is-8 is-offset-2" ]
+                    [ div [ class "content is-medium" ]
+                        [ h2 [ class "title showcase-title mb-5" ] [ page |> pageName |> text ]
+                        , page |> pageDescription
+                        ]
                     ]
-                , p [ class "card-text" ]
-                    [ pageDescription page ]
-                , a [ href ("#" ++ pageHash page), onClick (GoToPage page) ] [ text "» Go" ]
-                , span [ style "padding-left" "15px" ] [] -- FIXME: not pretty
-                , linkToGitHub page
                 ]
+            ]
+        , section [ class "section pt-1 has-background-black-bis" ]
+            [ pageView page model ]
+        ]
+
+
+showcase : Model -> Int -> Page -> Html Msg
+showcase _ num page =
+    div [ class "columns featured-showcase is-multiline" ]
+        [ div [ class "column is-12 showcase" ]
+            [ article [ class "columns featured" ]
+                ([ div [ class "column is-7 showcase-img" ]
+                    [ img [ src <| interpolate "/{0}.png" [ pageHash page ], width 450 ]
+                        []
+                    ]
+                 , div [ class "column is-5 featured-content va" ]
+                    [ div []
+                        [ h3
+                            [ class "heading showcase-category"
+                            ]
+                            [ page |> pageDate |> text ]
+                        , h1
+                            [ class "title showcase-title"
+                            ]
+                            [ page |> pageName |> text ]
+                        , pageDescription page
+                        , br []
+                            []
+                        , a
+                            [ href ("#" ++ pageHash page)
+                            , class "button is-primary mr-4"
+                            , onClick (GoToPage page)
+                            ]
+                            [ text "View demo" ]
+                        , a
+                            [ href (pageGithubLink page)
+                            , class "button is-secondary"
+                            , onClickNotPropagate (LinkClicked (External (pageGithubLink page)))
+                            ]
+                            [ i [ class "fa fa-github mr-2" ] []
+                            , text "Source"
+                            ]
+                        ]
+                    ]
+                 ]
+                    |> (if modBy 2 num == 0 then
+                            List.reverse
+
+                        else
+                            identity
+                       )
+                )
             ]
         ]
 
 
 {-| the special not found view displayed when routing has found no matching
 -}
-notFoundView : Html msg
-notFoundView =
-    div [ class "container" ]
-        [ hr [] []
-        , div [ class "text-muted" ]
-            [ div [ class "container" ]
-                [ div [ class "row" ]
-                    [ div [ class "col-sm-12 text-center" ]
-                        [ i [ class "fa fa-exclamation-triangle" ] []
-                        , h2 [] [ text "404" ]
-                        , text "not found"
-                        ]
-                    ]
+notFound : Html Msg
+notFound =
+    section [ class "home-container" ]
+        [ div
+            [ class "container has-text-centered"
+            ]
+            [ h1
+                [ class "is-size-1 has-text-weight-bold"
                 ]
+                [ text "404" ]
+            , p
+                [ class "is-size-5 has-text-weight-medium"
+                ]
+                [ span
+                    [ class "has-text-danger"
+                    ]
+                    [ text "Opps!" ]
+                , text " Page not found."
+                ]
+            , p
+                [ class "is-size-6 mb-2"
+                ]
+                [ text "The page you’re looking for doesn’t exist." ]
+            , a
+                [ href "#"
+                , class "button"
+                , onClickNotPropagate GoToHome
+                ]
+                [ text "Go Home" ]
             ]
         ]
 
 
-{-| returns the html anchor ('a') that denotes a link to the code source of the given page.
--}
-linkToGitHub : Page -> Html a
-linkToGitHub page =
-    let
-        url =
-            "https://github.com/ccamel/playground-elm/blob/main/src/"
-
-        link =
-            url ++ pageSrc page
-    in
-    a [ href link ] [ text "» Source" ]
-
-
-contentId : Route -> String
-contentId route =
-    case route of
+isHomePage : Model -> Bool
+isHomePage model =
+    case model.route of
         Home ->
-            "home"
-
-        Page p ->
-            pageHash p
-
-        NotFoundRoute ->
-            "?"
-
-
-hash : Route -> String
-hash route =
-    case route of
-        Home ->
-            "home"
-
-        Page p ->
-            pageHash p
-
-        NotFoundRoute ->
-            ""
-
-
-exists : Maybe a -> Bool
-exists m =
-    case m of
-        Just _ ->
             True
 
-        Nothing ->
+        _ ->
             False

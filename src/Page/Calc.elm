@@ -2,14 +2,14 @@ module Page.Calc exposing (Model, Msg(..), Op(..), State(..), Token(..), info, i
 
 import Basics.Extra exposing (flip)
 import Browser.Events
-import Html exposing (Html, div, hr, input, p, text)
-import Html.Attributes exposing (attribute, class, type_, value)
+import Html exposing (Html, div, input, span, text)
+import Html.Attributes exposing (attribute, class, disabled, type_, value)
 import Html.Events exposing (onClick)
 import Json.Decode as Json
+import Lib.Page
 import List exposing (drop, foldl, take)
 import Markdown
 import Maybe exposing (withDefault)
-import Page.Common
 import Result exposing (toMaybe)
 import String exposing (fromFloat, fromInt)
 
@@ -18,13 +18,14 @@ import String exposing (fromFloat, fromInt)
 -- PAGE INFO
 
 
-info : Page.Common.PageInfo Msg
+info : Lib.Page.PageInfo Msg
 info =
     { name = "calc"
     , hash = "calc"
+    , date = "2020-10-11"
     , description = Markdown.toHtml [ class "info" ] """
 
-A very simple and basic calculator
+A very simple and basic calculator.
        """
     , srcRel = "Page/Calc.elm"
     }
@@ -459,33 +460,39 @@ subscriptions _ =
 
 view : Model -> Html Msg
 view model =
-    div [ class "container animated flipInX" ]
-        [ hr [] []
-        , p [ class "text-muted" ]
-            [ text "A very simple and basic calculator." ]
-        , div [ class "calc" ]
-            [ -- display
-              div [ class "row display" ]
-                [ div [ class "col-11" ]
-                    [ input [ class "lcd", attribute "readOnly" "", type_ "Text", value (display model) ]
-                        []
-                    ]
-                , div []
-                    [ renderMemoryTag model
-                    , renderOperatorTag model
+    div [ class "columns is-centered" ]
+        [ div [ class "column is-one-third" ]
+            [ calc model
+            ]
+        ]
+
+
+calc : Model -> Html Msg
+calc model =
+    div [ class "pl-5 pb-5 has-background-grey-dark br-10" ]
+        [ -- display
+          div [ class "columns is-mobile" ]
+            [ div [ class "column is-11 control has-icons-right" ]
+                [ input [ class "input has-text-right is-family-monospace", attribute "readOnly" "", type_ "Text", value (display model) ]
+                    []
+                , span []
+                    [ span [ class "icon is-right is-size-7  mt-2 mr-2" ]
+                        [ renderMemoryTag model
+                        ]
+                    , span [ class "icon is-right is-size-7  mt-5 mr-2" ] [ renderOperatorTag model ]
                     ]
                 ]
-
-            -- buttons
-            , div [ class "row buttons" ]
-                [ button (Digit 7) model, button (Digit 8) model, button (Digit 9) model, button (Operator Plus) model, button Clear model ]
-            , div [ class "row buttons" ]
-                [ button (Digit 4) model, button (Digit 5) model, button (Digit 6) model, button (Operator Minus) model, button MS model ]
-            , div [ class "row buttons" ]
-                [ button (Digit 1) model, button (Digit 2) model, button (Digit 3) model, button (Operator Multiply) model, button MR model ]
-            , div [ class "row buttons" ]
-                [ button Dot model, button (Digit 0) model, button (Operator Result) model, button (Operator Divide) model, button MC model ]
             ]
+
+        -- buttons
+        , div [ class "columns is-mobile" ]
+            [ button (Digit 7) model, button (Digit 8) model, button (Digit 9) model, button (Operator Plus) model, button Clear model ]
+        , div [ class "columns is-mobile" ]
+            [ button (Digit 4) model, button (Digit 5) model, button (Digit 6) model, button (Operator Minus) model, button MS model ]
+        , div [ class "columns is-mobile" ]
+            [ button (Digit 1) model, button (Digit 2) model, button (Digit 3) model, button (Operator Multiply) model, button MR model ]
+        , div [ class "columns is-mobile" ]
+            [ button Dot model, button (Digit 0) model, button (Operator Result) model, button (Operator Divide) model, button MC model ]
         ]
 
 
@@ -520,41 +527,37 @@ accept model token =
 
 renderMemoryTag : Model -> Html Msg
 renderMemoryTag model =
-    div [ class "tag" ]
-        [ text
-            (model.memory
-                |> Maybe.map (\_ -> "M")
-                |> withDefault " "
-            )
-        ]
+    text
+        (model.memory
+            |> Maybe.map (\_ -> "M")
+            |> withDefault " "
+        )
 
 
 renderOperatorTag : Model -> Html Msg
 renderOperatorTag model =
-    div [ class "tag" ]
-        [ model.operators
-            |> List.head
-            |> Maybe.map
-                (\token ->
-                    case token of
-                        Plus ->
-                            "+"
+    model.operators
+        |> List.head
+        |> Maybe.map
+            (\token ->
+                case token of
+                    Plus ->
+                        "+"
 
-                        Minus ->
-                            "-"
+                    Minus ->
+                        "-"
 
-                        Multiply ->
-                            "x"
+                    Multiply ->
+                        "x"
 
-                        Divide ->
-                            "/"
+                    Divide ->
+                        "/"
 
-                        Result ->
-                            "="
-                )
-            |> withDefault " "
-            |> text
-        ]
+                    Result ->
+                        "="
+            )
+        |> withDefault " "
+        |> text
 
 
 display : Model -> String
@@ -572,19 +575,12 @@ display model =
 button : Token -> Model -> Html Msg
 button token model =
     let
-        disabled =
-            if accept model token then
-                ""
-
-            else
-                " disabled"
-
-        render txt style =
-            div [ class style ]
+        render txt divStyle buttonStyle =
+            div [ class <| "column p-1 " ++ divStyle ]
                 [ Html.button
-                    [ type_ "button"
-                    , class ("btn" ++ disabled)
-                    , onClick (Emitted token)
+                    [ class <| "button is-fullwidth " ++ buttonStyle
+                    , onClick <| Emitted token
+                    , disabled <| not <| accept model token
                     ]
                     [ text txt
                     ]
@@ -592,34 +588,34 @@ button token model =
     in
     case token of
         Clear ->
-            render "C" "clear col-2 push-1"
+            render "C" "clear is-2" "is-warning"
 
         Digit d ->
-            render (fromInt d) "digit col-2"
+            render (fromInt d) "digit is-2" ""
 
         Operator Plus ->
-            render "+" "operator col-2 push-1"
+            render "+" "operator is-4" "is-info"
 
         Operator Minus ->
-            render "-" "operator col-2 push-1"
+            render "-" "operator is-4" "is-info"
 
         Operator Multiply ->
-            render "x" "operator col-2 push-1"
+            render "x" "operator is-4" "is-info"
 
         Operator Divide ->
-            render "/" "operator col-2 push-1"
+            render "/" "operator is-4" "is-info"
 
         Operator Result ->
-            render "=" "result col-2"
+            render "=" "result is-2" "is-link"
 
         MR ->
-            render "MR" "memory col-2 push-1"
+            render "MR" "memory is-2" "is-success"
 
         MC ->
-            render "MC" "memory col-2 push-1"
+            render "MC" "memory is-2" "is-success"
 
         MS ->
-            render "MS" "memory col-2 push-1"
+            render "MS" "memory is-2" "is-success"
 
         Dot ->
-            render "." "dot col-2"
+            render "." "dot is-2" ""

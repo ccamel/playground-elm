@@ -1,12 +1,12 @@
-module App.Pages exposing (PageSpec, pageDescription, pageHash, pageName, pageSrc, pageSubscriptions, pageView, pages)
+module App.Pages exposing (PageSpec, pageDate, pageDescription, pageGithubLink, pageHash, pageName, pageSubscriptions, pageView, pages)
 
 import App.Messages exposing (Msg(..), Page(..))
 import App.Models exposing (Model)
 import Html exposing (Html)
+import Lib.Page exposing (PageInfo)
 import Page.About
 import Page.Asteroids
 import Page.Calc
-import Page.Common exposing (PageInfo)
 import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
@@ -24,7 +24,7 @@ to the view and the subscriptions.
 This way, it becomes easy to add new pages without changing the code everywhere.
 -}
 type alias PageSpec =
-    { info : Page.Common.PageInfo Msg
+    { info : PageInfo Msg
     , view : Model -> Html Msg
     , subscriptions : Model -> Sub Msg
     }
@@ -68,6 +68,7 @@ toSpec info aPageView aPageSubscriptions pageMsg modelExtractor =
     { info =
         { name = info.name
         , hash = info.hash
+        , date = info.date
         , description = Html.map pageMsg info.description
         , srcRel = info.srcRel
         }
@@ -126,11 +127,23 @@ pageSrc page =
         |> .srcRel
 
 
+pageGithubLink : Page -> String
+pageGithubLink page =
+    "https://github.com/ccamel/playground-elm/blob/main/src/" ++ pageSrc page
+
+
 pageHash : Page -> String
 pageHash page =
     pageSpec page
         |> .info
         |> .hash
+
+
+pageDate : Page -> String
+pageDate page =
+    pageSpec page
+        |> .info
+        |> .date
 
 
 pageView : Page -> Model -> Html Msg
