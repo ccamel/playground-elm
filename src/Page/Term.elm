@@ -1,6 +1,6 @@
 port module Page.Term exposing (Model, Msg(..), info, init, subscriptions, update, view)
 
-import Html exposing (Html, div, hr, p, text)
+import Html exposing (Html, div, p, text)
 import Html.Attributes exposing (class)
 import Lib.Page
 import Markdown
@@ -107,15 +107,16 @@ port evalJSResults : (String -> msg) -> Sub msg
 
 view : Model -> Html Msg
 view model =
-    div [ class "container" ]
-        [ hr [] []
-        , p [ class "text-muted" ]
-            [ Markdown.toHtml [ class "info" ] """
+    div [ class "columns" ]
+        [ div [ class "column is-8 is-offset-2" ]
+            [ div [ class "content is-medium" ]
+                [ Markdown.toHtml [ class "mb-2" ] """
 The purpose of this playground is to show interoperability between [Elm](https://elm-lang.org/) environment and `JavaScript` through [ports](https://guide.elm-lang.org/interop/ports.html).
 """
+                , p [ class "text-muted" ]
+                    [ text "Type some javascript code in the terminal below:"
+                    ]
+                , Term.render model.term
+                ]
             ]
-        , p [ class "text-muted" ]
-            [ text "Type some javascript code in the terminal below:"
-            ]
-        , Term.render model.term
         ]
