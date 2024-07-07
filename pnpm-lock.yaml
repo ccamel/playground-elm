@@ -17,9 +17,6 @@ importers:
       font-awesome:
         specifier: ^4.7.0
         version: 4.7.0
-      jquery:
-        specifier: ^3.7.1
-        version: 3.7.1
       popper.js:
         specifier: ^1.16.1
         version: 1.16.1
@@ -2119,9 +2116,6 @@ packages:
   jest-worker@27.5.1:
     resolution: {integrity: sha512-7vuh85V5cdDofPyxn58nrPjBktZo0u9x1g8WtjQol+jZDaE+fhN+cIvTj11GndBnMnyfrUOG1sZQxCdjKh+DKg==}
     engines: {node: '>= 10.13.0'}
-
-  jquery@3.7.1:
-    resolution: {integrity: sha512-m4avr8yL8kmFN8psrbFFFmB/If14iN5o9nw/NgnnM+kybDJpRsAynV2BsfpTYrTRysYUdADVD7CkUUizgkpLfg==}
 
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
@@ -5959,8 +5953,6 @@ snapshots:
       '@types/node': 20.4.10
       merge-stream: 2.0.0
       supports-color: 8.1.1
-
-  jquery@3.7.1: {}
 
   js-tokens@4.0.0: {}
 
