@@ -24,5 +24,5 @@ const app = Elm.Main.init({
 
 // -- for Elm ports
 
-import { registerPorts } from './port/term.js';
+import { registerPorts } from './Page/term.js';
 registerPorts(app);
