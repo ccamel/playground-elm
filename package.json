@@ -45,8 +45,7 @@
   "dependencies": {
     "elm-canvas": "^2.2.4",
     "file-loader": "^6.2.0",
-    "font-awesome": "^4.7.0",
-    "url-loader": "^4.1.1"
+    "font-awesome": "^4.7.0"
   },
   "devDependencies": {
     "@parcel/config-default": "^2.12.0",

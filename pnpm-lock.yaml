@@ -17,9 +17,6 @@ importers:
       font-awesome:
         specifier: ^4.7.0
         version: 4.7.0
-      url-loader:
-        specifier: ^4.1.1
-        version: 4.1.1(file-loader@6.2.0(webpack@5.88.2))(webpack@5.88.2)
     devDependencies:
       '@parcel/config-default':
         specifier: ^2.12.0
@@ -3310,16 +3307,6 @@ packages:
   url-join@5.0.0:
     resolution: {integrity: sha512-n2huDr9h9yzd6exQVnH/jU5mr+Pfx08LRXXZhkLLetAMESRj+anQsTAh940iMrIetKAmry9coFuZQ2jY8/p3WA==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
-
-  url-loader@4.1.1:
-    resolution: {integrity: sha512-3BTV812+AVHHOJQO8O5MkWgZ5aosP7GnROJwvzLS9hWDj00lZ6Z0wNak423Lp9PBZN05N+Jk/N5Si8jRAlGyWA==}
-    engines: {node: '>= 10.13.0'}
-    peerDependencies:
-      file-loader: '*'
-      webpack: ^4.0.0 || ^5.0.0
-    peerDependenciesMeta:
-      file-loader:
-        optional: true
 
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
@@ -7213,15 +7200,6 @@ snapshots:
       punycode: 2.3.0
 
   url-join@5.0.0: {}
-
-  url-loader@4.1.1(file-loader@6.2.0(webpack@5.88.2))(webpack@5.88.2):
-    dependencies:
-      loader-utils: 2.0.4
-      mime-types: 2.1.35
-      schema-utils: 3.3.0
-      webpack: 5.88.2
-    optionalDependencies:
-      file-loader: 6.2.0(webpack@5.88.2)
 
   util-deprecate@1.0.2: {}
 
