@@ -1,1 +1,21 @@
-{}
+{
+  "printWidth": 120,
+  "singleQuote": true,
+  "proseWrap": "always",
+  "trailingComma": "none",
+  "arrowParens": "avoid",
+  "overrides": [
+    {
+      "files": ".eslintrc",
+      "options": {
+        "parser": "json"
+      }
+    },
+    {
+      "files": ".parcelrc",
+      "options": {
+        "parser": "json"
+      }
+    }
+  ]
+}

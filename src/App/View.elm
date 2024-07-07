@@ -6,12 +6,11 @@ import App.Pages exposing (pageDate, pageDescription, pageGithubLink, pageHash, 
 import App.Routing exposing (Route(..))
 import Browser exposing (UrlRequest(..))
 import Html exposing (Html, a, article, br, div, footer, h1, h2, h3, hr, i, img, p, section, span, strong, text)
-import Html.Attributes exposing (attribute, class, href, src, title)
+import Html.Attributes exposing (attribute, class, href, src, title, width)
 import Html.Events exposing (onClick)
 import Lib.Html exposing (classList, onClickNotPropagate)
 import List exposing (intersperse)
 import String.Interpolate exposing (interpolate)
-import Html.Attributes exposing (width)
 
 
 

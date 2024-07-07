@@ -1,5 +1,3 @@
-"use strict";
-
 /**
  * Register the JS implementation of the ELM ports.
  *
@@ -7,8 +5,8 @@
  * - evalJSResults: (JS -> Elm) string result of the evaluation.
  */
 function registerPorts(app) {
-  app.ports.evalJS.subscribe((code) => {
-    let result = "";
+  app.ports.evalJS.subscribe(code => {
+    let result = '';
     try {
       result = eval(code);
     } catch (err) {
