@@ -1,1 +1,16 @@
-{}
+{
+  "overrides": [
+    {
+      "files": ".eslintrc",
+      "options": {
+        "parser": "json"
+      }
+    },
+    {
+      "files": ".parcelrc",
+      "options": {
+        "parser": "json"
+      }
+    }
+  ]
+}

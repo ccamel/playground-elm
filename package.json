@@ -38,7 +38,7 @@
     "build": "BASE_URL=/playground-elm/ parcel build src/index.html --no-source-maps --public-url ./",
     "serve": "BASE_URL=/ parcel src/index.html",
     "release": "release-it",
-    "prettify": "prettier --write . && elm-format src",
+    "prettify": "prettier --write \"**/*.{html,js,json,yaml,css,md,parcelrc,eslintrc}\" && elm-format src --yes",
     "lint": "elm-review",
     "elm-json": "elm-json"
   },
