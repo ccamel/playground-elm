@@ -16,7 +16,8 @@
 
 ## 🎯 Purpose
 
-The purpose of this playground is to explore, study and assess the [elm][] language — a delightful language for reliable webapps.
+The purpose of this playground is to explore, study and assess the [elm][] language — a delightful language for reliable
+webapps.
 
 <p align="center">
    <a href="https://ccamel.github.io/playground-elm/">
@@ -28,8 +29,8 @@ The showcases are intended to be:
 
 - **simple**: Fairly simple and understandable. Every showcase is implemented in a single elm file.
 - **exploratory**:
-  - _Highlight_ some aspects of the [elm][] language, like immutability, reactiveness, performance and
-    interoperability with other JS libraries and CSS frameworks.
+  - _Highlight_ some aspects of the [elm][] language, like immutability, reactiveness, performance and interoperability
+    with other JS libraries and CSS frameworks.
   - _Explore_ some architectural/design patterns around reactive static/serverless [SPA][]
 - **playable**: As much as possible, provides a useful and enjoyable content.
 
@@ -41,12 +42,17 @@ The demo is a pure [SPA][] (100% clientside application) written in [elm][].
 
 List of showcases:
 
-- _asteroids_: A simple Asteroids clone in [Elm][] using the [ECS](https://en.wikipedia.org/wiki/Entity_component_system) pattern and [SVG](https://fr.wikipedia.org/wiki/Scalable_Vector_Graphics) for rendering.
+- _asteroids_: A simple Asteroids clone in [Elm][] using the
+  [ECS](https://en.wikipedia.org/wiki/Entity_component_system) pattern and
+  [SVG](https://fr.wikipedia.org/wiki/Scalable_Vector_Graphics) for rendering.
 - _term_: A terminal which evaluates JavaScript code using elm ports.
-- _physics-engine_: Very simple physics engine using [Verlet Integration](https://en.wikipedia.org/wiki/Verlet_integration) algorithm and rendered through an HTML5 canvas.
-- _maze_: A maze generator using a [recursive backtracking](https://en.wikipedia.org/wiki/Maze_generation_algorithm#Recursive_backtracker) algorithm.
+- _physics-engine_: Very simple physics engine using
+  [Verlet Integration](https://en.wikipedia.org/wiki/Verlet_integration) algorithm and rendered through an HTML5 canvas.
+- _maze_: A maze generator using a
+  [recursive backtracking](https://en.wikipedia.org/wiki/Maze_generation_algorithm#Recursive_backtracker) algorithm.
 - _digital-clock_: A demo rendering a digital clock in [SVG](https://fr.wikipedia.org/wiki/Scalable_Vector_Graphics).
-- _lissajous_: Animated [Lissajous](https://en.wikipedia.org/wiki/Lissajous_curve) figures in [SVG](https://fr.wikipedia.org/wiki/Scalable_Vector_Graphics)
+- _lissajous_: Animated [Lissajous](https://en.wikipedia.org/wiki/Lissajous_curve) figures in
+  [SVG](https://fr.wikipedia.org/wiki/Scalable_Vector_Graphics)
 - _calc_: A very simple and basic calculator.
 
 ## 🛠 Building and Running
@@ -77,8 +83,8 @@ Be sure to have the following properly installed:
 
 The project now relies on [parceljs][], a web application bundler which handles [elm][] builds at free.
 
-At first, all the node packages this project depends on must be installed locally. This can be done with the
-following command:
+At first, all the node packages this project depends on must be installed locally. This can be done with the following
+command:
 
 ```bash
 pnpm install
@@ -93,7 +99,8 @@ pnpm build
 Then, open `./dist/index.html` file in your browser.
 
 If you prefer, the site can be published by a local HTTP server. In this mode, if any change is detected, the build of
-the project will be started again, and the site automatically updated in the browser; which is nice during the development phases.
+the project will be started again, and the site automatically updated in the browser; which is nice during the
+development phases.
 
 The publication is launched with the following command:
 

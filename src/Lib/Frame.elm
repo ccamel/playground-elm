@@ -38,10 +38,14 @@ fps : Frames -> Maybe Float
 fps frames =
     if frames.length > 1 then
         let
-            totalTime = foldl (+) 0 frames.values
-            averageTime = totalTime / 1000.0 / toFloat frames.length
+            totalTime =
+                foldl (+) 0 frames.values
+
+            averageTime =
+                totalTime / 1000.0 / toFloat frames.length
         in
         Just (1.0 / averageTime)
+
     else
         Nothing
 
