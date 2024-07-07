@@ -46,6 +46,7 @@ module.exports = {
         ':globe_with_meridians:',
         ':green_ale:',
         ':green_heart:',
+        ':hammer:',
         ':hankey:',
         ':heavy_minus_sign:',
         ':heavy_plus_sign:',
