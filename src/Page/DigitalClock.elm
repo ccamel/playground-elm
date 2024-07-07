@@ -184,11 +184,12 @@ view model =
                         []
                     , text ", the color used for the lcd is "
                     , ColorSelector.view
-                        model.colorPickerVisible
-                        model.color
-                        ShowColorPicker
-                        model.colorPicker
-                        ColorPickerMsg
+                        { visible = model.colorPickerVisible
+                        , color = model.color
+                        , onVisibilityChange = ShowColorPicker
+                        , state = model.colorPicker
+                        , toMsg = ColorPickerMsg
+                        }
                     , text " (click to change)"
                     , text ", and the refresh interval is "
                     , input

@@ -401,11 +401,12 @@ view model =
                 , p []
                     [ text "The color for the plot is "
                     , ColorSelector.view
-                        model.foregroundColorPickerVisible
-                        model.curveStyle.color
-                        ShowForegroundColorPicker
-                        model.foregroundColorPicker
-                        ForegroundColorPickerMsg
+                        { visible = model.foregroundColorPickerVisible
+                        , color = model.curveStyle.color
+                        , onVisibilityChange = ShowForegroundColorPicker
+                        , state = model.foregroundColorPicker
+                        , toMsg = ForegroundColorPickerMsg
+                        }
                     , text " "
                     , text " (click to change)."
                     ]

@@ -10,8 +10,8 @@ import Lib.Html exposing (classList, onClickNotPropagate)
 
 {-| A color selector that opens a color picker when clicked.
 -}
-view : Bool -> Color.Color -> (Bool -> msg) -> ColorPicker.State -> (ColorPicker.Msg -> msg) -> Html msg
-view visible color onVisibilityChange state mapper =
+view : { visible : Bool, color : Color.Color, onVisibilityChange : Bool -> msg, state : ColorPicker.State, toMsg : ColorPicker.Msg -> msg } -> Html msg
+view { visible, color, onVisibilityChange, state, toMsg } =
     div
         [ classList [ ( "is-active", visible ) ]
         , class "dropdown"
@@ -31,7 +31,7 @@ view visible color onVisibilityChange state mapper =
         , div [ class "dropdown-menu", id "dropdown-menu", role "menu" ]
             [ div [ class "dropdown-content" ]
                 [ div [ class "dropdown-item" ]
-                    [ ColorPicker.view color state |> Html.map mapper
+                    [ ColorPicker.view color state |> Html.map toMsg
                     ]
                 ]
             ]
