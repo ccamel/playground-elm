@@ -57,7 +57,7 @@ view model =
 {-| the html elements for the footer
 -}
 footerPart : Model -> Html Msg
-footerPart _ =
+footerPart { flags } =
     footer
         [ class "footer has-background-black-bis" ]
         [ div
@@ -98,7 +98,7 @@ footerPart _ =
                     ]
                 , p []
                     [ strong []
-                        [ text "playground-elm" ]
+                        [ text ("playground-elm v" ++ flags.version) ]
                     , text " | "
                     , a [ href "https://github.com/ccamel" ]
                         [ text "© 2017-2024 Christophe Camel" ]
