@@ -15,7 +15,7 @@ import './Page/term.css';
 
 import { Elm } from './Main.elm';
 const basePath = new URL(document.baseURI).pathname;
-const version = (document.querySelector('meta[name="version"]') || {}).content ?? '?';
+const version = document.querySelector('meta[name="version"]')?.content ?? '?';
 
 const app = Elm.Main.init({
   node: document.querySelector('main'),
