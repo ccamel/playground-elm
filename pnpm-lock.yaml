@@ -17,9 +17,6 @@ importers:
       font-awesome:
         specifier: ^4.7.0
         version: 4.7.0
-      style-loader:
-        specifier: ^4.0.0
-        version: 4.0.0(webpack@5.88.2)
       url-loader:
         specifier: ^4.1.1
         version: 4.1.1(file-loader@6.2.0(webpack@5.88.2))(webpack@5.88.2)
@@ -3103,12 +3100,6 @@ packages:
   strip-json-comments@2.0.1:
     resolution: {integrity: sha512-4gB8na07fecVVkOI6Rs4e7T6NOTki5EmL7TUduTs6bu3EdnSycntVJ4re8kgZA+wx9IueI2Y11bfbgwtzuE0KQ==}
     engines: {node: '>=0.10.0'}
-
-  style-loader@4.0.0:
-    resolution: {integrity: sha512-1V4WqhhZZgjVAVJyt7TdDPZoPBPNHbekX4fWnCJL1yQukhCeZhJySUL+gL9y6sNdN95uEOS83Y55SqHcP7MzLA==}
-    engines: {node: '>= 18.12.0'}
-    peerDependencies:
-      webpack: ^5.27.0
 
   sums@0.2.4:
     resolution: {integrity: sha512-5uXZlaoxZLgdXpBnwN5L0Gt4/k+dGynuvJVPSzhC2suOSojupMT/5fiZCrho9onLRSaXCe5j+QoKykFekgey4w==}
@@ -7000,10 +6991,6 @@ snapshots:
   strip-final-newline@3.0.0: {}
 
   strip-json-comments@2.0.1: {}
-
-  style-loader@4.0.0(webpack@5.88.2):
-    dependencies:
-      webpack: 5.88.2
 
   sums@0.2.4:
     dependencies:
