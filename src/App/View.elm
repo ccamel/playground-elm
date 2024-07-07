@@ -175,12 +175,12 @@ pagePart page model =
 
 
 showcase : Model -> Int -> Page -> Html Msg
-showcase _ num page =
+showcase { flags } num page =
     div [ class "columns featured-showcase is-multiline" ]
         [ div [ class "column is-12 showcase" ]
             [ article [ class "columns featured" ]
                 ([ div [ class "column is-7 showcase-img" ]
-                    [ img [ src <| interpolate "./{0}.png" [ pageHash page ], width 450 ]
+                    [ img [ src <| interpolate "{0}{1}.png" [ flags.basePath, pageHash page ], width 450 ]
                         []
                     ]
                  , div [ class "column is-5 featured-content va" ]
