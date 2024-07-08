@@ -1,5 +1,6 @@
 module Page.About exposing (Model, Msg, info, init, subscriptions, update, view)
 
+import App.Flags exposing (Flags)
 import Html exposing (Html, article, div, h1, img, p, text)
 import Html.Attributes exposing (alt, class, src)
 import Lib.Page
@@ -28,12 +29,14 @@ A very simple and minimal showcase that is used to lay the foundations of the na
 
 
 type alias Model =
-    {}
+    { basePath : String
+    }
 
 
-init : ( Model, Cmd Msg )
-init =
-    ( {}
+init : Flags -> ( Model, Cmd Msg )
+init { basePath } =
+    ( { basePath = basePath
+      }
     , Cmd.none
     )
 
@@ -47,8 +50,8 @@ type alias Msg =
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update _ _ =
-    ( {}, Cmd.none )
+update _ model =
+    ( model, Cmd.none )
 
 
 
@@ -65,20 +68,24 @@ subscriptions _ =
 
 
 view : Model -> Html Msg
-view _ =
+view model =
     let
         content =
             [ { title = "Simple"
               , text = "Fairly simple and understandable. Every showcase is implemented in a single elm file."
+              , img = "about-simple.png"
               }
             , { title = "Exploratory"
               , text = "Highlight some aspects of the elm language, like immutability, reactiveness, performance and interoperability with other JS libraries. Explore some architectural/design patterns around reactive static/serverless SPA."
+              , img = "about-exploratory.png"
               }
             , { title = "Playable"
               , text = "As much as possible, provides a useful and functional content."
+              , img = "about-playable.png"
               }
             , { title = "Scalable"
               , text = "The structure of the playground is designed to easily accommodate additional examples and showcases. Contributors can effortlessly expand the repository, ensuring it remains a relevant and up-to-date resource for learners and enthusiasts."
+              , img = "about-scalable.png"
               }
             ]
     in
@@ -94,7 +101,7 @@ view _ =
                                 div [ class "column showcase is-6" ]
                                     [ article [ class "columns is-multiline" ]
                                         [ div [ class "column is-12 showcase-img" ]
-                                            [ img [ src "https://placehold.co/480x300", alt "placeholder" ] []
+                                            [ img [ src <| model.basePath ++ c.img, alt "placeholder" ] []
                                             ]
                                         , div [ class "column is-12 featured-content" ]
                                             [ h1 [ class "title showcase-title" ]

@@ -1,7 +1,8 @@
 module Main exposing (main)
 
+import App.Flags exposing (Flags)
 import App.Messages exposing (Msg(..))
-import App.Models exposing (Flags, Model)
+import App.Models exposing (Model)
 import App.Routing
 import App.Subscriptions exposing (subscriptions)
 import App.Update exposing (initialModel, update)

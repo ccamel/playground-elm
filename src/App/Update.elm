@@ -1,7 +1,8 @@
 module App.Update exposing (initialModel, update)
 
+import App.Flags exposing (Flags)
 import App.Messages exposing (Msg(..), Page(..))
-import App.Models exposing (Flags, Model, PagesModel, emptyPagesModel)
+import App.Models exposing (Model, PagesModel, emptyPagesModel)
 import App.Pages exposing (pageHash)
 import App.Routing exposing (Route(..), toRoute)
 import Browser
@@ -43,7 +44,7 @@ update msg model =
                     { model | pages = emptyPagesModel }
 
                 ( aboutModel, aboutCmd ) =
-                    Page.About.init
+                    Page.About.init model.flags
 
                 ( calcModel, calcCmd ) =
                     Page.Calc.init
