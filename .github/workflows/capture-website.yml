@@ -13,6 +13,8 @@ concurrency:
 jobs:
   capture-website:
     runs-on: ubuntu-22.04
+    env:
+      SCREENSHOT_FILE: screenshot.webp
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -28,11 +30,16 @@ jobs:
           git_user_signingkey: true
           git_commit_gpgsign: true
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.1.2
+
       - name: Setup node environment
         uses: actions/setup-node@v4
         with:
           node-version: 18.17
-          cache: npm
+          cache: "pnpm"
 
       - name: Screenshot Website
         env:
@@ -50,6 +57,7 @@ jobs:
       - name: Commit changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
+          file_pattern: ${{ env.SCREENSHOT_FILE }}
           commit_user_name: ${{ secrets.USER_NAME }}
           commit_user_email: ${{ secrets.USER_EMAIL }}
           commit_author: ${{ secrets.USER_NAME }} <${{ secrets.USER_EMAIL }}>
