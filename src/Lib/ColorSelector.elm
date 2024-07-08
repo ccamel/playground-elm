@@ -10,10 +10,11 @@ import Lib.Html exposing (classList, onClickNotPropagate)
 
 {-| A color selector that opens a color picker when clicked.
 -}
-view : { visible : Bool, color : Color.Color, onVisibilityChange : Bool -> msg, state : ColorPicker.State, toMsg : ColorPicker.Msg -> msg } -> Html msg
-view { visible, color, onVisibilityChange, state, toMsg } =
+view : { elementId : String, visible : Bool, color : Color.Color, onVisibilityChange : Bool -> msg, state : ColorPicker.State, toMsg : ColorPicker.Msg -> msg } -> Html msg
+view { elementId, visible, color, onVisibilityChange, state, toMsg } =
     div
-        [ classList [ ( "is-active", visible ) ]
+        [ id elementId
+        , classList [ ( "is-active", visible ) ]
         , class "dropdown"
         ]
         [ div [ class "dropdown-trigger" ]
