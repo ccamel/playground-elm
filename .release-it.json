@@ -1,6 +1,6 @@
 {
   "git": {
-    "commitMessage": ":bookmark: release v${version}"
+    "commitMessage": ":bookmark: Release v${version}"
   },
   "github": {
     "release": true
