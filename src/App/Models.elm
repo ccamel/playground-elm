@@ -1,5 +1,6 @@
-module App.Models exposing (Flags, Model, PagesModel, emptyPagesModel)
+module App.Models exposing (Model, PagesModel, emptyPagesModel)
 
+import App.Flags exposing (Flags)
 import App.Routing exposing (Route)
 import Browser.Navigation as Nav
 import Page.About
@@ -10,12 +11,6 @@ import Page.Lissajous
 import Page.Maze
 import Page.Physics
 import Page.Term
-
-
-type alias Flags =
-    { basePath : String
-    , version : String
-    }
 
 
 type alias PagesModel =
