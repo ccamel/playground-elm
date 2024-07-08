@@ -1,11 +1,13 @@
 module Page.DigitalClock exposing (Figure(..), Model, Msg(..), Segment(..), info, init, subscriptions, update, view)
 
+import Browser.Events
 import Color exposing (Color, rgb255, toCssString)
 import ColorPicker
 import Html exposing (Html, div, input, p, text)
 import Html.Attributes exposing (class, name, size, style, type_, value)
 import Html.Events exposing (onInput)
 import Lib.ColorSelector as ColorSelector
+import Lib.Decoder exposing (outsideTarget)
 import Lib.Html exposing (svgClassList)
 import Lib.Page
 import Lib.String exposing (strToIntWithMinMax)
@@ -146,7 +148,10 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    every (toFloat model.refreshInterval) Tick
+    Sub.batch
+        [ every (toFloat model.refreshInterval) Tick
+        , Browser.Events.onMouseDown (outsideTarget "color-picker" (ShowColorPicker False))
+        ]
 
 
 
@@ -184,7 +189,8 @@ view model =
                         []
                     , text ", the color used for the lcd is "
                     , ColorSelector.view
-                        { visible = model.colorPickerVisible
+                        { elementId = "color-picker"
+                        , visible = model.colorPickerVisible
                         , color = model.color
                         , onVisibilityChange = ShowColorPicker
                         , state = model.colorPicker

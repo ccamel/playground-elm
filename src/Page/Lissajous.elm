@@ -11,6 +11,7 @@ import Html.Attributes exposing (class, href, id, name, size, step, style, type_
 import Html.Events exposing (onInput)
 import Lib.Array exposing (BoundedArray, appendToBoundedArray, createBoundedArray, resizeBoundedArray)
 import Lib.ColorSelector as ColorSelector
+import Lib.Decoder exposing (outsideTarget)
 import Lib.Frame exposing (Frames, addFrame, createFrames, fpsText, resetFrames)
 import Lib.Html exposing (onClickNotPropagate)
 import Lib.Page
@@ -289,11 +290,14 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    if model.started then
-        onAnimationFrameDelta Tick
+    Sub.batch
+        [ if model.started then
+            onAnimationFrameDelta Tick
 
-    else
-        Sub.none
+          else
+            Sub.none
+        , Browser.Events.onMouseDown (outsideTarget "foreground-color-picker" (ShowForegroundColorPicker False))
+        ]
 
 
 
@@ -401,7 +405,8 @@ view model =
                 , p []
                     [ text "The color for the plot is "
                     , ColorSelector.view
-                        { visible = model.foregroundColorPickerVisible
+                        { elementId = "foreground-color-picker"
+                        , visible = model.foregroundColorPickerVisible
                         , color = model.curveStyle.color
                         , onVisibilityChange = ShowForegroundColorPicker
                         , state = model.foregroundColorPicker
