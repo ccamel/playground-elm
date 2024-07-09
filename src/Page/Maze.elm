@@ -7,9 +7,8 @@ import FormatNumber exposing (format)
 import FormatNumber.Locales exposing (Decimals(..), Locale, usLocale)
 import Html exposing (Html, button, div, i, label, option, p, select, span, text)
 import Html.Attributes exposing (attribute, class, classList, disabled, selected, title, type_, value)
-import Html.Events exposing (onInput)
+import Html.Events exposing (onClick, onInput)
 import Json.Encode exposing (Value, encode, int, list, object, string)
-import Lib.Html exposing (onClickNotPropagate)
 import Lib.Page
 import List exposing (map, range, repeat)
 import List.Extra exposing (last, splitAt)
@@ -455,7 +454,7 @@ controlView model =
                 [ class "button is-danger"
                 , type_ "button"
                 , title "reset the maze"
-                , onClickNotPropagate Reset
+                , onClick Reset
                 ]
                 [ span [ class "icon is-small" ] [ i [ class "fa fa-repeat" ] [] ] ]
             , button
@@ -463,7 +462,7 @@ controlView model =
                 , disabled (model.auto || List.isEmpty model.memento)
                 , type_ "button"
                 , title "make 5 steps backward"
-                , onClickNotPropagate (Steps -5)
+                , onClick (Steps -5)
                 ]
                 [ span [ class "icon is-small" ] [ i [ class "fa fa-fast-backward" ] [] ] ]
             , button
@@ -471,7 +470,7 @@ controlView model =
                 , disabled (model.auto || List.isEmpty model.memento)
                 , type_ "button"
                 , title "make one step backward"
-                , onClickNotPropagate (Steps -1)
+                , onClick (Steps -1)
                 ]
                 [ span [ class "icon is-small" ] [ i [ class "fa fa-step-backward" ] [] ] ]
             , button
@@ -479,7 +478,7 @@ controlView model =
                 , disabled (model.auto || (model.maze.state == Ready))
                 , type_ "button"
                 , title "generate the maze"
-                , onClickNotPropagate StartAutoGeneration
+                , onClick StartAutoGeneration
                 ]
                 [ span [ class "icon is-small" ] [ i [ class "fa fa-play" ] [] ] ]
             , button
@@ -487,7 +486,7 @@ controlView model =
                 , disabled (not model.auto || (model.maze.state == Ready))
                 , type_ "button"
                 , title "stop the generation"
-                , onClickNotPropagate StopAutoGeneration
+                , onClick StopAutoGeneration
                 ]
                 [ span [ class "icon is-small" ] [ i [ class "fa fa-pause" ] [] ] ]
             , button
@@ -495,7 +494,7 @@ controlView model =
                 , disabled (model.auto || (model.maze.state == Ready))
                 , type_ "button"
                 , title "make one step"
-                , onClickNotPropagate (Steps 1)
+                , onClick (Steps 1)
                 ]
                 [ span [ class "icon is-small" ] [ i [ class "fa fa-step-forward" ] [] ] ]
             , button
@@ -503,14 +502,14 @@ controlView model =
                 , disabled (model.auto || (model.maze.state == Ready))
                 , type_ "button"
                 , title "make one step"
-                , onClickNotPropagate (Steps 5)
+                , onClick (Steps 5)
                 ]
                 [ span [ class "icon is-small" ] [ i [ class "fa fa-fast-forward" ] [] ] ]
             , button
                 [ class "button is-info ml-4"
                 , type_ "button"
                 , title "export the maze state to JSON"
-                , onClickNotPropagate Download
+                , onClick Download
                 ]
                 [ span [ class "icon is-small" ] [ i [ class "fa fa-download" ] [] ] ]
             , div [ class "select is-info is-small ml-4" ]

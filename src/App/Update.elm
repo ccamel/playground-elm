@@ -1,9 +1,8 @@
-module App.Update exposing (initialModel, update)
+module App.Update exposing (init, update)
 
 import App.Flags exposing (Flags)
 import App.Messages exposing (Msg(..), Page(..))
 import App.Models exposing (Model, PagesModel, emptyPagesModel)
-import App.Pages exposing (pageHash)
 import App.Routing exposing (Route(..), toRoute)
 import Browser
 import Browser.Navigation as Nav
@@ -16,8 +15,8 @@ import Page.Lissajous
 import Page.Maze
 import Page.Physics
 import Page.Term
-import String exposing (cons)
 import Tuple exposing (first, second)
+import Url
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -29,84 +28,79 @@ update msg model =
     case msg of
         LinkClicked urlRequest ->
             case urlRequest of
+                Browser.Internal location ->
+                    ( model, Nav.pushUrl model.navKey (Url.toString location) )
+
                 Browser.External href ->
                     ( model, Nav.load href )
-
-                _ ->
-                    ( model, Cmd.none )
 
         UrlChanged location ->
             let
                 newRoute =
                     toRoute model.flags.basePath location
-
-                clearedModel =
-                    { model | pages = emptyPagesModel }
-
-                ( aboutModel, aboutCmd ) =
-                    Page.About.init model.flags
-
-                ( calcModel, calcCmd ) =
-                    Page.Calc.init
-
-                ( lissajousModel, lissajousCmd ) =
-                    Page.Lissajous.init
-
-                ( digitalClockModel, digitalClockCmd ) =
-                    Page.DigitalClock.init
-
-                ( mazeModel, mazeCmd ) =
-                    Page.Maze.init
-
-                ( physicsModel, physicsCmd ) =
-                    Page.Physics.init
-
-                ( termModel, termCmd ) =
-                    Page.Term.init
-
-                ( asteroidsModel, asteroidsCmd ) =
-                    Page.Asteroids.init
             in
-            case newRoute of
-                NotFoundRoute ->
-                    ( { clearedModel | route = newRoute }, Cmd.none )
+            if model.route == newRoute then
+                ( model, Cmd.none )
 
-                Home ->
-                    ( { clearedModel | route = newRoute }, Cmd.none )
+            else
+                let
+                    clearedModel =
+                        { model | pages = emptyPagesModel }
 
-                Page About ->
-                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | aboutPage = Just aboutModel } }, Cmd.map AboutPageMsg aboutCmd )
+                    ( aboutModel, aboutCmd ) =
+                        Page.About.init model.flags
 
-                Page Calc ->
-                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | calcPage = Just calcModel } }, Cmd.map CalcPageMsg calcCmd )
+                    ( calcModel, calcCmd ) =
+                        Page.Calc.init
 
-                Page Lissajous ->
-                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | lissajousPage = Just lissajousModel } }, Cmd.map LissajousPageMsg lissajousCmd )
+                    ( lissajousModel, lissajousCmd ) =
+                        Page.Lissajous.init
 
-                Page DigitalClock ->
-                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | digitalClockPage = Just digitalClockModel } }, Cmd.map DigitalClockPageMsg digitalClockCmd )
+                    ( digitalClockModel, digitalClockCmd ) =
+                        Page.DigitalClock.init
 
-                Page Maze ->
-                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | mazePage = Just mazeModel } }, Cmd.map MazePageMsg mazeCmd )
+                    ( mazeModel, mazeCmd ) =
+                        Page.Maze.init
 
-                Page Physics ->
-                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | physicsPage = Just physicsModel } }, Cmd.map PhysicsPageMsg physicsCmd )
+                    ( physicsModel, physicsCmd ) =
+                        Page.Physics.init
 
-                Page Term ->
-                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | termPage = Just termModel } }, Cmd.map TermPageMsg termCmd )
+                    ( termModel, termCmd ) =
+                        Page.Term.init
 
-                Page Asteroids ->
-                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | asteroidsPage = Just asteroidsModel } }, Cmd.map AsteroidsPageMsg asteroidsCmd )
+                    ( asteroidsModel, asteroidsCmd ) =
+                        Page.Asteroids.init
+                in
+                case newRoute of
+                    NotFoundRoute ->
+                        ( { clearedModel | route = newRoute }, Cmd.none )
 
-        GoToPage p ->
-            ( model
-            , pageHash p
-                |> cons '#'
-                |> Nav.pushUrl model.navKey
-            )
+                    Home ->
+                        ( { clearedModel | route = newRoute }, Cmd.none )
 
-        GoToHome ->
-            ( model, Nav.replaceUrl model.navKey "#" )
+                    Page About ->
+                        ( { clearedModel | route = newRoute, pages = { emptyPagesModel | aboutPage = Just aboutModel } }, Cmd.map AboutPageMsg aboutCmd )
+
+                    Page Calc ->
+                        ( { clearedModel | route = newRoute, pages = { emptyPagesModel | calcPage = Just calcModel } }, Cmd.map CalcPageMsg calcCmd )
+
+                    Page Lissajous ->
+                        ( { clearedModel | route = newRoute, pages = { emptyPagesModel | lissajousPage = Just lissajousModel } }, Cmd.map LissajousPageMsg lissajousCmd )
+
+                    Page DigitalClock ->
+                        ( { clearedModel | route = newRoute, pages = { emptyPagesModel | digitalClockPage = Just digitalClockModel } }, Cmd.map DigitalClockPageMsg digitalClockCmd )
+
+                    Page Maze ->
+                        ( { clearedModel | route = newRoute, pages = { emptyPagesModel | mazePage = Just mazeModel } }, Cmd.map MazePageMsg mazeCmd )
+
+                    Page Physics ->
+                        ( { clearedModel | route = newRoute, pages = { emptyPagesModel | physicsPage = Just physicsModel } }, Cmd.map PhysicsPageMsg physicsCmd )
+
+                    Page Term ->
+                        ( { clearedModel | route = newRoute, pages = { emptyPagesModel | termPage = Just termModel } }, Cmd.map TermPageMsg termCmd )
+
+                    Page Asteroids ->
+                        ( { clearedModel | route = newRoute, pages = { emptyPagesModel | asteroidsPage = Just asteroidsModel } }, Cmd.map AsteroidsPageMsg asteroidsCmd )
 
         -- messages from pages
         AboutPageMsg m ->
@@ -134,27 +128,19 @@ update msg model =
             convert model m .asteroidsPage Page.Asteroids.update (\mdl -> { model | pages = { pages | asteroidsPage = Just mdl } }) AsteroidsPageMsg
 
 
-initialModel : Flags -> Nav.Key -> Route -> ( Model, Cmd App.Messages.Msg )
-initialModel flags navKey route =
+init : Flags -> Url.Url -> Nav.Key -> ( Model, Cmd App.Messages.Msg )
+init flags url navKey =
     let
         model =
             { flags = flags
-            , route = route
+            , route = Home
             , navKey = navKey
 
             -- models for pages
             , pages = emptyPagesModel
             }
     in
-    case route of
-        NotFoundRoute ->
-            update GoToHome model
-
-        Home ->
-            update GoToHome model
-
-        Page p ->
-            update (GoToPage p) model
+    update (UrlChanged url) model
 
 
 convert : Model -> b -> (PagesModel -> Maybe.Maybe a) -> (b -> a -> ( m, Cmd c )) -> (m -> Model) -> (c -> Msg) -> ( Model, Cmd Msg )

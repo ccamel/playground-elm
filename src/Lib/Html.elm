@@ -1,4 +1,4 @@
-module Lib.Html exposing (classList, onClickNotPropagate, svgClassList)
+module Lib.Html exposing (classList, svgClassList)
 
 {-| This function makes it easier to build a space-separated class attribute with SVG
 TODO: To replace with equivalent function in core modules when available
@@ -6,8 +6,6 @@ TODO: To replace with equivalent function in core modules when available
 
 import Html
 import Html.Attributes as HtmlAtt
-import Html.Events exposing (custom)
-import Json.Decode as Decode
 import Svg
 import Svg.Attributes as SvgAtt
 
@@ -26,14 +24,3 @@ svgClassList =
         >> List.map Tuple.first
         >> String.join " "
         >> SvgAtt.class
-
-
-onClickNotPropagate : a -> Html.Attribute a
-onClickNotPropagate msg =
-    custom "click"
-        (Decode.succeed
-            { message = msg
-            , stopPropagation = True
-            , preventDefault = True
-            }
-        )
