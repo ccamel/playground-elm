@@ -162,7 +162,7 @@ emptyMaze : Int -> Int -> Maze
 emptyMaze width height =
     { width = width
     , height = height
-    , cells = initialize width (\_ -> initialize height (\_ -> []))
+    , cells = initialize width (\_ -> initialize height (always []))
     , state = Created
     }
 

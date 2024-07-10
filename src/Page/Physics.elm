@@ -977,7 +977,7 @@ simulationView ({ entity } as model) =
             ( constants.width, constants.height )
             [ Mouse.onDown (\e -> MouseDown e.button (makeVector2D e.offsetPos))
             , Mouse.onMove (.offsetPos >> makeVector2D >> MouseMove)
-            , Mouse.onUp (\_ -> MouseUp)
+            , Mouse.onUp (always MouseUp)
             ]
             (List.concat
                 [ [ shapes [ fill constants.backgroundColor ] [ rect ( 0, 0 ) constants.width constants.height ]

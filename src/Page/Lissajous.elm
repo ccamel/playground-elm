@@ -114,7 +114,7 @@ init =
       , curveStyle = { color = Color.rgb255 31 122 31, lineType = solid 2 }
       , resolution = 400
       , afterglow = initialAfterGlow
-      , lissajousStencils = createBoundedArray (initialAfterGlow + 1) (\_ -> Nothing)
+      , lissajousStencils = createBoundedArray (initialAfterGlow + 1) (always Nothing)
       , ticks = createFrames 20 -- initial capacity
       , foregroundColorPicker = ColorPicker.empty
       , foregroundColorPickerVisible = False
