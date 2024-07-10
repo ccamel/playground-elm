@@ -5,6 +5,7 @@ import App.Messages exposing (Msg(..), Page(..))
 import App.Models exposing (Model, PagesModel, emptyPagesModel)
 import App.Routing exposing (Route(..), toRoute)
 import Browser
+import Browser.Dom as Dom
 import Browser.Navigation as Nav
 import Maybe exposing (withDefault)
 import Page.About
@@ -15,6 +16,7 @@ import Page.Lissajous
 import Page.Maze
 import Page.Physics
 import Page.Term
+import Task
 import Tuple exposing (first, second)
 import Url
 
@@ -26,10 +28,18 @@ update msg model =
             model.pages
     in
     case msg of
+        NoOp ->
+            ( model, Cmd.none )
+
         LinkClicked urlRequest ->
             case urlRequest of
                 Browser.Internal location ->
-                    ( model, Nav.pushUrl model.navKey (Url.toString location) )
+                    ( model
+                    , Cmd.batch
+                        [ Nav.pushUrl model.navKey (Url.toString location)
+                        , Task.perform (always NoOp) (Dom.setViewport 0 0)
+                        ]
+                    )
 
                 Browser.External href ->
                     ( model, Nav.load href )

@@ -24,7 +24,8 @@ type Page
 
 
 type Msg
-    = UrlChanged Url
+    = NoOp
+    | UrlChanged Url
     | LinkClicked Browser.UrlRequest
       -- messages for pages
     | AboutPageMsg Page.About.Msg
