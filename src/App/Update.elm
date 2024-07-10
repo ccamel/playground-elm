@@ -34,12 +34,20 @@ update msg model =
         LinkClicked urlRequest ->
             case urlRequest of
                 Browser.Internal location ->
-                    ( model
-                    , Cmd.batch
-                        [ Nav.pushUrl model.navKey (Url.toString location)
-                        , Task.perform (always NoOp) (Dom.setViewport 0 0)
-                        ]
-                    )
+                    let
+                        newRoute =
+                            toRoute model.flags.basePath location
+                    in
+                    if model.route == newRoute then
+                        ( model, Cmd.none )
+
+                    else
+                        ( model
+                        , Cmd.batch
+                            [ Nav.pushUrl model.navKey (Url.toString location)
+                            , Task.perform (always NoOp) (Dom.setViewport 0 0)
+                            ]
+                        )
 
                 Browser.External href ->
                     ( model, Nav.load href )
@@ -48,69 +56,64 @@ update msg model =
             let
                 newRoute =
                     toRoute model.flags.basePath location
+
+                clearedModel =
+                    { model | pages = emptyPagesModel }
+
+                ( aboutModel, aboutCmd ) =
+                    Page.About.init model.flags
+
+                ( calcModel, calcCmd ) =
+                    Page.Calc.init
+
+                ( lissajousModel, lissajousCmd ) =
+                    Page.Lissajous.init
+
+                ( digitalClockModel, digitalClockCmd ) =
+                    Page.DigitalClock.init
+
+                ( mazeModel, mazeCmd ) =
+                    Page.Maze.init
+
+                ( physicsModel, physicsCmd ) =
+                    Page.Physics.init
+
+                ( termModel, termCmd ) =
+                    Page.Term.init
+
+                ( asteroidsModel, asteroidsCmd ) =
+                    Page.Asteroids.init
             in
-            if model.route == newRoute then
-                ( model, Cmd.none )
+            case newRoute of
+                NotFoundRoute ->
+                    ( { clearedModel | route = newRoute }, Cmd.none )
 
-            else
-                let
-                    clearedModel =
-                        { model | pages = emptyPagesModel }
+                Home ->
+                    ( { clearedModel | route = newRoute }, Cmd.none )
 
-                    ( aboutModel, aboutCmd ) =
-                        Page.About.init model.flags
+                Page About ->
+                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | aboutPage = Just aboutModel } }, Cmd.map AboutPageMsg aboutCmd )
 
-                    ( calcModel, calcCmd ) =
-                        Page.Calc.init
+                Page Calc ->
+                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | calcPage = Just calcModel } }, Cmd.map CalcPageMsg calcCmd )
 
-                    ( lissajousModel, lissajousCmd ) =
-                        Page.Lissajous.init
+                Page Lissajous ->
+                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | lissajousPage = Just lissajousModel } }, Cmd.map LissajousPageMsg lissajousCmd )
 
-                    ( digitalClockModel, digitalClockCmd ) =
-                        Page.DigitalClock.init
+                Page DigitalClock ->
+                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | digitalClockPage = Just digitalClockModel } }, Cmd.map DigitalClockPageMsg digitalClockCmd )
 
-                    ( mazeModel, mazeCmd ) =
-                        Page.Maze.init
+                Page Maze ->
+                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | mazePage = Just mazeModel } }, Cmd.map MazePageMsg mazeCmd )
 
-                    ( physicsModel, physicsCmd ) =
-                        Page.Physics.init
+                Page Physics ->
+                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | physicsPage = Just physicsModel } }, Cmd.map PhysicsPageMsg physicsCmd )
 
-                    ( termModel, termCmd ) =
-                        Page.Term.init
+                Page Term ->
+                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | termPage = Just termModel } }, Cmd.map TermPageMsg termCmd )
 
-                    ( asteroidsModel, asteroidsCmd ) =
-                        Page.Asteroids.init
-                in
-                case newRoute of
-                    NotFoundRoute ->
-                        ( { clearedModel | route = newRoute }, Cmd.none )
-
-                    Home ->
-                        ( { clearedModel | route = newRoute }, Cmd.none )
-
-                    Page About ->
-                        ( { clearedModel | route = newRoute, pages = { emptyPagesModel | aboutPage = Just aboutModel } }, Cmd.map AboutPageMsg aboutCmd )
-
-                    Page Calc ->
-                        ( { clearedModel | route = newRoute, pages = { emptyPagesModel | calcPage = Just calcModel } }, Cmd.map CalcPageMsg calcCmd )
-
-                    Page Lissajous ->
-                        ( { clearedModel | route = newRoute, pages = { emptyPagesModel | lissajousPage = Just lissajousModel } }, Cmd.map LissajousPageMsg lissajousCmd )
-
-                    Page DigitalClock ->
-                        ( { clearedModel | route = newRoute, pages = { emptyPagesModel | digitalClockPage = Just digitalClockModel } }, Cmd.map DigitalClockPageMsg digitalClockCmd )
-
-                    Page Maze ->
-                        ( { clearedModel | route = newRoute, pages = { emptyPagesModel | mazePage = Just mazeModel } }, Cmd.map MazePageMsg mazeCmd )
-
-                    Page Physics ->
-                        ( { clearedModel | route = newRoute, pages = { emptyPagesModel | physicsPage = Just physicsModel } }, Cmd.map PhysicsPageMsg physicsCmd )
-
-                    Page Term ->
-                        ( { clearedModel | route = newRoute, pages = { emptyPagesModel | termPage = Just termModel } }, Cmd.map TermPageMsg termCmd )
-
-                    Page Asteroids ->
-                        ( { clearedModel | route = newRoute, pages = { emptyPagesModel | asteroidsPage = Just asteroidsModel } }, Cmd.map AsteroidsPageMsg asteroidsCmd )
+                Page Asteroids ->
+                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | asteroidsPage = Just asteroidsModel } }, Cmd.map AsteroidsPageMsg asteroidsCmd )
 
         -- messages from pages
         AboutPageMsg m ->
