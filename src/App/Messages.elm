@@ -24,10 +24,9 @@ type Page
 
 
 type Msg
-    = UrlChanged Url
+    = NoOp
+    | UrlChanged Url
     | LinkClicked Browser.UrlRequest
-    | GoToHome
-    | GoToPage Page
       -- messages for pages
     | AboutPageMsg Page.About.Msg
     | CalcPageMsg Page.Calc.Msg

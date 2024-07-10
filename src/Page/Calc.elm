@@ -529,7 +529,7 @@ renderMemoryTag : Model -> Html Msg
 renderMemoryTag model =
     text
         (model.memory
-            |> Maybe.map (\_ -> "M")
+            |> Maybe.map (always "M")
             |> withDefault " "
         )
 

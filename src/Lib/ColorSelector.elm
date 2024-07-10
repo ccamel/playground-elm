@@ -5,7 +5,8 @@ import ColorPicker
 import Html exposing (Html, button, div, i, span)
 import Html.Attributes exposing (attribute, class, id, style)
 import Html.Attributes.Aria exposing (ariaControls, ariaHasPopup, role)
-import Lib.Html exposing (classList, onClickNotPropagate)
+import Html.Events exposing (onClick)
+import Lib.Html exposing (classList)
 
 
 {-| A color selector that opens a color picker when clicked.
@@ -18,7 +19,7 @@ view { elementId, visible, color, onVisibilityChange, state, toMsg } =
         , class "dropdown"
         ]
         [ div [ class "dropdown-trigger" ]
-            [ button [ class "button py-1", ariaHasPopup "true", ariaControls "dropdown-menu", onClickNotPropagate (onVisibilityChange (not visible)) ]
+            [ button [ class "button py-1", ariaHasPopup "true", ariaControls "dropdown-menu", onClick (onVisibilityChange (not visible)) ]
                 [ span [ class "p-2 m-0", style "background-color" (toCssString color) ] []
                 , span [ class "icon is-small" ]
                     [ i

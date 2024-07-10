@@ -9,11 +9,11 @@ import GraphicSVG.Widget as Widget
 import Html exposing (Html, a, div, input, p, text)
 import Html.Attributes exposing (class, href, id, name, size, step, style, type_, value)
 import Html.Events exposing (onInput)
+import Html.Events.Extra exposing (onClickPreventDefaultAndStopPropagation)
 import Lib.Array exposing (BoundedArray, appendToBoundedArray, createBoundedArray, resizeBoundedArray)
 import Lib.ColorSelector as ColorSelector
 import Lib.Decoder exposing (outsideTarget)
 import Lib.Frame exposing (Frames, addFrame, createFrames, fpsText, resetFrames)
-import Lib.Html exposing (onClickNotPropagate)
 import Lib.Page
 import Lib.String exposing (strToFloatWithMinMax, strToIntWithMinMax)
 import List exposing (concat, concatMap, filterMap, indexedMap, map, range)
@@ -114,7 +114,7 @@ init =
       , curveStyle = { color = Color.rgb255 31 122 31, lineType = solid 2 }
       , resolution = 400
       , afterglow = initialAfterGlow
-      , lissajousStencils = createBoundedArray (initialAfterGlow + 1) (\_ -> Nothing)
+      , lissajousStencils = createBoundedArray (initialAfterGlow + 1) (always Nothing)
       , ticks = createFrames 20 -- initial capacity
       , foregroundColorPicker = ColorPicker.empty
       , foregroundColorPickerVisible = False
@@ -326,12 +326,12 @@ view model =
                 [ p []
                     [ text "You can "
                     , if not model.started then
-                        a [ class "action", href "", onClickNotPropagate Start ] [ text "start" ]
+                        a [ class "action", href "#lissajous", onClickPreventDefaultAndStopPropagation Start ] [ text "start" ]
 
                       else
-                        a [ class "action", href "", onClickNotPropagate Stop ] [ text "stop" ]
+                        a [ class "action", href "#lissajous", onClickPreventDefaultAndStopPropagation Stop ] [ text "stop" ]
                     , text " the animation. You can also "
-                    , a [ class "action", href "", onClickNotPropagate Reset ] [ text "reset" ]
+                    , a [ class "action", href "#lissajous", onClickPreventDefaultAndStopPropagation Reset ] [ text "reset" ]
                     , text " the values to default."
                     ]
                 , p [] [ text "The equations are:" ]
@@ -391,7 +391,7 @@ view model =
                             clazz =
                                 "action" ++ selected
                         in
-                        [ a [ class clazz, href "", onClickNotPropagate (Batch [ SetAParemeter (fromInt pa), SetBParameter (fromInt pb) ]) ]
+                        [ a [ class clazz, href "#lissajous", onClickPreventDefaultAndStopPropagation (Batch [ SetAParemeter (fromInt pa), SetBParameter (fromInt pb) ]) ]
                             [ text (interpolate "({0},{1})" ([ pa, pb ] |> map fromInt))
                             ]
                         , text " "

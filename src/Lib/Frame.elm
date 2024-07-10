@@ -19,7 +19,7 @@ type alias Frames =
 
 createFrames : Int -> Frames
 createFrames =
-    flip createBoundedArray (\_ -> 0.0)
+    flip createBoundedArray (always 0.0)
 
 
 addFrame : Frames -> Float -> Frames

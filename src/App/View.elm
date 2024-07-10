@@ -1,14 +1,13 @@
 module App.View exposing (view)
 
-import App.Messages exposing (Msg(..), Page)
+import App.Messages exposing (Msg, Page)
 import App.Models exposing (Model)
 import App.Pages exposing (pageDate, pageDescription, pageGithubLink, pageHash, pageName, pageView, pages)
 import App.Routing exposing (Route(..))
-import Browser exposing (UrlRequest(..))
+import Browser
 import Html exposing (Html, a, article, br, div, footer, h1, h2, h3, hr, i, img, p, section, span, strong, text)
 import Html.Attributes exposing (attribute, class, href, src, title, width)
-import Html.Events exposing (onClick)
-import Lib.Html exposing (classList, onClickNotPropagate)
+import Lib.Html exposing (classList)
 import List exposing (intersperse)
 import String.Interpolate exposing (interpolate)
 
@@ -34,7 +33,7 @@ view model =
                     [ h1 [ class "title pb-5" ]
                         [ i [ class "quote-left fa fa-quote-left text-muted pr-4" ] []
                         , span [ class "break" ] []
-                        , a [ href "#", onClickNotPropagate GoToHome ] [ text "playground" ]
+                        , a [ href "#" ] [ text "playground" ]
                         , span [ class "elm-pipe pl-1" ] [ text "|" ]
                         , span [ class "elm-gt pr-1" ] [ text ">" ]
                         , a [ href "http://elm-lang.org/" ] [ text "elm" ]
@@ -199,13 +198,11 @@ showcase { flags } num page =
                         , a
                             [ href ("#" ++ pageHash page)
                             , class "button is-primary mr-4"
-                            , onClick (GoToPage page)
                             ]
                             [ text "View demo" ]
                         , a
                             [ href (pageGithubLink page)
                             , class "button is-secondary"
-                            , onClickNotPropagate (LinkClicked (External (pageGithubLink page)))
                             ]
                             [ i [ class "fa fa-github mr-2" ] []
                             , text "Source"
@@ -252,7 +249,6 @@ notFound =
             , a
                 [ href "#"
                 , class "button"
-                , onClickNotPropagate GoToHome
                 ]
                 [ text "Go Home" ]
             ]

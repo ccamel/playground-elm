@@ -17,7 +17,6 @@ import Html.Events exposing (onClick, onInput)
 import Html.Events.Extra.Mouse as Mouse exposing (Button(..))
 import Lib.Frame exposing (Frames, addFrame, createFrames, fpsText)
 import Lib.Gfx exposing (withAlpha)
-import Lib.Html exposing (onClickNotPropagate)
 import Lib.Page
 import List exposing (length)
 import Markdown
@@ -978,7 +977,7 @@ simulationView ({ entity } as model) =
             ( constants.width, constants.height )
             [ Mouse.onDown (\e -> MouseDown e.button (makeVector2D e.offsetPos))
             , Mouse.onMove (.offsetPos >> makeVector2D >> MouseMove)
-            , Mouse.onUp (\_ -> MouseUp)
+            , Mouse.onUp (always MouseUp)
             ]
             (List.concat
                 [ [ shapes [ fill constants.backgroundColor ] [ rect ( 0, 0 ) constants.width constants.height ]
@@ -1036,7 +1035,7 @@ controlView model =
                         [ class "button is-danger ml-2"
                         , type_ "button"
                         , title "reset the simulation"
-                        , onClickNotPropagate Reset
+                        , onClick Reset
                         ]
                         [ span [ class "icon is-small" ] [ i [ class "fa fa-repeat" ] [] ] ]
                     , button
@@ -1044,7 +1043,7 @@ controlView model =
                         , disabled model.started
                         , type_ "button"
                         , title "start the simulation"
-                        , onClickNotPropagate Start
+                        , onClick Start
                         ]
                         [ span [ class "icon is-small" ] [ i [ class "fa fa-play" ] [] ] ]
                     , button
@@ -1052,7 +1051,7 @@ controlView model =
                         , disabled (not model.started)
                         , type_ "button"
                         , title "pause the simulation"
-                        , onClickNotPropagate Stop
+                        , onClick Stop
                         ]
                         [ span [ class "icon is-small" ] [ i [ class "fa fa-pause" ] [] ] ]
                     , div [ class "select is-info is-small ml-4" ]
