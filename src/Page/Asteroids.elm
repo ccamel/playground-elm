@@ -814,6 +814,9 @@ initSingletons seed =
 initEntities : World -> World
 initEntities world =
     let
+        maxStars =
+            100
+
         x =
             10.0 |> pixels
 
@@ -832,6 +835,7 @@ initEntities world =
         |> spawnAsteroidEntity BIG (Point2d.xy x h)
         |> spawnAsteroidEntity BIG (Point2d.xy w y)
         |> spawnAsteroidEntity BIG (Point2d.xy w h)
+        |> spawnStars maxStars
 
 
 newEntity : World -> World
@@ -974,31 +978,50 @@ spawnAsteroidEntity aType position world =
         |> Ecs.insertComponent specs.render (SpriteView [ asteroidSprite randoms.shape ])
 
 
+spawnStars : Int -> World -> World
+spawnStars maxStars world =
+    let
+        ( newWorld, particles ) =
+            world
+                |> randomStep (Random.list maxStars starsGenerator)
+
+        entityViewFn shift w =
+            Ecs.getComponent specs.particle w
+                |> Maybe.map (starParticleSprite shift >> singleton)
+                |> Maybe.withDefault []
+
+        createStarEntity particle w =
+            let
+                ( updatedWorld, randomValue ) =
+                    randomStep (Random.int 0 100) w
+            in
+            updatedWorld
+                |> newEntity
+                |> Ecs.insertComponent specs.particle particle
+                |> Ecs.insertComponent specs.render (EntityView (entityViewFn randomValue))
+    in
+    List.foldl createStarEntity newWorld particles
+
+
 spawnExplosion : Position -> World -> World
 spawnExplosion position world =
     let
-        ( w, particles ) =
-            randomStep
-                (fizzler position
-                    |> Random.list 100
-                )
-                world
+        ( newWorld, particles ) =
+            world
+                |> randomStep (Random.list 100 <| fizzler position)
 
-        entityView w2 =
-            w2
-                |> Ecs.getComponent specs.particle
+        entityView w =
+            Ecs.getComponent specs.particle w
                 |> Maybe.map (fizzleParticleSprite >> singleton)
                 |> Maybe.withDefault []
-    in
-    List.foldl
-        (\p w2 ->
-            w2
+
+        createExplosionEntity particle w =
+            w
                 |> newEntity
-                |> Ecs.insertComponent specs.particle p
+                |> Ecs.insertComponent specs.particle particle
                 |> Ecs.insertComponent specs.render (EntityView entityView)
-        )
-        w
-        particles
+    in
+    List.foldl createExplosionEntity newWorld particles
 
 
 asteroidSprite : Polygon2d Pixels CanvasCoordinates -> Svg Msg
@@ -1015,6 +1038,41 @@ asteroidSprite shape =
         , stroke "#8B979C"
         , fill "#9AAAB0"
         , strokeWidth "2"
+        ]
+        []
+
+
+starParticleSprite : Int -> Particle -> Svg msg
+starParticleSprite shift particle =
+    let
+        luminance =
+            let
+                ( minLuminance, maxLuminance ) =
+                    ( 50, 100 )
+
+                amplitude =
+                    (maxLuminance - minLuminance) / 2
+
+                midpoint =
+                    (maxLuminance + minLuminance) / 2
+
+                phaseShift =
+                    (toFloat shift / 100) * (2 * pi)
+
+                angularFrequency =
+                    0.02 * 2 * pi
+            in
+            midpoint + amplitude * sin (phaseShift + angularFrequency * Particle.lifetime particle)
+
+        color =
+            hslSvg 0 0 luminance
+    in
+    Svg.ellipse
+        [ cx "0"
+        , cy "0"
+        , rx "0.5"
+        , ry "0.5"
+        , fill color
         ]
         []
 
@@ -1110,6 +1168,16 @@ fizzler position =
                 , density = 0.015
                 , area = 8
                 }
+            )
+
+
+starsGenerator : Generator Particle
+starsGenerator =
+    Particle.init (Random.constant ())
+        |> Particle.withLocation
+            (Random.map2 (\x y -> { x = x, y = y })
+                (Random.float 0.0 (constants.width |> inPixels))
+                (Random.float 0.0 (constants.height |> inPixels))
             )
 
 
