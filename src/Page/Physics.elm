@@ -1,6 +1,6 @@
 module Page.Physics exposing (Dot, Entity, EntityMaker, ID, Interaction, Model, Msg(..), Stick, Vector2D, info, init, subscriptions, update, view)
 
-import Array exposing (Array, foldr, fromList, get, map, set, toList)
+import Array exposing (Array, foldr, fromList, get, map, set)
 import Basics.Extra exposing (flip, uncurry)
 import Browser.Events exposing (onAnimationFrameDelta)
 import Canvas exposing (Renderable, arc, lineTo, path, rect, shapes)
@@ -18,10 +18,10 @@ import Html.Events.Extra.Pointer as Pointer
 import Lib.Frame exposing (Frames, addFrame, createFrames, fpsText)
 import Lib.Gfx exposing (withAlpha)
 import Lib.Page
-import List exposing (length)
+import List
 import Markdown
 import Maybe exposing (withDefault)
-import String exposing (fromInt)
+import String
 import Tuple exposing (pair)
 import Vector2 exposing (Index(..), Vector2, map2)
 
@@ -956,57 +956,76 @@ using elementary functions from the fantastic [joakin/elm-canvas](https://packag
 
 
 simulationView : Model -> Html Msg
-simulationView ({ entity } as model) =
+simulationView model =
     div [ class "has-text-centered" ]
         [ Canvas.toHtml
             ( constants.width, constants.height )
-            ([ style "touch-action" "none" ]
-                |> withInteractionEvents
-            )
+            ([ style "touch-action" "none" ] |> withInteractionEvents)
             (List.concat
-                [ [ shapes [ fill constants.backgroundColor ] [ rect ( 0, 0 ) constants.width constants.height ]
-                  ]
-                , if model.showSticks then
-                    entity
-                        |> .sticks
-                        |> List.map (renderStick [ apply translate entity.offset ] entity)
-
-                  else
-                    []
-                , if model.showStickTension then
-                    entity
-                        |> .sticks
-                        |> List.map (renderStickTension [ apply translate entity.offset ] entity)
-
-                  else
-                    []
-                , if model.showDots then
-                    entity
-                        |> .dots
-                        |> map (renderDot [ apply translate entity.offset ])
-                        |> toList
-
-                  else
-                    []
-                , [ String.join " "
-                        [ fpsText model.frames
-                        , " - "
-                        , entity.dots |> Array.length |> fromInt
-                        , "dots"
-                        , " - "
-                        , entity.sticks |> length |> fromInt
-                        , "sticks"
-                        ]
-                        |> Canvas.text
-                            [ font { size = 10, family = "serif" }
-                            , align TextAlign.Left
-                            , fill constants.textColor
-                            ]
-                            ( 15, 10 )
-                  ]
+                [ [ backgroundShape ]
+                , renderSticks model
+                , renderStickTensions model
+                , renderDots model
+                , [ statsText model ]
                 ]
             )
         ]
+
+
+backgroundShape : Canvas.Renderable
+backgroundShape =
+    shapes [ fill constants.backgroundColor ]
+        [ rect ( 0, 0 ) constants.width constants.height ]
+
+
+renderSticks : Model -> List Canvas.Renderable
+renderSticks { showSticks, entity } =
+    if showSticks then
+        entity.sticks
+            |> List.map (renderStick [ apply translate entity.offset ] entity)
+
+    else
+        []
+
+
+renderStickTensions : Model -> List Canvas.Renderable
+renderStickTensions { showStickTension, entity } =
+    if showStickTension then
+        entity.sticks
+            |> List.map (renderStickTension [ apply translate entity.offset ] entity)
+
+    else
+        []
+
+
+renderDots : Model -> List Canvas.Renderable
+renderDots { showDots, entity } =
+    if showDots then
+        entity.dots
+            |> Array.map (renderDot [ apply translate entity.offset ])
+            |> Array.toList
+
+    else
+        []
+
+
+statsText : Model -> Canvas.Renderable
+statsText model =
+    [ fpsText model.frames
+    , " - "
+    , String.fromInt (Array.length model.entity.dots)
+    , "dots"
+    , " - "
+    , String.fromInt (List.length model.entity.sticks)
+    , "sticks"
+    ]
+        |> String.join " "
+        |> Canvas.text
+            [ font { size = 10, family = "serif" }
+            , align TextAlign.Left
+            , fill constants.textColor
+            ]
+            ( 15, 10 )
 
 
 controlView : Model -> Html Msg
