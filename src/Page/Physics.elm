@@ -1,6 +1,6 @@
-module Page.Physics exposing (Dot, Entity, EntityMaker, ID, Interaction, Model, Msg(..), Stick, Vector2D, info, init, subscriptions, update, view)
+module Page.Physics exposing (Dot, Entity, EntityMaker, ID, Interaction, Model, Msg(..), Simulation, Stick, Vector2D, info, init, subscriptions, update, view)
 
-import Array exposing (Array, foldr, fromList, get, map, set)
+import Array exposing (Array, foldl, foldr, fromList, get, map, set)
 import Basics.Extra exposing (flip, uncurry)
 import Browser.Events exposing (onAnimationFrameDelta)
 import Canvas exposing (Renderable, arc, lineTo, path, rect, shapes)
@@ -10,7 +10,6 @@ import Canvas.Settings.Line exposing (lineWidth)
 import Canvas.Settings.Text as TextAlign exposing (align, font)
 import Color exposing (Color)
 import Color.Interpolate as Color exposing (interpolate)
-import Dict exposing (Dict)
 import Html exposing (Html, button, div, i, input, label, option, select, span, text)
 import Html.Attributes exposing (checked, class, disabled, selected, style, title, type_, value)
 import Html.Events exposing (onClick, onInput)
@@ -22,7 +21,6 @@ import List
 import Markdown
 import Maybe exposing (withDefault)
 import String
-import Tuple exposing (pair)
 import Vector2 exposing (Index(..), Vector2, map2)
 
 
@@ -46,9 +44,24 @@ Very simple physics engine using [Verlet Integration](https://en.wikipedia.org/w
 -- MODEL
 
 
+type Simulation
+    = PENDULUM
+    | DOUBLE_PENDULUM
+    | ROPE
+    | NECKLACE
+    | CLOTH
+
+
+{-| list of available simulations
+-}
+simulations : List Simulation
+simulations =
+    [ PENDULUM, DOUBLE_PENDULUM, ROPE, NECKLACE, CLOTH ]
+
+
 {-| constants
 -}
-constants : { height : number, width : number, physicsIteration : Int, interactionInfluence : Float, defaultSimulation : ( String, EntityMaker ), backgroundColor : Color, textColor : Color, stickPalette : Float -> Color }
+constants : { height : number, width : number, physicsIteration : Int, interactionInfluence : Float, defaultSimulation : Simulation, backgroundColor : Color, textColor : Color, stickPalette : Float -> Color }
 constants =
     { -- width of the canvas
       height = 400
@@ -63,7 +76,7 @@ constants =
     , interactionInfluence = 10.0
 
     -- default simulation
-    , defaultSimulation = ( "necklace", necklaceEntityMaker )
+    , defaultSimulation = NECKLACE
 
     -- background color
     , backgroundColor = Color.black
@@ -609,45 +622,38 @@ ropeEntityMaker () =
         length =
             50
 
-        initializer n =
+        initDot n =
             let
                 coords =
                     makeVector2D ( 0.0, 3.0 * toFloat n )
+
+                baseDot =
+                    makeDot n coords
             in
-            makeDot n coords
-                |> (if n == 0 then
-                        pinDotPos >> withDotBrownColor
+            if n == 0 then
+                baseDot |> pinDotPos |> withDotBrownColor
 
-                    else
-                        identity
-                   )
-                |> (if n == length - 1 then
-                        withDotVelocity (makeVector2D ( 5.0, 0.0 ))
+            else if n == length - 1 then
+                baseDot |> withDotVelocity (makeVector2D ( 5.0, 0.0 ))
 
-                    else
-                        identity
-                   )
+            else
+                baseDot
 
         entity =
-            { dots = Array.initialize length initializer
+            { dots = Array.initialize length initDot
             , sticks = []
             , offset = makeVector2D ( 200, 20 )
             }
-    in
-    foldr
-        (\d acc ->
-            let
-                n =
-                    d.id
-            in
-            if n /= 0 then
-                addStick n (n - 1) Nothing acc
+
+        addStickIfNotFirst : Dot -> Entity -> Entity
+        addStickIfNotFirst dot acc =
+            if dot.id /= 0 then
+                addStick dot.id (dot.id - 1) Nothing acc
 
             else
                 acc
-        )
-        entity
-        entity.dots
+    in
+    Array.foldl addStickIfNotFirst entity entity.dots
 
 
 {-| Factory which produces a necklace.
@@ -658,65 +664,102 @@ necklaceEntityMaker () =
         length =
             50
 
-        initialspacing =
+        initialSpacing =
             5.0
 
         spacing =
             10.0
 
-        initializer n =
+        initDot n =
             let
                 coords =
-                    makeVector2D ( initialspacing * toFloat n, 0 )
+                    makeVector2D ( initialSpacing * toFloat n, 0 )
+
+                baseDot =
+                    makeDot n coords |> withDotRadius 3.0
             in
-            makeDot n coords
-                |> withDotRadius 3.0
-                |> (if n == 0 then
-                        pinDotPos >> withDotBrownColor
+            if n == 0 || n == length - 1 then
+                baseDot |> pinDotPos |> withDotBrownColor
 
-                    else
-                        identity
-                   )
-                |> (if n == length - 1 then
-                        pinDotPos >> withDotBrownColor
-
-                    else
-                        identity
-                   )
+            else
+                baseDot
 
         entity =
-            { dots = Array.initialize length initializer
+            { dots = Array.initialize length initDot
             , sticks = []
-            , offset = makeVector2D ( (constants.width - (initialspacing * length)) / 2, 30 )
+            , offset = makeVector2D ( (constants.width - (initialSpacing * toFloat length)) / 2, 30 )
             }
-    in
-    foldr
-        (\d acc ->
-            let
-                n =
-                    d.id
-            in
-            if n /= 0 then
-                addStick n (n - 1) (Just spacing) acc
+
+        addStickIfNotFirst dot acc =
+            if dot.id /= 0 then
+                addStick dot.id (dot.id - 1) (Just spacing) acc
 
             else
                 acc
-        )
-        entity
-        entity.dots
+    in
+    foldl addStickIfNotFirst entity entity.dots
+
+
+simulationFromString : String -> Maybe Simulation
+simulationFromString name =
+    case name of
+        "pendulum" ->
+            Just PENDULUM
+
+        "double pendulum" ->
+            Just DOUBLE_PENDULUM
+
+        "rope" ->
+            Just ROPE
+
+        "necklace" ->
+            Just NECKLACE
+
+        "cloth" ->
+            Just CLOTH
+
+        _ ->
+            Nothing
+
+
+simulationToString : Simulation -> String
+simulationToString simulation =
+    case simulation of
+        PENDULUM ->
+            "pendulum"
+
+        DOUBLE_PENDULUM ->
+            "double pendulum"
+
+        ROPE ->
+            "rope"
+
+        NECKLACE ->
+            "necklace"
+
+        CLOTH ->
+            "cloth"
 
 
 {-| Dictionary of available simulations (entities, with associated factory function)
 -}
-simulations : Dict String EntityMaker
-simulations =
-    Dict.fromList
-        [ ( "pendulum", pendulumEntityMaker )
-        , ( "double pendulum", doublePendulumEntityMaker )
-        , ( "rope", ropeEntityMaker )
-        , constants.defaultSimulation
-        , ( "cloth", clothEntityMaker )
-        ]
+simulationMaker : Simulation -> EntityMaker
+simulationMaker simulation =
+    case simulation of
+        PENDULUM ->
+            pendulumEntityMaker
+
+        DOUBLE_PENDULUM ->
+            doublePendulumEntityMaker
+
+        ROPE ->
+            ropeEntityMaker
+
+        NECKLACE ->
+            necklaceEntityMaker
+
+        CLOTH ->
+            clothEntityMaker
 
 
 updateEntity : Entity -> Entity
@@ -801,7 +844,7 @@ type alias Model =
       entity : Entity
 
     -- the name (short) simulated
-    , entityName : String
+    , simulation : Simulation
 
     -- maintain the state of the interaction (old position, current position)
     , interaction : Maybe Interaction
@@ -825,12 +868,8 @@ type alias Model =
 
 init : ( Model, Cmd Msg )
 init =
-    let
-        ( simulationName, simulationMaker ) =
-            constants.defaultSimulation
-    in
-    ( { entity = simulationMaker ()
-      , entityName = simulationName
+    ( { entity = simulationMaker constants.defaultSimulation ()
+      , simulation = constants.defaultSimulation
       , interaction = Nothing
       , started = True
       , frames = createFrames 10 -- initial capacity
@@ -853,7 +892,7 @@ type Msg
     | Start
     | Stop
     | Reset
-    | ChangeSimulation ( String, EntityMaker )
+    | ChangeSimulation Simulation
     | ToggleShowDots
     | ToggleShowSticks
     | ToggleShowStickTension
@@ -891,11 +930,11 @@ update msg model =
         Stop ->
             ( { model | started = False }, Cmd.none )
 
-        ChangeSimulation ( name, factory ) ->
-            if name /= model.entityName then
+        ChangeSimulation simulation ->
+            if simulation /= model.simulation then
                 ( { model
-                    | entity = factory ()
-                    , entityName = name
+                    | entity = simulationMaker simulation ()
+                    , simulation = simulation
                   }
                 , Cmd.none
                 )
@@ -1059,23 +1098,19 @@ controlView model =
                         [ span [ class "icon is-small" ] [ i [ class "fa fa-pause" ] [] ] ]
                     , div [ class "select is-info is-small ml-4" ]
                         [ select
-                            [ onInput
-                                (\s ->
-                                    Dict.get s simulations
-                                        |> Maybe.map (pair s)
-                                        |> Maybe.withDefault constants.defaultSimulation
-                                        |> ChangeSimulation
-                                )
+                            [ onInput <|
+                                ChangeSimulation
+                                    << Maybe.withDefault constants.defaultSimulation
+                                    << simulationFromString
                             ]
                             (simulations
-                                |> Dict.keys
                                 |> List.map
                                     (\name ->
                                         option
-                                            [ selected (name == model.entityName)
-                                            , value name
+                                            [ selected (name == model.simulation)
+                                            , value <| simulationToString name
                                             ]
-                                            [ text name ]
+                                            [ text <| simulationToString name ]
                                     )
                             )
                         ]
