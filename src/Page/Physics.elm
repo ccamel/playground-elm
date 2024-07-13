@@ -1,4 +1,4 @@
-module Page.Physics exposing (Dot, Entity, EntityMaker, ID, Model, MouseButton(..), MouseState, Msg(..), Stick, Vector2D, info, init, subscriptions, update, view)
+module Page.Physics exposing (Dot, Entity, EntityMaker, ID, Interaction, Model, Msg(..), Stick, Vector2D, info, init, subscriptions, update, view)
 
 import Array exposing (Array, foldr, fromList, get, map, set, toList)
 import Basics.Extra exposing (flip, uncurry)
@@ -12,9 +12,9 @@ import Color exposing (Color)
 import Color.Interpolate as Color exposing (interpolate)
 import Dict exposing (Dict)
 import Html exposing (Html, button, div, i, input, label, option, select, span, text)
-import Html.Attributes exposing (checked, class, disabled, selected, title, type_, value)
+import Html.Attributes exposing (checked, class, disabled, selected, style, title, type_, value)
 import Html.Events exposing (onClick, onInput)
-import Html.Events.Extra.Mouse as Mouse exposing (Button(..))
+import Html.Events.Extra.Pointer as Pointer
 import Lib.Frame exposing (Frames, addFrame, createFrames, fpsText)
 import Lib.Gfx exposing (withAlpha)
 import Lib.Page
@@ -48,7 +48,7 @@ Very simple physics engine using [Verlet Integration](https://en.wikipedia.org/w
 
 {-| constants
 -}
-constants : { height : number, width : number, physicsIteration : Int, mouseInfluence : Float, defaultSimulation : ( String, EntityMaker ), backgroundColor : Color, textColor : Color, stickPalette : Float -> Color }
+constants : { height : number, width : number, physicsIteration : Int, interactionInfluence : Float, defaultSimulation : ( String, EntityMaker ), backgroundColor : Color, textColor : Color, stickPalette : Float -> Color }
 constants =
     { -- width of the canvas
       height = 400
@@ -59,8 +59,8 @@ constants =
     -- number of iterations
     , physicsIteration = 3
 
-    -- radius of the mouse when interacting with the entity
-    , mouseInfluence = 10.0
+    -- radius of the touch point when interacting with the entity
+    , interactionInfluence = 10.0
 
     -- default simulation
     , defaultSimulation = ( "necklace", necklaceEntityMaker )
@@ -268,13 +268,13 @@ velocityDot { pos, oldPos, friction, radius, groundFriction } =
         vel
 
 
-interactWithEntity : Maybe MouseState -> Entity -> Entity
-interactWithEntity mouseState ({ dots, offset } as entity) =
-    case mouseState of
-        Just aMouseState ->
+interactWithEntity : Maybe Interaction -> Entity -> Entity
+interactWithEntity maybeInteraction ({ dots, offset } as entity) =
+    case maybeInteraction of
+        Just interaction ->
             let
                 ( pos, oldPos ) =
-                    ( aMouseState.pos |> flip sub offset, aMouseState.oldPos |> flip sub offset )
+                    ( interaction.pos |> flip sub offset, interaction.oldPos |> flip sub offset )
             in
             { entity
                 | dots =
@@ -285,7 +285,7 @@ interactWithEntity mouseState ({ dots, offset } as entity) =
                                     d =
                                         dist dot.pos pos
                                 in
-                                if d < constants.mouseInfluence then
+                                if d < constants.interactionInfluence then
                                     { dot
                                         | oldPos = sub pos oldPos |> mult 1.8 |> sub dot.pos
                                     }
@@ -775,30 +775,23 @@ setDot ({ id } as p) entity =
     }
 
 
-type MouseButton
-    = Left
-    | Right
-
-
-type alias MouseState =
+type alias Interaction =
     { pos : Vector2D
     , oldPos : Vector2D
-    , button : MouseButton
     }
 
 
-initMouseState : Vector2D -> MouseButton -> MouseState
-initMouseState pos button =
+initInteraction : Vector2D -> Interaction
+initInteraction pos =
     { pos = pos
     , oldPos = pos
-    , button = button
     }
 
 
-updateMousePos : MouseState -> Vector2D -> MouseState
-updateMousePos mouse pos =
-    { mouse
-        | oldPos = mouse.pos
+updateInteraction : Interaction -> Vector2D -> Interaction
+updateInteraction interaction pos =
+    { interaction
+        | oldPos = interaction.pos
         , pos = pos
     }
 
@@ -810,8 +803,8 @@ type alias Model =
     -- the name (short) simulated
     , entityName : String
 
-    -- maintain the state of the mouse (old position, current position and mouse button clicks)
-    , mouse : Maybe MouseState
+    -- maintain the state of the interaction (old position, current position)
+    , interaction : Maybe Interaction
 
     -- if simulation is started or not
     , started : Bool
@@ -838,7 +831,7 @@ init =
     in
     ( { entity = simulationMaker ()
       , entityName = simulationName
-      , mouse = Nothing
+      , interaction = Nothing
       , started = True
       , frames = createFrames 10 -- initial capacity
       , showDots = True
@@ -854,9 +847,9 @@ init =
 
 
 type Msg
-    = MouseDown Button Vector2D
-    | MouseMove Vector2D
-    | MouseUp
+    = PointerDown Vector2D
+    | PointerMove Vector2D
+    | PointerEnd
     | Start
     | Stop
     | Reset
@@ -872,33 +865,25 @@ update msg model =
     case msg of
         Frame diff ->
             ( { model
-                | entity = model.entity |> updateEntity |> interactWithEntity model.mouse
+                | entity = model.entity |> updateEntity |> interactWithEntity model.interaction
                 , frames = addFrame model.frames diff
               }
             , Cmd.none
             )
 
-        MouseDown b pos ->
-            case b of
-                MainButton ->
-                    ( { model | mouse = Just <| initMouseState pos Left }, Cmd.none )
+        PointerDown pos ->
+            ( { model | interaction = Just <| initInteraction pos }, Cmd.none )
 
-                SecondButton ->
-                    ( { model | mouse = Just <| initMouseState pos Right }, Cmd.none )
-
-                _ ->
-                    ( model, Cmd.none )
-
-        MouseUp ->
-            ( { model | mouse = Nothing }, Cmd.none )
-
-        MouseMove pos ->
-            case model.mouse of
+        PointerMove pos ->
+            case model.interaction of
                 Just state ->
-                    ( { model | mouse = Just <| updateMousePos state pos }, Cmd.none )
+                    ( { model | interaction = Just <| updateInteraction state pos }, Cmd.none )
 
                 Nothing ->
                     ( model, Cmd.none )
+
+        PointerEnd ->
+            ( { model | interaction = Nothing }, Cmd.none )
 
         Start ->
             ( { model | started = True }, Cmd.none )
@@ -954,7 +939,7 @@ view model =
         [ div [ class "column is-8 is-offset-2" ]
             [ div [ class "content is-medium" ]
                 [ Markdown.toHtml [ class "mb-2" ] """
-Click on the left button of the mouse to interact with the simulation.
+Click on the left button of the mouse or touch the screen to interact with the simulation.
         """
                 , controlView model
                 , simulationView model
@@ -975,10 +960,9 @@ simulationView ({ entity } as model) =
     div [ class "responsive-canvas" ]
         [ Canvas.toHtml
             ( constants.width, constants.height )
-            [ Mouse.onDown (\e -> MouseDown e.button (makeVector2D e.offsetPos))
-            , Mouse.onMove (.offsetPos >> makeVector2D >> MouseMove)
-            , Mouse.onUp (always MouseUp)
-            ]
+            ([ style "touch-action" "none" ]
+                |> withInteractionEvents
+            )
             (List.concat
                 [ [ shapes [ fill constants.backgroundColor ] [ rect ( 0, 0 ) constants.width constants.height ]
                   ]
@@ -1094,3 +1078,17 @@ controlView model =
                 ]
             ]
         ]
+
+
+withInteractionEvents : List (Html.Attribute Msg) -> List (Html.Attribute Msg)
+withInteractionEvents attributes =
+    let
+        relativePos =
+            makeVector2D << .offsetPos << .pointer
+    in
+    Pointer.onDown (PointerDown << relativePos)
+        :: Pointer.onMove (PointerMove << relativePos)
+        :: Pointer.onUp (always PointerEnd)
+        :: Pointer.onCancel (always PointerEnd)
+        :: Pointer.onOut (always PointerEnd)
+        :: attributes
