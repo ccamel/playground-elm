@@ -957,7 +957,7 @@ using elementary functions from the fantastic [joakin/elm-canvas](https://packag
 
 simulationView : Model -> Html Msg
 simulationView ({ entity } as model) =
-    div [ class "responsive-canvas" ]
+    div [ class "has-text-centered" ]
         [ Canvas.toHtml
             ( constants.width, constants.height )
             ([ style "touch-action" "none" ]
