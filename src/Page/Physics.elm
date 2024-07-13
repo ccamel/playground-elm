@@ -5,11 +5,12 @@ import Basics.Extra exposing (flip, uncurry)
 import Browser.Events exposing (onAnimationFrameDelta)
 import Canvas exposing (Renderable, arc, lineTo, path, rect, shapes)
 import Canvas.Settings exposing (fill, stroke)
-import Canvas.Settings.Advanced exposing (Transform, transform, translate)
-import Canvas.Settings.Line exposing (lineWidth)
+import Canvas.Settings.Advanced exposing (Transform, alpha, shadow, transform, translate)
+import Canvas.Settings.Line exposing (LineCap(..), LineJoin(..), lineCap, lineJoin, lineWidth)
 import Canvas.Settings.Text as TextAlign exposing (align, font)
 import Color exposing (Color)
 import Color.Interpolate as Color exposing (interpolate)
+import Color.Manipulate exposing (darken, lighten)
 import Html exposing (Html, button, div, i, input, label, option, select, span, text)
 import Html.Attributes exposing (checked, class, disabled, selected, style, title, type_, value)
 import Html.Events exposing (onClick, onInput)
@@ -205,7 +206,7 @@ makeDot id p =
     , groundFriction = 0.7
     , gravity = makeVector2D ( 0, 1 )
     , radius = 2.0
-    , color = Color.darkGray
+    , color = Color.blue
     , mass = 1
     , pin = Nothing
     }
@@ -359,9 +360,30 @@ constraintDot offset ({ pos, radius, pin } as dot) =
 
 renderDot : List Transform -> Dot -> Renderable
 renderDot transforms { pos, radius, color } =
-    shapes
-        [ fill color, transform transforms ]
-        [ arc (getXY pos) radius { startAngle = degrees 0, endAngle = degrees 360, clockwise = True }
+    let
+        ( x, y ) =
+            getXY pos
+
+        lightColor =
+            lighten 0.2 color
+    in
+    Canvas.group
+        [ transform transforms ]
+        [ shapes
+            [ fill color
+            , shadow { blur = radius * 0.5, offset = ( 1, 1 ), color = Color.rgba 0 0 0 0.3 }
+            ]
+            [ arc ( x, y ) radius { startAngle = 0, endAngle = 2 * pi, clockwise = False } ]
+        , shapes
+            [ fill lightColor
+            , alpha 0.5
+            ]
+            [ arc ( x, y ) (radius * 0.8) { startAngle = 0, endAngle = pi, clockwise = False } ]
+        , shapes
+            [ fill (Color.rgb 1 1 1)
+            , alpha 0.6
+            ]
+            [ arc ( x - radius * 0.3, y - radius * 0.3 ) (radius * 0.2) { startAngle = 0, endAngle = 2 * pi, clockwise = False } ]
         ]
 
 
@@ -370,7 +392,7 @@ makeStick p1 p2 length =
     { p1Id = p1.id
     , p2Id = p2.id
     , stiffness = 2.5
-    , color = Color.darkGray
+    , color = darken 0.5 Color.darkGray
     , length =
         case length of
             Just alength ->
@@ -443,28 +465,32 @@ updateStick entity stick =
 renderStick : List Transform -> Entity -> Stick -> Renderable
 renderStick transforms entity { p1Id, p2Id, color } =
     let
-        lens =
+        posLens =
             getXY << .pos << flip getDot entity
 
         ( pos1, pos2 ) =
-            ( lens p1Id, lens p2Id )
+            ( posLens p1Id, posLens p2Id )
     in
-    shapes
-        [ stroke color
-        , transform transforms
-        ]
-        [ path pos1 [ lineTo pos2 ]
+    Canvas.group
+        [ transform transforms ]
+        [ shapes
+            [ stroke color
+            , lineWidth 3
+            , lineCap RoundCap
+            , lineJoin RoundJoin
+            ]
+            [ path pos1 [ lineTo pos2 ] ]
         ]
 
 
 renderStickTension : List Transform -> Entity -> Stick -> Renderable
 renderStickTension transforms entity { p1Id, p2Id, length } =
     let
-        lens =
+        posLens =
             .pos << flip getDot entity
 
         ( v1, v2 ) =
-            ( lens p1Id, lens p2Id )
+            ( posLens p1Id, posLens p2Id )
 
         ( p1, p2 ) =
             ( getXY v1, getXY v2 )
@@ -1137,11 +1163,11 @@ controlView model =
 withInteractionEvents : List (Html.Attribute Msg) -> List (Html.Attribute Msg)
 withInteractionEvents attributes =
     let
-        relativePos =
+        posLens =
             makeVector2D << .offsetPos << .pointer
     in
-    Pointer.onDown (PointerDown << relativePos)
-        :: Pointer.onMove (PointerMove << relativePos)
+    Pointer.onDown (PointerDown << posLens)
+        :: Pointer.onMove (PointerMove << posLens)
         :: Pointer.onUp (always PointerEnd)
         :: Pointer.onCancel (always PointerEnd)
         :: Pointer.onOut (always PointerEnd)
