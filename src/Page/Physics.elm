@@ -1,28 +1,27 @@
-module Page.Physics exposing (Dot, Entity, EntityMaker, ID, Model, MouseButton(..), MouseState, Msg(..), Stick, Vector2D, info, init, subscriptions, update, view)
+module Page.Physics exposing (Dot, Entity, EntityMaker, ID, Interaction, Model, Msg(..), Simulation, Stick, Vector2D, info, init, subscriptions, update, view)
 
-import Array exposing (Array, foldr, fromList, get, map, set, toList)
+import Array exposing (Array, foldl, foldr, fromList, get, map, set)
 import Basics.Extra exposing (flip, uncurry)
 import Browser.Events exposing (onAnimationFrameDelta)
 import Canvas exposing (Renderable, arc, lineTo, path, rect, shapes)
 import Canvas.Settings exposing (fill, stroke)
-import Canvas.Settings.Advanced exposing (Transform, transform, translate)
-import Canvas.Settings.Line exposing (lineWidth)
+import Canvas.Settings.Advanced exposing (Transform, alpha, shadow, transform, translate)
+import Canvas.Settings.Line exposing (LineCap(..), LineJoin(..), lineCap, lineJoin, lineWidth)
 import Canvas.Settings.Text as TextAlign exposing (align, font)
 import Color exposing (Color)
 import Color.Interpolate as Color exposing (interpolate)
-import Dict exposing (Dict)
+import Color.Manipulate exposing (darken, lighten)
 import Html exposing (Html, button, div, i, input, label, option, select, span, text)
-import Html.Attributes exposing (checked, class, disabled, selected, title, type_, value)
+import Html.Attributes exposing (checked, class, disabled, selected, style, title, type_, value)
 import Html.Events exposing (onClick, onInput)
-import Html.Events.Extra.Mouse as Mouse exposing (Button(..))
+import Html.Events.Extra.Pointer as Pointer
 import Lib.Frame exposing (Frames, addFrame, createFrames, fpsText)
 import Lib.Gfx exposing (withAlpha)
 import Lib.Page
-import List exposing (length)
+import List
 import Markdown
 import Maybe exposing (withDefault)
-import String exposing (fromInt)
-import Tuple exposing (pair)
+import String
 import Vector2 exposing (Index(..), Vector2, map2)
 
 
@@ -46,9 +45,24 @@ Very simple physics engine using [Verlet Integration](https://en.wikipedia.org/w
 -- MODEL
 
 
+type Simulation
+    = PENDULUM
+    | DOUBLE_PENDULUM
+    | ROPE
+    | NECKLACE
+    | CLOTH
+
+
+{-| list of available simulations
+-}
+simulations : List Simulation
+simulations =
+    [ PENDULUM, DOUBLE_PENDULUM, ROPE, NECKLACE, CLOTH ]
+
+
 {-| constants
 -}
-constants : { height : number, width : number, physicsIteration : Int, mouseInfluence : Float, defaultSimulation : ( String, EntityMaker ), backgroundColor : Color, textColor : Color, stickPalette : Float -> Color }
+constants : { height : number, width : number, physicsIteration : Int, interactionInfluence : Float, defaultSimulation : Simulation, backgroundColor : Color, textColor : Color, stickPalette : Float -> Color }
 constants =
     { -- width of the canvas
       height = 400
@@ -59,11 +73,11 @@ constants =
     -- number of iterations
     , physicsIteration = 3
 
-    -- radius of the mouse when interacting with the entity
-    , mouseInfluence = 10.0
+    -- radius of the touch point when interacting with the entity
+    , interactionInfluence = 10.0
 
     -- default simulation
-    , defaultSimulation = ( "necklace", necklaceEntityMaker )
+    , defaultSimulation = NECKLACE
 
     -- background color
     , backgroundColor = Color.black
@@ -192,7 +206,7 @@ makeDot id p =
     , groundFriction = 0.7
     , gravity = makeVector2D ( 0, 1 )
     , radius = 2.0
-    , color = Color.darkGray
+    , color = Color.blue
     , mass = 1
     , pin = Nothing
     }
@@ -268,13 +282,13 @@ velocityDot { pos, oldPos, friction, radius, groundFriction } =
         vel
 
 
-interactWithEntity : Maybe MouseState -> Entity -> Entity
-interactWithEntity mouseState ({ dots, offset } as entity) =
-    case mouseState of
-        Just aMouseState ->
+interactWithEntity : Maybe Interaction -> Entity -> Entity
+interactWithEntity maybeInteraction ({ dots, offset } as entity) =
+    case maybeInteraction of
+        Just interaction ->
             let
                 ( pos, oldPos ) =
-                    ( aMouseState.pos |> flip sub offset, aMouseState.oldPos |> flip sub offset )
+                    ( interaction.pos |> flip sub offset, interaction.oldPos |> flip sub offset )
             in
             { entity
                 | dots =
@@ -285,7 +299,7 @@ interactWithEntity mouseState ({ dots, offset } as entity) =
                                     d =
                                         dist dot.pos pos
                                 in
-                                if d < constants.mouseInfluence then
+                                if d < constants.interactionInfluence then
                                     { dot
                                         | oldPos = sub pos oldPos |> mult 1.8 |> sub dot.pos
                                     }
@@ -346,9 +360,30 @@ constraintDot offset ({ pos, radius, pin } as dot) =
 
 renderDot : List Transform -> Dot -> Renderable
 renderDot transforms { pos, radius, color } =
-    shapes
-        [ fill color, transform transforms ]
-        [ arc (getXY pos) radius { startAngle = degrees 0, endAngle = degrees 360, clockwise = True }
+    let
+        ( x, y ) =
+            getXY pos
+
+        lightColor =
+            lighten 0.2 color
+    in
+    Canvas.group
+        [ transform transforms ]
+        [ shapes
+            [ fill color
+            , shadow { blur = radius * 0.5, offset = ( 1, 1 ), color = Color.rgba 0 0 0 0.3 }
+            ]
+            [ arc ( x, y ) radius { startAngle = 0, endAngle = 2 * pi, clockwise = False } ]
+        , shapes
+            [ fill lightColor
+            , alpha 0.5
+            ]
+            [ arc ( x, y ) (radius * 0.8) { startAngle = 0, endAngle = pi, clockwise = False } ]
+        , shapes
+            [ fill (Color.rgb 1 1 1)
+            , alpha 0.6
+            ]
+            [ arc ( x - radius * 0.3, y - radius * 0.3 ) (radius * 0.2) { startAngle = 0, endAngle = 2 * pi, clockwise = False } ]
         ]
 
 
@@ -357,7 +392,7 @@ makeStick p1 p2 length =
     { p1Id = p1.id
     , p2Id = p2.id
     , stiffness = 2.5
-    , color = Color.darkGray
+    , color = darken 0.5 Color.darkGray
     , length =
         case length of
             Just alength ->
@@ -430,28 +465,32 @@ updateStick entity stick =
 renderStick : List Transform -> Entity -> Stick -> Renderable
 renderStick transforms entity { p1Id, p2Id, color } =
     let
-        lens =
+        posLens =
             getXY << .pos << flip getDot entity
 
         ( pos1, pos2 ) =
-            ( lens p1Id, lens p2Id )
+            ( posLens p1Id, posLens p2Id )
     in
-    shapes
-        [ stroke color
-        , transform transforms
-        ]
-        [ path pos1 [ lineTo pos2 ]
+    Canvas.group
+        [ transform transforms ]
+        [ shapes
+            [ stroke color
+            , lineWidth 3
+            , lineCap RoundCap
+            , lineJoin RoundJoin
+            ]
+            [ path pos1 [ lineTo pos2 ] ]
         ]
 
 
 renderStickTension : List Transform -> Entity -> Stick -> Renderable
 renderStickTension transforms entity { p1Id, p2Id, length } =
     let
-        lens =
+        posLens =
             .pos << flip getDot entity
 
         ( v1, v2 ) =
-            ( lens p1Id, lens p2Id )
+            ( posLens p1Id, posLens p2Id )
 
         ( p1, p2 ) =
             ( getXY v1, getXY v2 )
@@ -609,45 +648,38 @@ ropeEntityMaker () =
         length =
             50
 
-        initializer n =
+        initDot n =
             let
                 coords =
                     makeVector2D ( 0.0, 3.0 * toFloat n )
+
+                baseDot =
+                    makeDot n coords
             in
-            makeDot n coords
-                |> (if n == 0 then
-                        pinDotPos >> withDotBrownColor
+            if n == 0 then
+                baseDot |> pinDotPos |> withDotBrownColor
 
-                    else
-                        identity
-                   )
-                |> (if n == length - 1 then
-                        withDotVelocity (makeVector2D ( 5.0, 0.0 ))
+            else if n == length - 1 then
+                baseDot |> withDotVelocity (makeVector2D ( 5.0, 0.0 ))
 
-                    else
-                        identity
-                   )
+            else
+                baseDot
 
         entity =
-            { dots = Array.initialize length initializer
+            { dots = Array.initialize length initDot
             , sticks = []
             , offset = makeVector2D ( 200, 20 )
             }
-    in
-    foldr
-        (\d acc ->
-            let
-                n =
-                    d.id
-            in
-            if n /= 0 then
-                addStick n (n - 1) Nothing acc
+
+        addStickIfNotFirst : Dot -> Entity -> Entity
+        addStickIfNotFirst dot acc =
+            if dot.id /= 0 then
+                addStick dot.id (dot.id - 1) Nothing acc
 
             else
                 acc
-        )
-        entity
-        entity.dots
+    in
+    Array.foldl addStickIfNotFirst entity entity.dots
 
 
 {-| Factory which produces a necklace.
@@ -658,65 +690,102 @@ necklaceEntityMaker () =
         length =
             50
 
-        initialspacing =
+        initialSpacing =
             5.0
 
         spacing =
             10.0
 
-        initializer n =
+        initDot n =
             let
                 coords =
-                    makeVector2D ( initialspacing * toFloat n, 0 )
+                    makeVector2D ( initialSpacing * toFloat n, 0 )
+
+                baseDot =
+                    makeDot n coords |> withDotRadius 3.0
             in
-            makeDot n coords
-                |> withDotRadius 3.0
-                |> (if n == 0 then
-                        pinDotPos >> withDotBrownColor
+            if n == 0 || n == length - 1 then
+                baseDot |> pinDotPos |> withDotBrownColor
 
-                    else
-                        identity
-                   )
-                |> (if n == length - 1 then
-                        pinDotPos >> withDotBrownColor
-
-                    else
-                        identity
-                   )
+            else
+                baseDot
 
         entity =
-            { dots = Array.initialize length initializer
+            { dots = Array.initialize length initDot
             , sticks = []
-            , offset = makeVector2D ( (constants.width - (initialspacing * length)) / 2, 30 )
+            , offset = makeVector2D ( (constants.width - (initialSpacing * toFloat length)) / 2, 30 )
             }
-    in
-    foldr
-        (\d acc ->
-            let
-                n =
-                    d.id
-            in
-            if n /= 0 then
-                addStick n (n - 1) (Just spacing) acc
+
+        addStickIfNotFirst dot acc =
+            if dot.id /= 0 then
+                addStick dot.id (dot.id - 1) (Just spacing) acc
 
             else
                 acc
-        )
-        entity
-        entity.dots
+    in
+    foldl addStickIfNotFirst entity entity.dots
+
+
+simulationFromString : String -> Maybe Simulation
+simulationFromString name =
+    case name of
+        "pendulum" ->
+            Just PENDULUM
+
+        "double pendulum" ->
+            Just DOUBLE_PENDULUM
+
+        "rope" ->
+            Just ROPE
+
+        "necklace" ->
+            Just NECKLACE
+
+        "cloth" ->
+            Just CLOTH
+
+        _ ->
+            Nothing
+
+
+simulationToString : Simulation -> String
+simulationToString simulation =
+    case simulation of
+        PENDULUM ->
+            "pendulum"
+
+        DOUBLE_PENDULUM ->
+            "double pendulum"
+
+        ROPE ->
+            "rope"
+
+        NECKLACE ->
+            "necklace"
+
+        CLOTH ->
+            "cloth"
 
 
 {-| Dictionary of available simulations (entities, with associated factory function)
 -}
-simulations : Dict String EntityMaker
-simulations =
-    Dict.fromList
-        [ ( "pendulum", pendulumEntityMaker )
-        , ( "double pendulum", doublePendulumEntityMaker )
-        , ( "rope", ropeEntityMaker )
-        , constants.defaultSimulation
-        , ( "cloth", clothEntityMaker )
-        ]
+simulationMaker : Simulation -> EntityMaker
+simulationMaker simulation =
+    case simulation of
+        PENDULUM ->
+            pendulumEntityMaker
+
+        DOUBLE_PENDULUM ->
+            doublePendulumEntityMaker
+
+        ROPE ->
+            ropeEntityMaker
+
+        NECKLACE ->
+            necklaceEntityMaker
+
+        CLOTH ->
+            clothEntityMaker
 
 
 updateEntity : Entity -> Entity
@@ -775,30 +844,23 @@ setDot ({ id } as p) entity =
     }
 
 
-type MouseButton
-    = Left
-    | Right
-
-
-type alias MouseState =
+type alias Interaction =
     { pos : Vector2D
     , oldPos : Vector2D
-    , button : MouseButton
     }
 
 
-initMouseState : Vector2D -> MouseButton -> MouseState
-initMouseState pos button =
+initInteraction : Vector2D -> Interaction
+initInteraction pos =
     { pos = pos
     , oldPos = pos
-    , button = button
     }
 
 
-updateMousePos : MouseState -> Vector2D -> MouseState
-updateMousePos mouse pos =
-    { mouse
-        | oldPos = mouse.pos
+updateInteraction : Interaction -> Vector2D -> Interaction
+updateInteraction interaction pos =
+    { interaction
+        | oldPos = interaction.pos
         , pos = pos
     }
 
@@ -808,10 +870,10 @@ type alias Model =
       entity : Entity
 
     -- the name (short) simulated
-    , entityName : String
+    , simulation : Simulation
 
-    -- maintain the state of the mouse (old position, current position and mouse button clicks)
-    , mouse : Maybe MouseState
+    -- maintain the state of the interaction (old position, current position)
+    , interaction : Maybe Interaction
 
     -- if simulation is started or not
     , started : Bool
@@ -832,13 +894,9 @@ type alias Model =
 
 init : ( Model, Cmd Msg )
 init =
-    let
-        ( simulationName, simulationMaker ) =
-            constants.defaultSimulation
-    in
-    ( { entity = simulationMaker ()
-      , entityName = simulationName
-      , mouse = Nothing
+    ( { entity = simulationMaker constants.defaultSimulation ()
+      , simulation = constants.defaultSimulation
+      , interaction = Nothing
       , started = True
       , frames = createFrames 10 -- initial capacity
       , showDots = True
@@ -854,13 +912,13 @@ init =
 
 
 type Msg
-    = MouseDown Button Vector2D
-    | MouseMove Vector2D
-    | MouseUp
+    = PointerDown Vector2D
+    | PointerMove Vector2D
+    | PointerEnd
     | Start
     | Stop
     | Reset
-    | ChangeSimulation ( String, EntityMaker )
+    | ChangeSimulation Simulation
     | ToggleShowDots
     | ToggleShowSticks
     | ToggleShowStickTension
@@ -872,33 +930,25 @@ update msg model =
     case msg of
         Frame diff ->
             ( { model
-                | entity = model.entity |> updateEntity |> interactWithEntity model.mouse
+                | entity = model.entity |> updateEntity |> interactWithEntity model.interaction
                 , frames = addFrame model.frames diff
               }
             , Cmd.none
             )
 
-        MouseDown b pos ->
-            case b of
-                MainButton ->
-                    ( { model | mouse = Just <| initMouseState pos Left }, Cmd.none )
+        PointerDown pos ->
+            ( { model | interaction = Just <| initInteraction pos }, Cmd.none )
 
-                SecondButton ->
-                    ( { model | mouse = Just <| initMouseState pos Right }, Cmd.none )
-
-                _ ->
-                    ( model, Cmd.none )
-
-        MouseUp ->
-            ( { model | mouse = Nothing }, Cmd.none )
-
-        MouseMove pos ->
-            case model.mouse of
+        PointerMove pos ->
+            case model.interaction of
                 Just state ->
-                    ( { model | mouse = Just <| updateMousePos state pos }, Cmd.none )
+                    ( { model | interaction = Just <| updateInteraction state pos }, Cmd.none )
 
                 Nothing ->
                     ( model, Cmd.none )
+
+        PointerEnd ->
+            ( { model | interaction = Nothing }, Cmd.none )
 
         Start ->
             ( { model | started = True }, Cmd.none )
@@ -906,11 +956,11 @@ update msg model =
         Stop ->
             ( { model | started = False }, Cmd.none )
 
-        ChangeSimulation ( name, factory ) ->
-            if name /= model.entityName then
+        ChangeSimulation simulation ->
+            if simulation /= model.simulation then
                 ( { model
-                    | entity = factory ()
-                    , entityName = name
+                    | entity = simulationMaker simulation ()
+                    , simulation = simulation
                   }
                 , Cmd.none
                 )
@@ -954,7 +1004,7 @@ view model =
         [ div [ class "column is-8 is-offset-2" ]
             [ div [ class "content is-medium" ]
                 [ Markdown.toHtml [ class "mb-2" ] """
-Click on the left button of the mouse to interact with the simulation.
+Click on the left button of the mouse or touch the screen to interact with the simulation.
         """
                 , controlView model
                 , simulationView model
@@ -971,58 +1021,76 @@ using elementary functions from the fantastic [joakin/elm-canvas](https://packag
 
 
 simulationView : Model -> Html Msg
-simulationView ({ entity } as model) =
-    div [ class "responsive-canvas" ]
+simulationView model =
+    div ([ class "has-text-centered", style "touch-action" "none" ] |> withInteractionEvents)
         [ Canvas.toHtml
             ( constants.width, constants.height )
-            [ Mouse.onDown (\e -> MouseDown e.button (makeVector2D e.offsetPos))
-            , Mouse.onMove (.offsetPos >> makeVector2D >> MouseMove)
-            , Mouse.onUp (always MouseUp)
-            ]
+            []
             (List.concat
-                [ [ shapes [ fill constants.backgroundColor ] [ rect ( 0, 0 ) constants.width constants.height ]
-                  ]
-                , if model.showSticks then
-                    entity
-                        |> .sticks
-                        |> List.map (renderStick [ apply translate entity.offset ] entity)
-
-                  else
-                    []
-                , if model.showStickTension then
-                    entity
-                        |> .sticks
-                        |> List.map (renderStickTension [ apply translate entity.offset ] entity)
-
-                  else
-                    []
-                , if model.showDots then
-                    entity
-                        |> .dots
-                        |> map (renderDot [ apply translate entity.offset ])
-                        |> toList
-
-                  else
-                    []
-                , [ String.join " "
-                        [ fpsText model.frames
-                        , " - "
-                        , entity.dots |> Array.length |> fromInt
-                        , "dots"
-                        , " - "
-                        , entity.sticks |> length |> fromInt
-                        , "sticks"
-                        ]
-                        |> Canvas.text
-                            [ font { size = 10, family = "serif" }
-                            , align TextAlign.Left
-                            , fill constants.textColor
-                            ]
-                            ( 15, 10 )
-                  ]
+                [ [ backgroundShape ]
+                , renderSticks model
+                , renderStickTensions model
+                , renderDots model
+                , [ statsText model ]
                 ]
             )
         ]
+
+
+backgroundShape : Canvas.Renderable
+backgroundShape =
+    shapes [ fill constants.backgroundColor ]
+        [ rect ( 0, 0 ) constants.width constants.height ]
+
+
+renderSticks : Model -> List Canvas.Renderable
+renderSticks { showSticks, entity } =
+    if showSticks then
+        entity.sticks
+            |> List.map (renderStick [ apply translate entity.offset ] entity)
+
+    else
+        []
+
+
+renderStickTensions : Model -> List Canvas.Renderable
+renderStickTensions { showStickTension, entity } =
+    if showStickTension then
+        entity.sticks
+            |> List.map (renderStickTension [ apply translate entity.offset ] entity)
+
+    else
+        []
+
+
+renderDots : Model -> List Canvas.Renderable
+renderDots { showDots, entity } =
+    if showDots then
+        entity.dots
+            |> Array.map (renderDot [ apply translate entity.offset ])
+            |> Array.toList
+
+    else
+        []
+
+
+statsText : Model -> Canvas.Renderable
+statsText model =
+    [ fpsText model.frames
+    , " - "
+    , String.fromInt (Array.length model.entity.dots)
+    , "dots"
+    , " - "
+    , String.fromInt (List.length model.entity.sticks)
+    , "sticks"
+    ]
+        |> String.join " "
+        |> Canvas.text
+            [ font { size = 10, family = "serif" }
+            , align TextAlign.Left
+            , fill constants.textColor
+            ]
+            ( 15, 10 )
 
 
 controlView : Model -> Html Msg
@@ -1056,23 +1124,19 @@ controlView model =
                         [ span [ class "icon is-small" ] [ i [ class "fa fa-pause" ] [] ] ]
                     , div [ class "select is-info is-small ml-4" ]
                         [ select
-                            [ onInput
-                                (\s ->
-                                    Dict.get s simulations
-                                        |> Maybe.map (pair s)
-                                        |> Maybe.withDefault constants.defaultSimulation
-                                        |> ChangeSimulation
-                                )
+                            [ onInput <|
+                                ChangeSimulation
+                                    << Maybe.withDefault constants.defaultSimulation
+                                    << simulationFromString
                             ]
                             (simulations
-                                |> Dict.keys
                                 |> List.map
                                     (\name ->
                                         option
-                                            [ selected (name == model.entityName)
-                                            , value name
+                                            [ selected (name == model.simulation)
+                                            , value <| simulationToString name
                                             ]
-                                            [ text name ]
+                                            [ text <| simulationToString name ]
                                     )
                             )
                         ]
@@ -1094,3 +1158,17 @@ controlView model =
                 ]
             ]
         ]
+
+
+withInteractionEvents : List (Html.Attribute Msg) -> List (Html.Attribute Msg)
+withInteractionEvents attributes =
+    let
+        posLens =
+            makeVector2D << .offsetPos << .pointer
+    in
+    Pointer.onWithOptions "pointerdown" { stopPropagation = True, preventDefault = True } (PointerDown << posLens)
+        :: Pointer.onMove (PointerMove << posLens)
+        :: Pointer.onUp (always PointerEnd)
+        :: Pointer.onCancel (always PointerEnd)
+        :: Pointer.onOut (always PointerEnd)
+        :: attributes
