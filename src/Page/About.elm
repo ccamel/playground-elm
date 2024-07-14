@@ -28,15 +28,20 @@ A very simple and minimal showcase that is used to lay the foundations of the na
 -- MODEL
 
 
-type alias Model =
+type alias ModelRecord =
     { basePath : String
     }
 
 
+type Model
+    = Model ModelRecord
+
+
 init : Flags -> ( Model, Cmd Msg )
 init { basePath } =
-    ( { basePath = basePath
-      }
+    ( Model
+        { basePath = basePath
+        }
     , Cmd.none
     )
 
@@ -68,7 +73,7 @@ subscriptions _ =
 
 
 view : Model -> Html Msg
-view model =
+view (Model model) =
     let
         content =
             [ { title = "Simple"

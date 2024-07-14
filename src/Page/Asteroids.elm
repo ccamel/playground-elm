@@ -1,4 +1,4 @@
-module Page.Asteroids exposing (Age, AllComponentsSpec, AngularFriction, AsteroidType(..), CanvasCoordinates, Class(..), CollidingEntity, Collisions, ComponentSpec, Components, EntityId, FireCommand(..), Frame, Health, Keys, Model, Msg(..), Orientation, Parameters, Particle, Position, PositionVelocity, Render(..), RotationVelocity, Seed, Shape, SideThrustCommand, SingletonSpec, Singletons, Specs, ThrustCommand, Ttl, VelocityFriction, World, info, init, subscriptions, update, view)
+module Page.Asteroids exposing (Model, Msg, info, init, subscriptions, update, view)
 
 import Angle exposing (inDegrees)
 import AngularAcceleration exposing (AngularAcceleration, radiansPerSecondSquared)
@@ -748,13 +748,17 @@ type alias World =
     Ecs.World EntityId Components Singletons
 
 
-type alias Model =
+type alias ModelRecord =
     { world : Maybe World
     , keys : ( List Key, Maybe KeyChange )
 
     -- a list containing n last frames, used to compute the fps (frame per seconds)
     , frames : Frames
     }
+
+
+type Model
+    = Model ModelRecord
 
 
 
@@ -784,10 +788,11 @@ center =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { world = Nothing
-      , keys = ( [], Nothing )
-      , frames = createFrames 10 -- initial capacity
-      }
+    ( Model
+        { world = Nothing
+        , keys = ( [], Nothing )
+        , frames = createFrames 10 -- initial capacity
+        }
     , Task.perform GotTime Time.now
     )
 
@@ -1192,37 +1197,38 @@ type Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg ({ world } as model) =
-    case ( msg, world ) of
-        ( GotTime time, Nothing ) ->
-            ( { model
-                | world =
-                    initWorld time
-                        |> initEntities
-                        |> Just
-              }
-            , Cmd.none
-            )
+update msg (Model ({ world } as model)) =
+    Tuple.mapFirst Model <|
+        case ( msg, world ) of
+            ( GotTime time, Nothing ) ->
+                ( { model
+                    | world =
+                        initWorld time
+                            |> initEntities
+                            |> Just
+                  }
+                , Cmd.none
+                )
 
-        ( GotAnimationFrameDeltaMilliseconds delta, Just w ) ->
-            ( { model
-                | world = Just <| updateWorld (delta |> milliseconds) model.keys w
-                , frames = addFrame model.frames delta
-                , keys = ( first model.keys, Nothing )
-              }
-            , Cmd.none
-            )
+            ( GotAnimationFrameDeltaMilliseconds delta, Just w ) ->
+                ( { model
+                    | world = Just <| updateWorld (delta |> milliseconds) model.keys w
+                    , frames = addFrame model.frames delta
+                    , keys = ( first model.keys, Nothing )
+                  }
+                , Cmd.none
+                )
 
-        ( KeyboardMsg keyMsg, _ ) ->
-            ( { model
-                | keys = Keyboard.updateWithKeyChange Keyboard.anyKeyUpper keyMsg (first model.keys)
-                , world = world
-              }
-            , Cmd.none
-            )
+            ( KeyboardMsg keyMsg, _ ) ->
+                ( { model
+                    | keys = Keyboard.updateWithKeyChange Keyboard.anyKeyUpper keyMsg (first model.keys)
+                    , world = world
+                  }
+                , Cmd.none
+                )
 
-        _ ->
-            ( model, Cmd.none )
+            _ ->
+                ( model, Cmd.none )
 
 
 updateWorld : Duration -> ( List Key, Maybe KeyChange ) -> World -> World
@@ -1247,7 +1253,7 @@ subscriptions _ =
 
 
 view : Model -> Html Msg
-view { world, frames } =
+view (Model { world, frames }) =
     let
         asteroid =
             div [ Attributes.class "asteroids" ]
