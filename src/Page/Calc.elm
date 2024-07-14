@@ -1,4 +1,4 @@
-module Page.Calc exposing (Model, Msg(..), Op(..), State(..), Token(..), info, init, subscriptions, update, view)
+module Page.Calc exposing (Model, Msg, info, init, subscriptions, update, view)
 
 import Basics.Extra exposing (flip)
 import Browser.Events
@@ -41,7 +41,7 @@ type State
     | DOT
 
 
-type alias Model =
+type alias ModelRecord =
     { outputs : List Float
     , operators : List Op
     , state : State
@@ -50,14 +50,19 @@ type alias Model =
     }
 
 
+type Model
+    = Model ModelRecord
+
+
 init : ( Model, Cmd Msg )
 init =
-    ( { outputs = []
-      , operators = []
-      , state = ACCUM
-      , accumulator = ""
-      , memory = Nothing
-      }
+    ( Model
+        { outputs = []
+        , operators = []
+        , state = ACCUM
+        , accumulator = ""
+        , memory = Nothing
+        }
     , Cmd.none
     )
 
@@ -94,78 +99,79 @@ type Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        Emitted token ->
-            apply token model
+update msg (Model model) =
+    Tuple.mapFirst Model <|
+        case msg of
+            Emitted token ->
+                apply token model
 
-        KeyMsg key ->
-            let
-                -- dummy = Debug.log "--> " key
-                token =
-                    case key of
-                        "0" ->
-                            Just (Digit 0)
+            KeyMsg key ->
+                let
+                    -- dummy = Debug.log "--> " key
+                    token =
+                        case key of
+                            "0" ->
+                                Just (Digit 0)
 
-                        "1" ->
-                            Just (Digit 1)
+                            "1" ->
+                                Just (Digit 1)
 
-                        "2" ->
-                            Just (Digit 2)
+                            "2" ->
+                                Just (Digit 2)
 
-                        "3" ->
-                            Just (Digit 3)
+                            "3" ->
+                                Just (Digit 3)
 
-                        "4" ->
-                            Just (Digit 4)
+                            "4" ->
+                                Just (Digit 4)
 
-                        "5" ->
-                            Just (Digit 5)
+                            "5" ->
+                                Just (Digit 5)
 
-                        "6" ->
-                            Just (Digit 6)
+                            "6" ->
+                                Just (Digit 6)
 
-                        "7" ->
-                            Just (Digit 7)
+                            "7" ->
+                                Just (Digit 7)
 
-                        "8" ->
-                            Just (Digit 8)
+                            "8" ->
+                                Just (Digit 8)
 
-                        "9" ->
-                            Just (Digit 9)
+                            "9" ->
+                                Just (Digit 9)
 
-                        "+" ->
-                            Just (Operator Plus)
+                            "+" ->
+                                Just (Operator Plus)
 
-                        "-" ->
-                            Just (Operator Minus)
+                            "-" ->
+                                Just (Operator Minus)
 
-                        "/" ->
-                            Just (Operator Divide)
+                            "/" ->
+                                Just (Operator Divide)
 
-                        "*" ->
-                            Just (Operator Multiply)
+                            "*" ->
+                                Just (Operator Multiply)
 
-                        "=" ->
-                            Just (Operator Result)
+                            "=" ->
+                                Just (Operator Result)
 
-                        "." ->
-                            Just Dot
+                            "." ->
+                                Just Dot
 
-                        "Delete" ->
-                            Just Clear
+                            "Delete" ->
+                                Just Clear
 
-                        _ ->
-                            Nothing
-            in
-            token
-                |> Maybe.map (flip apply model)
-                |> Maybe.withDefault ( model, Cmd.none )
+                            _ ->
+                                Nothing
+                in
+                token
+                    |> Maybe.map (flip apply model)
+                    |> Maybe.withDefault ( model, Cmd.none )
 
 
 {-| apply the given token to the model, computing a new state
 -}
-apply : Token -> Model -> ( Model, Cmd Msg )
+apply : Token -> ModelRecord -> ( ModelRecord, Cmd Msg )
 apply token model =
     case model.state of
         ACCUM ->
@@ -305,7 +311,7 @@ apply token model =
                     )
 
 
-doAccumulate : Token -> Model -> Model
+doAccumulate : Token -> ModelRecord -> ModelRecord
 doAccumulate d model =
     let
         value =
@@ -325,7 +331,7 @@ doAccumulate d model =
     { model | accumulator = value }
 
 
-doOperator : Op -> Model -> Model
+doOperator : Op -> ModelRecord -> ModelRecord
 doOperator op model =
     let
         reduce m o =
@@ -377,27 +383,31 @@ doOperator op model =
             { c | operators = op :: c.operators }
 
 
-doResetAccu : Model -> Model
+doResetAccu : ModelRecord -> ModelRecord
 doResetAccu model =
     { model | accumulator = "" }
 
 
-doClear : Model -> ( Model, Cmd Msg )
+doClear : ModelRecord -> ( ModelRecord, Cmd Msg )
 doClear _ =
-    init
+    let
+        ( Model m, c ) =
+            init
+    in
+    ( m, c )
 
 
-doMS : Model -> Model
+doMS : ModelRecord -> ModelRecord
 doMS model =
     { model | memory = toMaybe (result model) }
 
 
-doMC : Model -> Model
+doMC : ModelRecord -> ModelRecord
 doMC model =
     { model | memory = Nothing }
 
 
-doMR : Model -> Model
+doMR : ModelRecord -> ModelRecord
 doMR model =
     case model.memory of
         Just v ->
@@ -407,7 +417,7 @@ doMR model =
             model
 
 
-go : State -> Model -> Model
+go : State -> ModelRecord -> ModelRecord
 go state model =
     { model | state = state }
 
@@ -431,7 +441,7 @@ opPriority op =
             0
 
 
-result : Model -> Result String Float
+result : ModelRecord -> Result String Float
 result model =
     case model.accumulator of
         "" ->
@@ -459,7 +469,7 @@ subscriptions _ =
 
 
 view : Model -> Html Msg
-view model =
+view (Model model) =
     div [ class "columns is-centered" ]
         [ div [ class "column is-one-third" ]
             [ calc model
@@ -467,7 +477,7 @@ view model =
         ]
 
 
-calc : Model -> Html Msg
+calc : ModelRecord -> Html Msg
 calc model =
     div [ class "pl-5 pb-5 has-background-grey-dark br-10" ]
         [ -- display
@@ -499,7 +509,7 @@ calc model =
 {-| accept tells if the given token can be accepted regarding the current state (model)
 used to find if a button should be enabled or disabled depending on the calc context.
 -}
-accept : Model -> Token -> Bool
+accept : ModelRecord -> Token -> Bool
 accept model token =
     case token of
         Dot ->
@@ -525,7 +535,7 @@ accept model token =
             True
 
 
-renderMemoryTag : Model -> Html Msg
+renderMemoryTag : ModelRecord -> Html Msg
 renderMemoryTag model =
     text
         (model.memory
@@ -534,7 +544,7 @@ renderMemoryTag model =
         )
 
 
-renderOperatorTag : Model -> Html Msg
+renderOperatorTag : ModelRecord -> Html Msg
 renderOperatorTag model =
     model.operators
         |> List.head
@@ -560,7 +570,7 @@ renderOperatorTag model =
         |> text
 
 
-display : Model -> String
+display : ModelRecord -> String
 display model =
     case model.accumulator of
         "" ->
@@ -572,7 +582,7 @@ display model =
 
 {-| returns an html representation of the given token regarding the current state (model)
 -}
-button : Token -> Model -> Html Msg
+button : Token -> ModelRecord -> Html Msg
 button token model =
     let
         render txt divStyle buttonStyle =

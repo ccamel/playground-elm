@@ -1,4 +1,4 @@
-port module Page.Term exposing (Model, Msg(..), info, init, subscriptions, update, view)
+port module Page.Term exposing (Model, Msg, info, init, subscriptions, update, view)
 
 import Html exposing (Html, div, p, text)
 import Html.Attributes exposing (class)
@@ -29,14 +29,19 @@ A terminal which evaluates `JavaScript` code using elm ports.
 -- MODEL
 
 
-type alias Model =
+type alias ModelRecord =
     { term : Term Msg
     }
 
 
+type Model
+    = Model ModelRecord
+
+
 init : ( Model, Cmd Msg )
 init =
-    ( { term =
+    ( Model
+        { term =
             Term.offline
                 (Just
                     { defaultFormat
@@ -44,7 +49,7 @@ init =
                     }
                 )
                 CommandTyped
-      }
+        }
     , Cmd.batch
         [ -- execute some evals at startup
           evalJS "\"hello\" + \" world!\""
@@ -63,17 +68,18 @@ type Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        CommandTyped str ->
-            ( model, evalJS str )
+update msg (Model model) =
+    Tuple.mapFirst Model <|
+        case msg of
+            CommandTyped str ->
+                ( model, evalJS str )
 
-        EvalResult str ->
-            let
-                newTerm =
-                    Term.receive (str ++ "\n") model.term
-            in
-            ( Model newTerm, Cmd.none )
+            EvalResult str ->
+                let
+                    newTerm =
+                        Term.receive (str ++ "\n") model.term
+                in
+                ( ModelRecord newTerm, Cmd.none )
 
 
 
@@ -106,7 +112,7 @@ port evalJSResults : (String -> msg) -> Sub msg
 
 
 view : Model -> Html Msg
-view model =
+view (Model model) =
     div [ class "columns" ]
         [ div [ class "column is-8 is-offset-2" ]
             [ div [ class "content is-medium" ]

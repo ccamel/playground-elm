@@ -1,4 +1,4 @@
-module Page.Physics exposing (Dot, Entity, EntityMaker, ID, Interaction, Model, Msg(..), Simulation, Stick, Vector2D, info, init, subscriptions, update, view)
+module Page.Physics exposing (Model, Msg, info, init, subscriptions, update, view)
 
 import Array exposing (Array, foldl, foldr, fromList, get, map, set)
 import Basics.Extra exposing (flip, uncurry)
@@ -865,7 +865,7 @@ updateInteraction interaction pos =
     }
 
 
-type alias Model =
+type alias ModelRecord =
     { -- the entity simulated
       entity : Entity
 
@@ -892,17 +892,22 @@ type alias Model =
     }
 
 
+type Model
+    = Model ModelRecord
+
+
 init : ( Model, Cmd Msg )
 init =
-    ( { entity = simulationMaker constants.defaultSimulation ()
-      , simulation = constants.defaultSimulation
-      , interaction = Nothing
-      , started = True
-      , frames = createFrames 10 -- initial capacity
-      , showDots = True
-      , showSticks = True
-      , showStickTension = False
-      }
+    ( Model
+        { entity = simulationMaker constants.defaultSimulation ()
+        , simulation = constants.defaultSimulation
+        , interaction = Nothing
+        , started = True
+        , frames = createFrames 10 -- initial capacity
+        , showDots = True
+        , showSticks = True
+        , showStickTension = False
+        }
     , Cmd.none
     )
 
@@ -926,59 +931,64 @@ type Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        Frame diff ->
-            ( { model
-                | entity = model.entity |> updateEntity |> interactWithEntity model.interaction
-                , frames = addFrame model.frames diff
-              }
-            , Cmd.none
-            )
-
-        PointerDown pos ->
-            ( { model | interaction = Just <| initInteraction pos }, Cmd.none )
-
-        PointerMove pos ->
-            case model.interaction of
-                Just state ->
-                    ( { model | interaction = Just <| updateInteraction state pos }, Cmd.none )
-
-                Nothing ->
-                    ( model, Cmd.none )
-
-        PointerEnd ->
-            ( { model | interaction = Nothing }, Cmd.none )
-
-        Start ->
-            ( { model | started = True }, Cmd.none )
-
-        Stop ->
-            ( { model | started = False }, Cmd.none )
-
-        ChangeSimulation simulation ->
-            if simulation /= model.simulation then
+update msg (Model model) =
+    Tuple.mapFirst Model <|
+        case msg of
+            Frame diff ->
                 ( { model
-                    | entity = simulationMaker simulation ()
-                    , simulation = simulation
+                    | entity = model.entity |> updateEntity |> interactWithEntity model.interaction
+                    , frames = addFrame model.frames diff
                   }
                 , Cmd.none
                 )
 
-            else
-                ( model, Cmd.none )
+            PointerDown pos ->
+                ( { model | interaction = Just <| initInteraction pos }, Cmd.none )
 
-        ToggleShowDots ->
-            ( { model | showDots = not model.showDots }, Cmd.none )
+            PointerMove pos ->
+                case model.interaction of
+                    Just state ->
+                        ( { model | interaction = Just <| updateInteraction state pos }, Cmd.none )
 
-        ToggleShowSticks ->
-            ( { model | showSticks = not model.showSticks }, Cmd.none )
+                    Nothing ->
+                        ( model, Cmd.none )
 
-        ToggleShowStickTension ->
-            ( { model | showStickTension = not model.showStickTension }, Cmd.none )
+            PointerEnd ->
+                ( { model | interaction = Nothing }, Cmd.none )
 
-        Reset ->
-            init
+            Start ->
+                ( { model | started = True }, Cmd.none )
+
+            Stop ->
+                ( { model | started = False }, Cmd.none )
+
+            ChangeSimulation simulation ->
+                if simulation /= model.simulation then
+                    ( { model
+                        | entity = simulationMaker simulation ()
+                        , simulation = simulation
+                      }
+                    , Cmd.none
+                    )
+
+                else
+                    ( model, Cmd.none )
+
+            ToggleShowDots ->
+                ( { model | showDots = not model.showDots }, Cmd.none )
+
+            ToggleShowSticks ->
+                ( { model | showSticks = not model.showSticks }, Cmd.none )
+
+            ToggleShowStickTension ->
+                ( { model | showStickTension = not model.showStickTension }, Cmd.none )
+
+            Reset ->
+                let
+                    ( Model m, c ) =
+                        init
+                in
+                ( m, c )
 
 
 
@@ -986,8 +996,8 @@ update msg model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
-    if model.started then
+subscriptions (Model { started }) =
+    if started then
         onAnimationFrameDelta Frame
 
     else
@@ -999,7 +1009,7 @@ subscriptions model =
 
 
 view : Model -> Html Msg
-view model =
+view (Model model) =
     div [ class "columns" ]
         [ div [ class "column is-8 is-offset-2" ]
             [ div [ class "content is-medium" ]
@@ -1020,7 +1030,7 @@ using elementary functions from the fantastic [joakin/elm-canvas](https://packag
         ]
 
 
-simulationView : Model -> Html Msg
+simulationView : ModelRecord -> Html Msg
 simulationView model =
     div ([ class "has-text-centered", style "touch-action" "none" ] |> withInteractionEvents)
         [ Canvas.toHtml
@@ -1043,7 +1053,7 @@ backgroundShape =
         [ rect ( 0, 0 ) constants.width constants.height ]
 
 
-renderSticks : Model -> List Canvas.Renderable
+renderSticks : ModelRecord -> List Canvas.Renderable
 renderSticks { showSticks, entity } =
     if showSticks then
         entity.sticks
@@ -1053,7 +1063,7 @@ renderSticks { showSticks, entity } =
         []
 
 
-renderStickTensions : Model -> List Canvas.Renderable
+renderStickTensions : ModelRecord -> List Canvas.Renderable
 renderStickTensions { showStickTension, entity } =
     if showStickTension then
         entity.sticks
@@ -1063,7 +1073,7 @@ renderStickTensions { showStickTension, entity } =
         []
 
 
-renderDots : Model -> List Canvas.Renderable
+renderDots : ModelRecord -> List Canvas.Renderable
 renderDots { showDots, entity } =
     if showDots then
         entity.dots
@@ -1074,7 +1084,7 @@ renderDots { showDots, entity } =
         []
 
 
-statsText : Model -> Canvas.Renderable
+statsText : ModelRecord -> Canvas.Renderable
 statsText model =
     [ fpsText model.frames
     , " - "
@@ -1093,7 +1103,7 @@ statsText model =
             ( 15, 10 )
 
 
-controlView : Model -> Html Msg
+controlView : ModelRecord -> Html Msg
 controlView model =
     div [ class "section" ]
         [ div [ class "columns is-centered" ]

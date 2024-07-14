@@ -1,4 +1,4 @@
-module Page.DigitalClock exposing (Figure(..), Model, Msg(..), Segment(..), info, init, subscriptions, update, view)
+module Page.DigitalClock exposing (Model, Msg, info, init, subscriptions, update, view)
 
 import Browser.Events
 import Color exposing (Color, rgb255, toCssString)
@@ -42,7 +42,7 @@ A demo rendering a digital clock in [SVG](https://fr.wikipedia.org/wiki/Scalable
 -- MODEL
 
 
-type alias Model =
+type alias ModelRecord =
     { time : Maybe Posix
     , timeZone : Zone
     , spaceX : Int
@@ -54,12 +54,16 @@ type alias Model =
     }
 
 
+type Model
+    = Model ModelRecord
+
+
 init : ( Model, Cmd Msg )
 init =
-    ( initialModel, initialCmd )
+    ( Model initialModel, initialCmd )
 
 
-initialModel : Model
+initialModel : ModelRecord
 initialModel =
     { time = Nothing
     , timeZone = utc
@@ -91,55 +95,56 @@ type Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        Tick t ->
-            ( { model | time = Just t }, Cmd.none )
+update msg (Model model) =
+    Tuple.mapFirst Model <|
+        case msg of
+            Tick t ->
+                ( { model | time = Just t }, Cmd.none )
 
-        SetSpaceX s ->
-            ( case strToIntWithMinMax s 0 25 of
-                Just v ->
-                    { model | spaceX = v }
+            SetSpaceX s ->
+                ( case strToIntWithMinMax s 0 25 of
+                    Just v ->
+                        { model | spaceX = v }
 
-                Nothing ->
-                    model
-            , Cmd.none
-            )
+                    Nothing ->
+                        model
+                , Cmd.none
+                )
 
-        SetTilt s ->
-            ( case strToIntWithMinMax s -45 45 of
-                Just v ->
-                    { model | tilt = v }
+            SetTilt s ->
+                ( case strToIntWithMinMax s -45 45 of
+                    Just v ->
+                        { model | tilt = v }
 
-                Nothing ->
-                    model
-            , Cmd.none
-            )
+                    Nothing ->
+                        model
+                , Cmd.none
+                )
 
-        SetRefreshInterval s ->
-            ( case strToIntWithMinMax s 25 2000 of
-                Just v ->
-                    { model | refreshInterval = v }
+            SetRefreshInterval s ->
+                ( case strToIntWithMinMax s 25 2000 of
+                    Just v ->
+                        { model | refreshInterval = v }
 
-                Nothing ->
-                    model
-            , Cmd.none
-            )
+                    Nothing ->
+                        model
+                , Cmd.none
+                )
 
-        ShowColorPicker b ->
-            ( { model | colorPickerVisible = b }, Cmd.none )
+            ShowColorPicker b ->
+                ( { model | colorPickerVisible = b }, Cmd.none )
 
-        ColorPickerMsg msgPicker ->
-            let
-                ( state, color ) =
-                    ColorPicker.update msgPicker model.color model.colorPicker
-            in
-            ( { model
-                | colorPicker = state
-                , color = color |> Maybe.withDefault model.color
-              }
-            , Cmd.none
-            )
+            ColorPickerMsg msgPicker ->
+                let
+                    ( state, color ) =
+                        ColorPicker.update msgPicker model.color model.colorPicker
+                in
+                ( { model
+                    | colorPicker = state
+                    , color = color |> Maybe.withDefault model.color
+                  }
+                , Cmd.none
+                )
 
 
 
@@ -147,7 +152,7 @@ update msg model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions (Model model) =
     Sub.batch
         [ every (toFloat model.refreshInterval) Tick
         , Browser.Events.onMouseDown (outsideTarget "color-picker" (ShowColorPicker False))
@@ -159,7 +164,7 @@ subscriptions model =
 
 
 view : Model -> Html Msg
-view model =
+view (Model model) =
     div [ class "columns" ]
         [ div [ class "column is-8 is-offset-2" ]
             [ div [ class "content is-medium" ]
@@ -477,7 +482,7 @@ figureSvgView fig =
         )
 
 
-stringToSvgView : Model -> String -> List (Svg msg)
+stringToSvgView : ModelRecord -> String -> List (Svg msg)
 stringToSvgView model s =
     stringToFigures s
         |> List.map figureSvgView
@@ -494,7 +499,7 @@ stringToSvgView model s =
             )
 
 
-digitalClock : Model -> Html msg
+digitalClock : ModelRecord -> Html msg
 digitalClock model =
     let
         styles =

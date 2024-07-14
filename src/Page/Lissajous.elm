@@ -1,4 +1,4 @@
-module Page.Lissajous exposing (LineStyle, Model, Msg(..), info, init, subscriptions, update, view)
+module Page.Lissajous exposing (Model, Msg, info, init, subscriptions, update, view)
 
 import Array
 import Browser.Events exposing (onAnimationFrameDelta)
@@ -49,7 +49,7 @@ This demo allows to visualize Lissajous curves in motion and adjust some paramet
 -- MODEL
 
 
-type alias Model =
+type alias ModelRecord =
     { -- parameter a for the lissajous curve
       a : Int
 
@@ -91,6 +91,10 @@ type alias Model =
     }
 
 
+type Model
+    = Model ModelRecord
+
+
 type alias LineStyle =
     { color : Color.Color
     , lineType : LineType
@@ -106,20 +110,21 @@ init =
         ( widgetModel, widgetCmd ) =
             Widget.init (toFloat constants.width) (toFloat constants.height) "lissajous"
     in
-    ( { a = 3
-      , b = 4
-      , p = 90 -- π/2
-      , vp = 1
-      , started = True
-      , curveStyle = { color = Color.rgb255 31 122 31, lineType = solid 2 }
-      , resolution = 400
-      , afterglow = initialAfterGlow
-      , lissajousStencils = createBoundedArray (initialAfterGlow + 1) (always Nothing)
-      , ticks = createFrames 20 -- initial capacity
-      , foregroundColorPicker = ColorPicker.empty
-      , foregroundColorPickerVisible = False
-      , widgetState = widgetModel
-      }
+    ( Model
+        { a = 3
+        , b = 4
+        , p = 90 -- π/2
+        , vp = 1
+        , started = True
+        , curveStyle = { color = Color.rgb255 31 122 31, lineType = solid 2 }
+        , resolution = 400
+        , afterglow = initialAfterGlow
+        , lissajousStencils = createBoundedArray (initialAfterGlow + 1) (always Nothing)
+        , ticks = createFrames 20 -- initial capacity
+        , foregroundColorPicker = ColorPicker.empty
+        , foregroundColorPickerVisible = False
+        , widgetState = widgetModel
+        }
     , Cmd.map WidgetMessage widgetCmd
     )
 
@@ -146,142 +151,147 @@ type Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        Reset ->
-            init
+update msg (Model model) =
+    Tuple.mapFirst Model <|
+        case msg of
+            Reset ->
+                let
+                    ( Model m, c ) =
+                        init
+                in
+                ( m, c )
 
-        Tick diff ->
-            let
-                -- compute the new phase according to velocity (diff is in ms)
-                v =
-                    model.p
-                        + (diff * model.vp * 2 * 360 / 60000)
-                        |> modulo 180
+            Tick diff ->
+                let
+                    -- compute the new phase according to velocity (diff is in ms)
+                    v =
+                        model.p
+                            + (diff * model.vp * 2 * 360 / 60000)
+                            |> modulo 180
 
-                lissajousStencils =
-                    appendToBoundedArray (Just <| lissajous model.a model.b (toRadian model.p) model.resolution) model.lissajousStencils
-            in
-            ( { model
-                | p = v
-                , ticks = addFrame model.ticks diff
-                , lissajousStencils = lissajousStencils
-              }
-            , Cmd.none
-            )
+                    lissajousStencils =
+                        appendToBoundedArray (Just <| lissajous model.a model.b (toRadian model.p) model.resolution) model.lissajousStencils
+                in
+                ( { model
+                    | p = v
+                    , ticks = addFrame model.ticks diff
+                    , lissajousStencils = lissajousStencils
+                  }
+                , Cmd.none
+                )
 
-        Start ->
-            ( { model
-                | started = True
-                , ticks = resetFrames model.ticks
-              }
-            , Cmd.none
-            )
+            Start ->
+                ( { model
+                    | started = True
+                    , ticks = resetFrames model.ticks
+                  }
+                , Cmd.none
+                )
 
-        Stop ->
-            ( { model | started = False }, Cmd.none )
+            Stop ->
+                ( { model | started = False }, Cmd.none )
 
-        SetPhaseVelocity s ->
-            ( case strToFloatWithMinMax s 0 1000 of
-                Just v ->
-                    { model | vp = v }
-
-                Nothing ->
-                    model
-            , Cmd.none
-            )
-
-        SetAParemeter s ->
-            ( case strToIntWithMinMax s 1 10 of
-                Just v ->
-                    { model | a = v }
-
-                Nothing ->
-                    model
-            , Cmd.none
-            )
-
-        SetBParameter s ->
-            ( case strToIntWithMinMax s 1 10 of
-                Just v ->
-                    { model | b = v }
-
-                Nothing ->
-                    model
-            , Cmd.none
-            )
-
-        SetResolution s ->
-            ( case strToIntWithMinMax s 5 1000 of
-                Just v ->
-                    { model | resolution = v }
-
-                Nothing ->
-                    model
-            , Cmd.none
-            )
-
-        SetPhase p ->
-            if not model.started then
-                case String.toFloat p of
+            SetPhaseVelocity s ->
+                ( case strToFloatWithMinMax s 0 1000 of
                     Just v ->
-                        ( { model | p = modulo 180.0 v }, Cmd.none )
+                        { model | vp = v }
 
                     Nothing ->
-                        ( model, Cmd.none )
+                        model
+                , Cmd.none
+                )
 
-            else
+            SetAParemeter s ->
+                ( case strToIntWithMinMax s 1 10 of
+                    Just v ->
+                        { model | a = v }
+
+                    Nothing ->
+                        model
+                , Cmd.none
+                )
+
+            SetBParameter s ->
+                ( case strToIntWithMinMax s 1 10 of
+                    Just v ->
+                        { model | b = v }
+
+                    Nothing ->
+                        model
+                , Cmd.none
+                )
+
+            SetResolution s ->
+                ( case strToIntWithMinMax s 5 1000 of
+                    Just v ->
+                        { model | resolution = v }
+
+                    Nothing ->
+                        model
+                , Cmd.none
+                )
+
+            SetPhase p ->
+                if not model.started then
+                    case String.toFloat p of
+                        Just v ->
+                            ( { model | p = modulo 180.0 v }, Cmd.none )
+
+                        Nothing ->
+                            ( model, Cmd.none )
+
+                else
+                    ( model, Cmd.none )
+
+            SetAfterglow s ->
+                ( case strToIntWithMinMax s 0 10 of
+                    Just v ->
+                        { model
+                            | afterglow = v
+                            , lissajousStencils = resizeBoundedArray (v + 1) model.lissajousStencils
+                        }
+
+                    Nothing ->
+                        model
+                , Cmd.none
+                )
+
+            ForegroundColorPickerMsg msgf ->
+                let
+                    curveStyle =
+                        model.curveStyle
+
+                    ( state, color ) =
+                        ColorPicker.update msgf curveStyle.color model.foregroundColorPicker
+                in
+                ( { model
+                    | foregroundColorPicker = state
+                    , curveStyle = { curveStyle | color = Maybe.withDefault curveStyle.color color }
+                  }
+                , Cmd.none
+                )
+
+            ShowForegroundColorPicker b ->
+                ( { model | foregroundColorPickerVisible = b }, Cmd.none )
+
+            WidgetMessage msgw ->
+                let
+                    ( widgetModel, widgetCmd ) =
+                        Widget.update msgw model.widgetState
+                in
+                ( { model | widgetState = widgetModel }, Cmd.map WidgetMessage widgetCmd )
+
+            Batch [] ->
                 ( model, Cmd.none )
 
-        SetAfterglow s ->
-            ( case strToIntWithMinMax s 0 10 of
-                Just v ->
-                    { model
-                        | afterglow = v
-                        , lissajousStencils = resizeBoundedArray (v + 1) model.lissajousStencils
-                    }
-
-                Nothing ->
-                    model
-            , Cmd.none
-            )
-
-        ForegroundColorPickerMsg msgf ->
-            let
-                curveStyle =
-                    model.curveStyle
-
-                ( state, color ) =
-                    ColorPicker.update msgf curveStyle.color model.foregroundColorPicker
-            in
-            ( { model
-                | foregroundColorPicker = state
-                , curveStyle = { curveStyle | color = Maybe.withDefault curveStyle.color color }
-              }
-            , Cmd.none
-            )
-
-        ShowForegroundColorPicker b ->
-            ( { model | foregroundColorPickerVisible = b }, Cmd.none )
-
-        WidgetMessage msgw ->
-            let
-                ( widgetModel, widgetCmd ) =
-                    Widget.update msgw model.widgetState
-            in
-            ( { model | widgetState = widgetModel }, Cmd.map WidgetMessage widgetCmd )
-
-        Batch [] ->
-            ( model, Cmd.none )
-
-        Batch (x :: xs) ->
-            let
-                ( newModel, cmd ) =
-                    update x model
-            in
-            ( newModel
-            , Cmd.batch [ cmd, sendMsg (Batch xs) ]
-            )
+            Batch (x :: xs) ->
+                let
+                    ( Model m, c ) =
+                        update x (Model model)
+                in
+                ( m
+                , Cmd.batch [ c, sendMsg (Batch xs) ]
+                )
 
 
 
@@ -289,7 +299,7 @@ update msg model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions (Model model) =
     Sub.batch
         [ if model.started then
             onAnimationFrameDelta Tick
@@ -319,7 +329,7 @@ constants =
 
 
 view : Model -> Html Msg
-view model =
+view (Model model) =
     div [ class "columns" ]
         [ div [ class "column is-8 is-offset-2" ]
             [ div [ class "content is-medium" ]
@@ -458,7 +468,7 @@ view model =
         ]
 
 
-lissajouComponent : Model -> Html Msg
+lissajouComponent : ModelRecord -> Html Msg
 lissajouComponent model =
     div [ id "lissajous-scope", style "max-width" (fromInt constants.width ++ "px"), class "mx-auto" ]
         [ Widget.view model.widgetState

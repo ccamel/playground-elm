@@ -1,4 +1,4 @@
-module Page.Maze exposing (Cells, InitializingCtx, Maze, MazeState(..), Model, Msg(..), Side(..), Sides, VisitedCell, info, init, subscriptions, update, view)
+module Page.Maze exposing (Model, Msg, info, init, subscriptions, update, view)
 
 import Array exposing (Array, get, initialize, set)
 import Basics.Extra exposing (flip)
@@ -91,26 +91,30 @@ type alias Maze =
     }
 
 
-type alias Model =
+type alias ModelRecord =
     { maze : Maze
     , auto : Bool
     , memento : List Maze
     }
 
 
+type Model
+    = Model ModelRecord
+
+
 init : ( Model, Cmd Msg )
 init =
-    ( initialModelWithMazeSize 20 15
+    ( Model <| initialModelWithMazeSize 20 15
     , Cmd.none
     )
 
 
-initialModel : Model
+initialModel : ModelRecord
 initialModel =
     initialModelWithMazeSize 20 15
 
 
-initialModelWithMazeSize : Int -> Int -> Model
+initialModelWithMazeSize : Int -> Int -> ModelRecord
 initialModelWithMazeSize w h =
     { maze = emptyMaze w h
     , auto = False
@@ -324,77 +328,78 @@ type Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        Tick time ->
-            let
-                maze =
-                    model.maze
-
-                newModel =
-                    case maze.state of
-                        Created ->
-                            -- going to initializing state
-                            { model | maze = { maze | state = Initializing <| initialInitializingContext time } }
-
-                        Initializing _ ->
-                            { model | maze = stepMaze model.maze }
-
-                        Ready ->
-                            { model | auto = False }
-            in
-            if newModel.maze /= model.maze then
-                ( { newModel | memento = maze :: newModel.memento }, Cmd.none )
-
-            else
-                ( newModel, Cmd.none )
-
-        StartAutoGeneration ->
-            ( { model | auto = True }, Cmd.none )
-
-        StopAutoGeneration ->
-            ( { model | auto = False }, Cmd.none )
-
-        Steps n ->
-            if n > 0 then
+update msg (Model model) =
+    Tuple.mapFirst Model <|
+        case msg of
+            Tick time ->
                 let
-                    -- produce n commands, each one sending a tick on "time.now"
-                    cmd =
-                        Time.now
-                            |> repeat n
-                            |> map (Task.perform Tick)
-                            |> Cmd.batch
-                in
-                ( model, cmd )
+                    maze =
+                        model.maze
 
-            else
-                -- restore state from memento
+                    newModel =
+                        case maze.state of
+                            Created ->
+                                -- going to initializing state
+                                { model | maze = { maze | state = Initializing <| initialInitializingContext time } }
+
+                            Initializing _ ->
+                                { model | maze = stepMaze model.maze }
+
+                            Ready ->
+                                { model | auto = False }
+                in
+                if newModel.maze /= model.maze then
+                    ( { newModel | memento = maze :: newModel.memento }, Cmd.none )
+
+                else
+                    ( newModel, Cmd.none )
+
+            StartAutoGeneration ->
+                ( { model | auto = True }, Cmd.none )
+
+            StopAutoGeneration ->
+                ( { model | auto = False }, Cmd.none )
+
+            Steps n ->
+                if n > 0 then
+                    let
+                        -- produce n commands, each one sending a tick on "time.now"
+                        cmd =
+                            Time.now
+                                |> repeat n
+                                |> map (Task.perform Tick)
+                                |> Cmd.batch
+                    in
+                    ( model, cmd )
+
+                else
+                    -- restore state from memento
+                    let
+                        ( first, second ) =
+                            splitAt (-1 * n) model.memento
+                    in
+                    ( { model
+                        | maze = last first |> withDefault initialModel.maze
+                        , memento = second
+                      }
+                    , Cmd.none
+                    )
+
+            Reset ->
+                ( initialModelWithMazeSize model.maze.width model.maze.height, Cmd.none )
+
+            SetDimension ( w, h ) ->
                 let
-                    ( first, second ) =
-                        splitAt (-1 * n) model.memento
+                    width =
+                        w |> min maxDimensionsMaze.maxW |> max maxDimensionsMaze.minW
+
+                    height =
+                        h |> min maxDimensionsMaze.maxH |> max maxDimensionsMaze.minH
                 in
-                ( { model
-                    | maze = last first |> withDefault initialModel.maze
-                    , memento = second
-                  }
-                , Cmd.none
-                )
+                ( initialModelWithMazeSize width height, Cmd.none )
 
-        Reset ->
-            ( initialModelWithMazeSize model.maze.width model.maze.height, Cmd.none )
-
-        SetDimension ( w, h ) ->
-            let
-                width =
-                    w |> min maxDimensionsMaze.maxW |> max maxDimensionsMaze.minW
-
-                height =
-                    h |> min maxDimensionsMaze.maxH |> max maxDimensionsMaze.minH
-            in
-            ( initialModelWithMazeSize width height, Cmd.none )
-
-        Download ->
-            ( model, Download.string "maze.json" "text/csv" (model.maze |> asJsonValue |> encode 4) )
+            Download ->
+                ( model, Download.string "maze.json" "text/csv" (model.maze |> asJsonValue |> encode 4) )
 
 
 
@@ -402,8 +407,8 @@ update msg model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
-    if model.auto then
+subscriptions (Model { auto }) =
+    if auto then
         every 15 Tick
 
     else
@@ -415,7 +420,7 @@ subscriptions model =
 
 
 view : Model -> Html Msg
-view model =
+view (Model model) =
     div [ class "columns" ]
         [ div [ class "column is-8 is-offset-2" ]
             [ div [ class "content is-medium" ]
@@ -446,7 +451,7 @@ rowsView maze =
             )
 
 
-controlView : Model -> Html Msg
+controlView : ModelRecord -> Html Msg
 controlView model =
     div []
         [ div [ class "buttons has-addons is-centered are-small" ]
@@ -545,7 +550,7 @@ controlView model =
         ]
 
 
-progressView : Model -> Html Msg
+progressView : ModelRecord -> Html Msg
 progressView model =
     let
         progressValue =
