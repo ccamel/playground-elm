@@ -1022,10 +1022,10 @@ using elementary functions from the fantastic [joakin/elm-canvas](https://packag
 
 simulationView : Model -> Html Msg
 simulationView model =
-    div [ class "has-text-centered" ]
+    div ([ class "has-text-centered", style "touch-action" "none" ] |> withInteractionEvents)
         [ Canvas.toHtml
             ( constants.width, constants.height )
-            ([ style "touch-action" "none" ] |> withInteractionEvents)
+            []
             (List.concat
                 [ [ backgroundShape ]
                 , renderSticks model
@@ -1166,7 +1166,7 @@ withInteractionEvents attributes =
         posLens =
             makeVector2D << .offsetPos << .pointer
     in
-    Pointer.onDown (PointerDown << posLens)
+    Pointer.onWithOptions "pointerdown" { stopPropagation = True, preventDefault = True } (PointerDown << posLens)
         :: Pointer.onMove (PointerMove << posLens)
         :: Pointer.onUp (always PointerEnd)
         :: Pointer.onCancel (always PointerEnd)
