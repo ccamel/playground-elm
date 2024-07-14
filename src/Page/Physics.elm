@@ -1,6 +1,6 @@
 module Page.Physics exposing (Model, Msg, info, init, subscriptions, update, view)
 
-import Array exposing (Array, foldl, foldr, fromList, get, map, set)
+import Array exposing (Array, foldl, fromList, get, map, set)
 import Basics.Extra exposing (flip, uncurry)
 import Browser.Events exposing (onAnimationFrameDelta)
 import Canvas exposing (Renderable, arc, lineTo, path, rect, shapes)
@@ -435,27 +435,22 @@ updateStick entity stick =
         m =
             p1.mass + p2.mass
 
-        p1u =
-            if p1.pin == Nothing then
+        updatePosition pm dot op =
+            if dot.pin == Nothing then
                 let
-                    m1 =
-                        p2.mass / m
+                    mass =
+                        pm / m
                 in
-                { p1 | pos = p1.pos |> flip sub (mult m1 offset) }
+                { dot | pos = dot.pos |> op (mult mass offset) }
 
             else
-                p1
+                dot
+
+        p1u =
+            updatePosition p2.mass p1 (flip sub)
 
         p2u =
-            if p2.pin == Nothing then
-                let
-                    m2 =
-                        p1.mass / m
-                in
-                { p2 | pos = p2.pos |> add (mult m2 offset) }
-
-            else
-                p2
+            updatePosition p1.mass p2 add
     in
     entity
         |> setDot p1u
@@ -530,58 +525,57 @@ clothEntityMaker () =
 makeCloth : Int -> Int -> Float -> Entity
 makeCloth w h spacing =
     let
-        initializer n =
+        initDot n =
             let
                 ( x, y ) =
                     ( remainderBy w n, n // w )
 
                 coords =
                     makeVector2D ( spacing * toFloat x, spacing * toFloat y )
+
+                baseDot =
+                    makeDot n coords
             in
-            makeDot n coords
-                |> (if y == 0 then
-                        pinDotPos >> withDotBrownColor
+            if y == 0 then
+                baseDot |> pinDotPos |> withDotBrownColor
 
-                    else
-                        identity
-                   )
-                |> (if y == h - 1 then
-                        withDotVelocity <| makeVector2D ( 5.0, 0.0 )
+            else if y == h - 1 then
+                baseDot |> withDotVelocity (makeVector2D ( 5.0, 0.0 ))
 
-                    else
-                        identity
-                   )
+            else
+                baseDot
 
-        cloth =
-            { dots = Array.initialize (w * h) initializer
-            , sticks = []
-            , offset = makeVector2D ( 20, 20 )
-            }
-    in
-    foldr
-        (\d acc ->
+        addSticks dot acc =
             let
                 n =
-                    d.id
+                    dot.id
 
                 ( x, y ) =
                     ( remainderBy w n, n // w )
 
-                step1 =
+                withHorizontalStick =
                     if x /= 0 then
-                        addStick n (n - 1) Nothing acc
+                        addStick n (n - 1) Nothing
 
                     else
-                        acc
-            in
-            if y /= 0 then
-                addStick n (x + (y - 1) * w) Nothing step1
+                        identity
 
-            else
-                step1
-        )
-        cloth
-        cloth.dots
+                withVerticalStick =
+                    if y /= 0 then
+                        addStick n (x + (y - 1) * w) Nothing
+
+                    else
+                        identity
+            in
+            acc |> withVerticalStick |> withHorizontalStick
+
+        initialCloth =
+            { dots = Array.initialize (w * h) initDot
+            , sticks = []
+            , offset = makeVector2D ( 20, 20 )
+            }
+    in
+    Array.foldl addSticks initialCloth initialCloth.dots
 
 
 {-| Factory witch produces a pendulum, i.e. a body suspended from a fixed support.
