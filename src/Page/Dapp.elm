@@ -181,7 +181,7 @@ update msg (Model model) =
             AddToast notification ->
                 let
                     ( tray, tmsg ) =
-                        Toast.add model.tray (Toast.expireIn 3000 notification)
+                        Toast.add model.tray (Toast.expireIn 3000 notification |> Toast.withExitTransition 1000)
                 in
                 ( { model | tray = tray }, Cmd.map ToastMsg tmsg )
 
@@ -361,7 +361,7 @@ notificationDecoder =
 view : Model -> Html Msg
 view (Model model) =
     div []
-        [ div [ class "toast-tray" ] [ Toast.render toastView model.tray (Toast.config ToastMsg) ]
+        [ trayView model.tray
         , div [ class "columns" ]
             [ div [ class "column is-8 is-offset-2" ]
                 [ div [ class "content is-medium" ]
@@ -399,6 +399,15 @@ walletsView { wallets } =
 
 walletView : Wallet -> Html Msg
 walletView wallet =
+    let
+        isConnected =
+            case wallet.state of
+                Connected _ ->
+                    True
+
+                _ ->
+                    False
+    in
     div [ class "box" ]
         (div [ class "level is-mobile" ]
             [ div [ class "level-left" ]
@@ -424,23 +433,22 @@ walletView wallet =
                     [ button
                         [ class "button is-small is-rounded is-info is-outlined"
                         , style "width" "100px"
-                        , classList [ ( "is-loading", wallet.state == Connecting ) ]
+                        , classList [ ( "is-loading", wallet.state == Connecting ), ( "animate__animated animate__pulse", isConnected ) ]
                         , attributeIf (wallet.state == NotConnected) <| onClick <| ConnectWalletWithProvider wallet.provider.info.uuid
                         ]
-                        (case wallet.state of
-                            Connected _ ->
-                                [ span [] [ text "connected" ]
-                                , span [ class "icon is-small has-text-success" ]
-                                    [ i [ class "fa fa-circle is-size-7" ] []
-                                    ]
+                        (if isConnected then
+                            [ span [] [ text "connected" ]
+                            , span [ class "icon is-small has-text-success" ]
+                                [ i [ class "fa fa-circle is-size-7" ] []
                                 ]
+                            ]
 
-                            _ ->
-                                [ span [] [ text "connect" ]
-                                , span [ class "icon is-small has-text-link" ]
-                                    [ i [ class "fa fa-link" ] []
-                                    ]
+                         else
+                            [ span [] [ text "connect" ]
+                            , span [ class "icon is-small has-text-link" ]
+                                [ i [ class "fa fa-link" ] []
                                 ]
+                            ]
                         )
                     ]
                 ]
@@ -483,8 +491,18 @@ walletAddressView address =
     ]
 
 
+trayView : Toast.Tray Notification -> Html Msg
+trayView tray =
+    div [ class "toast-tray" ]
+        [ Toast.config ToastMsg
+            |> Toast.withEnterAttributes [ class "animate__animated animate__fadeInUp" ]
+            |> Toast.withExitAttributes [ class "animate__animated animate__fadeOut" ]
+            |> Toast.render toastView tray
+        ]
+
+
 toastView : List (Html.Attribute Msg) -> Toast.Info Notification -> Html Msg
-toastView _ toast =
+toastView attributes toast =
     let
         color =
             case toast.content.type_ of
@@ -497,7 +515,7 @@ toastView _ toast =
                 Error ->
                     "is-danger"
     in
-    div [ class <| "notification is-light " ++ color ]
+    div ([ class <| "notification is-light " ++ color ] ++ attributes)
         [ button
             [ class "delete"
             , onClick (ToastMsg <| Toast.exit toast.id)

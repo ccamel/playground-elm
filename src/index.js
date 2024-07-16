@@ -1,5 +1,6 @@
 import 'elm-pep';
 import 'bulma/css/bulma.min.css';
+import 'animate.css';
 import 'github-fork-ribbon-css/gh-fork-ribbon.css';
 import './fonts/font.css';
 import 'elm-canvas/elm-canvas.js';
