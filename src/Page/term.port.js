@@ -4,7 +4,7 @@
  * - evalJS: (Elm -> JS) evaluate a string as javascript code.
  * - evalJSResults: (JS -> Elm) string result of the evaluation.
  */
-function registerPorts(app) {
+const registerPorts = app => {
   app.ports.evalJS.subscribe(code => {
     let result = '';
     try {
@@ -15,6 +15,6 @@ function registerPorts(app) {
 
     app.ports.evalJSResults.send(`> ${code}\n${result}`);
   });
-}
+};
 
 export { registerPorts };
