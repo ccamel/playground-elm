@@ -42,6 +42,7 @@
     "elm-json": "elm-json"
   },
   "dependencies": {
+    "animate.css": "^4.1.1",
     "elm-canvas": "^2.2.4",
     "elm-pep": "^1.0.6",
     "file-loader": "^6.2.0",
