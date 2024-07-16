@@ -1,0 +1,7 @@
+.toast-tray {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 1000;
+  gap: 0.3rem;
+}

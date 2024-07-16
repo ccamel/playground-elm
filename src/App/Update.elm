@@ -11,6 +11,7 @@ import Maybe exposing (withDefault)
 import Page.About
 import Page.Asteroids
 import Page.Calc
+import Page.Dapp
 import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
@@ -83,6 +84,9 @@ update msg model =
 
                 ( asteroidsModel, asteroidsCmd ) =
                     Page.Asteroids.init
+
+                ( dappModel, dappCmd ) =
+                    Page.Dapp.init model.flags
             in
             case newRoute of
                 NotFoundRoute ->
@@ -115,6 +119,9 @@ update msg model =
                 Page Asteroids ->
                     ( { clearedModel | route = newRoute, pages = { emptyPagesModel | asteroidsPage = Just asteroidsModel } }, Cmd.map AsteroidsPageMsg asteroidsCmd )
 
+                Page Dapp ->
+                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | dappPage = Just dappModel } }, Cmd.map DappPageMsg dappCmd )
+
         -- messages from pages
         AboutPageMsg m ->
             convert model m .aboutPage Page.About.update (\mdl -> { model | pages = { pages | aboutPage = Just mdl } }) AboutPageMsg
@@ -139,6 +146,9 @@ update msg model =
 
         AsteroidsPageMsg m ->
             convert model m .asteroidsPage Page.Asteroids.update (\mdl -> { model | pages = { pages | asteroidsPage = Just mdl } }) AsteroidsPageMsg
+
+        DappPageMsg m ->
+            convert model m .dappPage Page.Dapp.update (\mdl -> { model | pages = { pages | dappPage = Just mdl } }) DappPageMsg
 
 
 init : Flags -> Url.Url -> Nav.Key -> ( Model, Cmd App.Messages.Msg )

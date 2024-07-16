@@ -6,6 +6,7 @@ import Browser.Navigation as Nav
 import Page.About
 import Page.Asteroids
 import Page.Calc
+import Page.Dapp
 import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
@@ -22,6 +23,7 @@ type alias PagesModel =
     , physicsPage : Maybe Page.Physics.Model
     , termPage : Maybe Page.Term.Model
     , asteroidsPage : Maybe Page.Asteroids.Model
+    , dappPage : Maybe Page.Dapp.Model
     }
 
 
@@ -35,7 +37,7 @@ type alias Model =
     }
 
 
-emptyPagesModel : { aboutPage : Maybe a, calcPage : Maybe b, lissajousPage : Maybe c, digitalClockPage : Maybe d, mazePage : Maybe e, physicsPage : Maybe f, termPage : Maybe g, asteroidsPage : Maybe h }
+emptyPagesModel : { aboutPage : Maybe a, calcPage : Maybe b, lissajousPage : Maybe c, digitalClockPage : Maybe d, mazePage : Maybe e, physicsPage : Maybe f, termPage : Maybe g, asteroidsPage : Maybe h, dappPage : Maybe i }
 emptyPagesModel =
     { aboutPage = Nothing
     , calcPage = Nothing
@@ -45,4 +47,5 @@ emptyPagesModel =
     , physicsPage = Nothing
     , termPage = Nothing
     , asteroidsPage = Nothing
+    , dappPage = Nothing
     }
