@@ -13,6 +13,7 @@ import './Page/lissajous.css';
 import './Page/maze.css';
 import './Page/physics.css';
 import './Page/term.css';
+import './Page/dapp.css';
 
 import { Elm } from './Main.elm';
 const basePath = new URL(document.baseURI).pathname;
@@ -25,5 +26,8 @@ const app = Elm.Main.init({
 
 // -- for Elm ports
 
-import { registerPorts } from './Page/term.js';
-registerPorts(app);
+import { registerPorts as portA } from './Page/term.port.js';
+portA(app);
+
+import { registerPorts as portB } from './Page/dapp.port.js';
+portB(app);

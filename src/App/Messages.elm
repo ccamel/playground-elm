@@ -4,6 +4,7 @@ import Browser
 import Page.About
 import Page.Asteroids
 import Page.Calc
+import Page.Dapp
 import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
@@ -21,6 +22,7 @@ type Page
     | Physics
     | Term
     | Asteroids
+    | Dapp
 
 
 type Msg
@@ -36,3 +38,4 @@ type Msg
     | PhysicsPageMsg Page.Physics.Msg
     | TermPageMsg Page.Term.Msg
     | AsteroidsPageMsg Page.Asteroids.Msg
+    | DappPageMsg Page.Dapp.Msg

@@ -4,6 +4,7 @@ import App.Messages exposing (Page(..))
 import Page.About
 import Page.Asteroids
 import Page.Calc
+import Page.Dapp
 import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
@@ -57,6 +58,9 @@ parseFragment fragment =
 
             else if p == Page.Asteroids.info.name then
                 Page Asteroids
+
+            else if p == Page.Dapp.info.name then
+                Page Dapp
 
             else
                 NotFoundRoute

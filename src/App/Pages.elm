@@ -7,6 +7,7 @@ import Lib.Page exposing (PageInfo)
 import Page.About
 import Page.Asteroids
 import Page.Calc
+import Page.Dapp
 import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
@@ -42,6 +43,7 @@ pages =
     , Physics
     , Term
     , Asteroids
+    , Dapp
     ]
 
 
@@ -104,6 +106,9 @@ pageSpec page =
 
         Asteroids ->
             toSpec Page.Asteroids.info Page.Asteroids.view Page.Asteroids.subscriptions AsteroidsPageMsg (\model -> model.pages.asteroidsPage)
+
+        Dapp ->
+            toSpec Page.Dapp.info Page.Dapp.view Page.Dapp.subscriptions DappPageMsg (\model -> model.pages.dappPage)
 
 
 pageName : Page -> String
