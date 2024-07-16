@@ -3,10 +3,9 @@ module Lib.ColorSelector exposing (view)
 import Color exposing (toCssString)
 import ColorPicker
 import Html exposing (Html, button, div, i, span)
-import Html.Attributes exposing (attribute, class, id, style)
+import Html.Attributes exposing (attribute, class, classList, id, style)
 import Html.Attributes.Aria exposing (ariaControls, ariaHasPopup, role)
 import Html.Events exposing (onClick)
-import Lib.Html exposing (classList)
 
 
 {-| A color selector that opens a color picker when clicked.

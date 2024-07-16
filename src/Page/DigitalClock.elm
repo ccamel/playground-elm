@@ -8,9 +8,9 @@ import Html.Attributes exposing (class, name, size, style, type_, value)
 import Html.Events exposing (onInput)
 import Lib.ColorSelector as ColorSelector
 import Lib.Decoder exposing (outsideTarget)
-import Lib.Html exposing (svgClassList)
 import Lib.Page
 import Lib.String exposing (strToIntWithMinMax)
+import Lib.Svg exposing (classList)
 import List exposing (map, member)
 import Markdown
 import Maybe exposing (withDefault)
@@ -468,7 +468,7 @@ figureSvgView fig =
                     member seg segments
             in
             segmentSvgView
-                [ svgClassList
+                [ classList
                     [ ( "lit", lit )
                     , ( "unlit", not lit )
                     ]

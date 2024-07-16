@@ -515,7 +515,7 @@ toastView attributes toast =
                 Error ->
                     "is-danger"
     in
-    div ([ class <| "notification is-light " ++ color ] ++ attributes)
+    div (class ("notification is-light " ++ color) :: attributes)
         [ button
             [ class "delete"
             , onClick (ToastMsg <| Toast.exit toast.id)
