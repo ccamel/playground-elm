@@ -30,7 +30,7 @@ info =
 A dApp utilizing [EIP-6963](https://eips.ethereum.org/EIPS/eip-6963) to discover multiple injected providers and connect to various wallets
 using [ELM ports](https://guide.elm-lang.org/interop/ports.html) to communicate with the browser extensions.
       """
-    , srcRel = "Page/Wallet.elm"
+    , srcRel = "Page/Dapp.elm"
     }
 
 
