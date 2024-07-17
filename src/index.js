@@ -15,6 +15,7 @@ import './Page/maze.css';
 import './Page/physics.css';
 import './Page/term.css';
 import './Page/dapp.css';
+import './Page/soundWaveToggle.css';
 
 import { Elm } from './Main.elm';
 const basePath = new URL(document.baseURI).pathname;

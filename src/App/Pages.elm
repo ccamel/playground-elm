@@ -12,6 +12,7 @@ import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
 import Page.Physics
+import Page.SoundWaveToggle
 import Page.Term
 
 
@@ -44,6 +45,7 @@ pages =
     , Term
     , Asteroids
     , Dapp
+    , SoundWaveToggle
     ]
 
 
@@ -109,6 +111,9 @@ pageSpec page =
 
         Dapp ->
             toSpec Page.Dapp.info Page.Dapp.view Page.Dapp.subscriptions DappPageMsg (\model -> model.pages.dappPage)
+
+        SoundWaveToggle ->
+            toSpec Page.SoundWaveToggle.info Page.SoundWaveToggle.view Page.SoundWaveToggle.subscriptions SoundWaveTogglePageMsg (\model -> model.pages.soundWaveTogglePage)
 
 
 pageName : Page -> String
