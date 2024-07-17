@@ -2,6 +2,7 @@ port module Page.Dapp exposing (Model, Msg, info, init, subscriptions, update, v
 
 import App.Flags exposing (Flags)
 import Dict exposing (Dict)
+import Duration exposing (Duration, seconds)
 import Html exposing (Html, button, div, figure, hr, i, img, p, section, span, text)
 import Html.Attributes exposing (class, classList, src, style)
 import Html.Attributes.Extra exposing (attributeIf)
@@ -11,6 +12,8 @@ import Json.Decode
 import Json.Decode.Extra
 import Lib.Page
 import Markdown
+import Process
+import Task
 import Toast
 
 
@@ -61,6 +64,7 @@ type alias Wallet =
 type alias ModelRecord =
     { wallets : Dict Uuid Wallet
     , tray : Toast.Tray Notification
+    , copy : CopyState
     }
 
 
@@ -92,6 +96,7 @@ init _ =
     ( Model
         { wallets = Dict.empty
         , tray = Toast.tray
+        , copy = Idle
         }
     , listProviders ()
     )
@@ -99,6 +104,11 @@ init _ =
 
 
 -- UPDATE
+
+
+type CopyState
+    = Idle
+    | Copying
 
 
 type alias WalletConnection =
@@ -119,8 +129,9 @@ type
       -- notification
     | ToastMsg Toast.Msg
     | AddToast Notification
-      -- misc
+      -- copy
     | CopyToClipboard String
+    | SetCopyStateIdle
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -193,7 +204,25 @@ update msg (Model model) =
                 ( { model | tray = tray }, Cmd.map ToastMsg newTmesg )
 
             CopyToClipboard text ->
-                ( model, copyToClipboard text )
+                ( { model | copy = Copying }
+                , Cmd.batch
+                    [ copyToClipboard text
+                    , resetCopyState (2.0 |> seconds)
+                    ]
+                )
+
+            SetCopyStateIdle ->
+                ( { model | copy = Idle }, Cmd.none )
+
+
+delayMsg : Duration -> msg -> Cmd msg
+delayMsg delay msg =
+    Task.perform (always msg) (Process.sleep <| Duration.inMilliseconds delay)
+
+
+resetCopyState : Duration -> Cmd Msg
+resetCopyState delay =
+    delayMsg delay SetCopyStateIdle
 
 
 
@@ -376,7 +405,7 @@ The discovered wallets are listed below. Click the `Connect` button to link a wa
 
 
 walletsView : ModelRecord -> Html Msg
-walletsView { wallets } =
+walletsView { wallets, copy } =
     section []
         [ div [ class "columns" ]
             [ div [ class "column is-4 is-offset-4" ]
@@ -390,15 +419,15 @@ walletsView { wallets } =
                         (wallets
                             |> Dict.values
                             |> List.sortBy (.provider >> .info >> .name)
-                            |> List.map walletView
+                            |> List.map (walletView copy)
                         )
                 ]
             ]
         ]
 
 
-walletView : Wallet -> Html Msg
-walletView wallet =
+walletView : CopyState -> Wallet -> Html Msg
+walletView copy wallet =
     let
         isConnected =
             case wallet.state of
@@ -453,24 +482,24 @@ walletView wallet =
                     ]
                 ]
             ]
-            :: walletAddressesView wallet.state
+            :: walletAddressesView copy wallet.state
         )
 
 
-walletAddressesView : WalletState -> List (Html Msg)
-walletAddressesView state =
+walletAddressesView : CopyState -> WalletState -> List (Html Msg)
+walletAddressesView copy state =
     case state of
         Connected connection ->
             [ viewIf (not <| List.isEmpty connection.address) <| hr [] []
-            , div [ class "level is-mobile" ] <| List.concatMap walletAddressView connection.address
+            , div [ class "level is-mobile" ] <| List.concatMap (walletAddressView copy) connection.address
             ]
 
         _ ->
             [ nothing ]
 
 
-walletAddressView : String -> List (Html Msg)
-walletAddressView address =
+walletAddressView : CopyState -> String -> List (Html Msg)
+walletAddressView copy address =
     [ div [ class "level-left" ]
         [ div [ class "level-item" ]
             [ div [ class "is-family-monospace" ] [ text <| truncateAddress 6 address ]
@@ -478,12 +507,21 @@ walletAddressView address =
         ]
     , div [ class "level-right" ]
         [ div [ class "level-item" ]
-            [ button
+            [ let
+                icon =
+                    case copy of
+                        Copying ->
+                            "fa-check"
+
+                        Idle ->
+                            "fa-clipboard"
+              in
+              button
                 [ class "button is-small is-ghost"
                 , onClick (CopyToClipboard address)
                 ]
                 [ span [ class "icon is-small" ]
-                    [ i [ class "fa fa-clipboard" ] []
+                    [ i [ class <| "fa " ++ icon ] []
                     ]
                 ]
             ]
