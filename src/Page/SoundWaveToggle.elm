@@ -43,7 +43,7 @@ An amazing Sound Wave Toggle in pure SVG (as it can be found in [SOTD](https://r
 -- MODEL
 
 
-constants : { width : Float, height : Float, rectCount : Int, rectWidth : Float, rectHeight : Float, rectRx : Float, initialX : Float, initialY : Float, horizontalShift : Float, minTranslationY : Float, maxTranslationY : Float, animationSpeed : Float }
+constants : { width : Float, height : Float, rectCount : Int, rectWidth : Float, rectHeight : Float, rectRx : Float, initialX : Float, initialY : Float, horizontalShift : Float, minTranslationY : Float, maxTranslationY : Float, animationSpeed : Float, color : Css.Color }
 constants =
     { width = 28
     , height = 28
@@ -57,6 +57,7 @@ constants =
     , minTranslationY = -3
     , maxTranslationY = 3
     , animationSpeed = 200
+    , color = Css.rgb 188 188 188
     }
 
 
@@ -98,8 +99,8 @@ stepN n generator =
         ( n, generator )
 
 
-linearRectGenerator : Float -> Float -> Float -> Float -> Float -> Float -> Generator Rect
-linearRectGenerator x y w h rx hShift =
+linearWaveGenerator : Float -> Float -> Float -> Float -> Float -> Float -> Generator Rect
+linearWaveGenerator x y w h rx hShift =
     let
         generateRect state =
             let
@@ -120,7 +121,7 @@ type PlayState
 
 
 type alias ModelRecord =
-    { rects : Array Rect
+    { wave : Array Rect
     , playState : PlayState
     }
 
@@ -132,21 +133,21 @@ type Model
 init : ( Model, Cmd Msg )
 init =
     ( Model
-        { rects = initRects
+        { wave = initWave
         , playState = Paused
         }
     , Cmd.none
     )
 
 
-initRects : Array Rect
-initRects =
+initWave : Array Rect
+initWave =
     let
         { rectCount, initialX, initialY, rectWidth, rectHeight, rectRx, horizontalShift } =
             constants
 
         generator =
-            linearRectGenerator initialX initialY rectWidth rectHeight rectRx horizontalShift
+            linearWaveGenerator initialX initialY rectWidth rectHeight rectRx horizontalShift
     in
     stepN rectCount generator |> Array.fromList
 
@@ -171,7 +172,7 @@ update msg (Model model) =
             TogglePlay ->
                 ( case model.playState of
                     Playing ->
-                        { model | playState = Paused, rects = initRects }
+                        { model | playState = Paused, wave = initWave }
 
                     Paused ->
                         { model | playState = Playing }
@@ -179,16 +180,30 @@ update msg (Model model) =
                 )
 
             Tick timestamp ->
-                ( { model | rects = updateRects timestamp model.rects }, Cmd.none )
+                ( { model | wave = applyTransformer (sineWaveTransformer timestamp) model.wave }, Cmd.none )
 
 
-updateRects : Time.Posix -> Array Rect -> Array Rect
-updateRects timestamp rects =
-    Array.indexedMap (updateRect timestamp) rects
+{-| Type alias for a generic transformer function that modifies elements of a specific type based on their index.
+-}
+type alias Transformer a =
+    Int -> a -> a
 
 
-updateRect : Time.Posix -> Int -> Rect -> Rect
-updateRect timestamp index rect =
+{-| Specialized transformer for Rect type.
+-}
+type alias RectTransformer =
+    Transformer Rect
+
+
+applyTransformer : Transformer a -> Array a -> Array a
+applyTransformer transformer a =
+    Array.indexedMap transformer a
+
+
+{-| Transform the Rect elements based on a sine function.
+-}
+sineWaveTransformer : Time.Posix -> RectTransformer
+sineWaveTransformer timestamp index point =
     let
         { animationSpeed, minTranslationY, maxTranslationY } =
             constants
@@ -199,7 +214,7 @@ updateRect timestamp index rect =
         newTranslationY =
             lerp minTranslationY maxTranslationY ((sin t + 1) / 2)
     in
-    { rect | translationY = newTranslationY }
+    { point | translationY = newTranslationY }
 
 
 
@@ -241,7 +256,7 @@ from a JavaScript implementation by [Lodz](https://codepen.io/loiclaudet/pen/Rwz
 
 
 viewSoundWaveToggle : ModelRecord -> Html Msg
-viewSoundWaveToggle { playState, rects } =
+viewSoundWaveToggle { playState, wave } =
     svg
         [ SvgAttr.version "1.1"
         , SvgAttr.width <| fromFloat constants.width
@@ -272,9 +287,9 @@ viewSoundWaveToggle { playState, rects } =
             []
         , g
             [ css
-                (soundWaveToggleRectsStyle
+                (soundWaveToggleWaveStyle
                     :: (if playState == Paused then
-                            [ soundWaveTogglePausedRectsStyle ]
+                            [ soundWaveTogglePausedWaveStyle ]
 
                         else
                             []
@@ -297,7 +312,7 @@ viewSoundWaveToggle { playState, rects } =
              in
              Array.map
                 rectView
-                rects
+                wave
                 |> Array.toList
             )
         ]
@@ -330,7 +345,7 @@ soundWaveToggleStyle =
 soundWaveToggleSvgStyle : Style
 soundWaveToggleSvgStyle =
     Css.batch
-        [ Css.property "color" "rgb(188, 188, 188)"
+        [ Css.color constants.color
         , Css.transform <| Css.scale 5
         , Css.borderRadius (50 |> Css.pct)
         ]
@@ -355,8 +370,8 @@ soundWaveToggleCircleStyle =
         ]
 
 
-soundWaveToggleRectsStyle : Style
-soundWaveToggleRectsStyle =
+soundWaveToggleWaveStyle : Style
+soundWaveToggleWaveStyle =
     Css.batch
         [ Css.property "transform-origin" "center"
         , Css.transformBox Css.fillBox
@@ -365,8 +380,8 @@ soundWaveToggleRectsStyle =
         ]
 
 
-soundWaveTogglePausedRectsStyle : Style
-soundWaveTogglePausedRectsStyle =
+soundWaveTogglePausedWaveStyle : Style
+soundWaveTogglePausedWaveStyle =
     Css.batch
         [ Css.opacity (num 0.6)
         , Css.transform <|
