@@ -88,6 +88,9 @@ update msg model =
 
                 ( dappModel, dappCmd ) =
                     Page.Dapp.init model.flags
+
+                ( soundWaveToggleModel, soundWaveToggleCmd ) =
+                    Page.SoundWaveToggle.init
             in
             case newRoute of
                 NotFoundRoute ->
@@ -124,11 +127,7 @@ update msg model =
                     ( { clearedModel | route = newRoute, pages = { emptyPagesModel | dappPage = Just dappModel } }, Cmd.map DappPageMsg dappCmd )
 
                 Page SoundWaveToggle ->
-                    let
-                        ( soundWaveToggleModel, _ ) =
-                            Page.SoundWaveToggle.init
-                    in
-                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | soundWaveTogglePage = Just soundWaveToggleModel } }, Cmd.map DappPageMsg dappCmd )
+                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | soundWaveTogglePage = Just soundWaveToggleModel } }, Cmd.map SoundWaveTogglePageMsg soundWaveToggleCmd )
 
         -- messages from pages
         AboutPageMsg m ->
