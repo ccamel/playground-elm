@@ -2,17 +2,22 @@ module Page.SoundWaveToggle exposing (Model, Msg, info, init, subscriptions, upd
 
 import Array exposing (Array)
 import Browser.Events exposing (onAnimationFrame)
-import Html exposing (Html, div)
-import Html.Attributes exposing (class)
+import Css exposing (Style, num, opacity)
+import Css.Global as Global exposing (global)
+import Html
+import Html.Attributes as HtmlAttr
 import Html.Attributes.Aria as Aria
-import Html.Events exposing (onClick)
+import Html.Styled exposing (Html, div, fromUnstyled, toUnstyled)
+import Html.Styled.Attributes exposing (class, css)
+import Html.Styled.Events exposing (onClick)
 import Lib.Page
-import Lib.Svg as Svg
 import List.Extra exposing (unfoldr)
 import Markdown
 import String exposing (fromFloat, join)
-import Svg exposing (svg)
-import Svg.Attributes as SvgAttr
+import String.Interpolate exposing (interpolate)
+import Svg.Styled exposing (g, rect, svg)
+import Svg.Styled.Attributes as SvgAttr
+import Svg.Styled.Keyed as SvgStyledKeyed
 import Time exposing (Posix)
 
 
@@ -25,7 +30,7 @@ info =
     { name = "sound-wave-toggle"
     , hash = "sound-wave-toggle"
     , date = "2024-07-14"
-    , description = Markdown.toHtml [ class "info" ] """
+    , description = Markdown.toHtml [ HtmlAttr.class "info" ] """
 
 An amazing Sound Wave Toggle in pure SVG (as it can be found in [SOTD](https://rogierdeboeve.com/) website).
 
@@ -60,7 +65,7 @@ type alias Rect =
     , y : Float
     , w : Float
     , h : Float
-    , rx: Float
+    , rx : Float
     , translationY : Float
     }
 
@@ -108,9 +113,11 @@ linearRectGenerator x y w h rx hShift =
     in
     Generator <| \() -> generateRect { x = x }
 
-type PlayState =
-    Playing
+
+type PlayState
+    = Playing
     | Paused
+
 
 type alias ModelRecord =
     { rects : Array Rect
@@ -162,7 +169,7 @@ update msg (Model model) =
     Tuple.mapFirst Model <|
         case msg of
             TogglePlay ->
-                ( case  model.playState of
+                ( case model.playState of
                     Playing ->
                         { model | playState = Paused, rects = initRects }
 
@@ -202,50 +209,53 @@ updateRect timestamp index rect =
 subscriptions : Model -> Sub Msg
 subscriptions (Model { playState }) =
     case playState of
-    Playing ->
-        onAnimationFrame Tick
+        Playing ->
+            onAnimationFrame Tick
 
-    _ ->
-        Sub.none
+        _ ->
+            Sub.none
 
 
 
 -- VIEW
 
 
-view : Model -> Html Msg
+view : Model -> Html.Html Msg
 view (Model model) =
-    div [ class "columns" ]
-        [ div [ class "column is-8 is-offset-2" ]
-            [ div [ class "content is-medium" ]
-                [ Markdown.toHtml [ class "mt-4" ] """
+    toUnstyled <|
+        div [ class "columns" ]
+            [ div [ class "column is-8 is-offset-2" ]
+                [ div [ class "content is-medium" ]
+                    [ fromUnstyled (Markdown.toHtml [ HtmlAttr.class "mt-4" ] """
 The component is an SVG element featured on the [SOTD](https://rogierdeboeve.com/) website, translated
 from a JavaScript implementation by [Lodz](https://codepen.io/loiclaudet/pen/RwzPajb) to Elm.
-"""
-                ]
-            , div [ class "section has-text-centered" ]
-                [ div [ class "has-text-centered" ]
-                    [ viewSoundWaveToggle model
+""")
+                    ]
+                , div [ class "section has-text-centered" ]
+                    [ div [ class "has-text-centered" ]
+                        [ viewSoundWaveToggle model
+                        ]
                     ]
                 ]
             ]
-        ]
 
 
 viewSoundWaveToggle : ModelRecord -> Html Msg
 viewSoundWaveToggle { playState, rects } =
     svg
         [ SvgAttr.version "1.1"
-        , SvgAttr.width  <| fromFloat constants.width
+        , SvgAttr.width <| fromFloat constants.width
         , SvgAttr.height <| fromFloat constants.height
         , SvgAttr.viewBox (join " " [ "0", "0", fromFloat constants.width, fromFloat constants.height ])
         , SvgAttr.class "sound-wave-toggle"
-        , Aria.role "button"
-        , Aria.ariaLabel "Toggle sound wave"
-        , Aria.ariaPressed (playState == Playing)
+        , SvgAttr.fromUnstyled <| Aria.role "button"
+        , SvgAttr.fromUnstyled <| Aria.ariaLabel "Toggle sound wave"
+        , SvgAttr.fromUnstyled <| Aria.ariaPressed (playState == Playing)
+        , css [ soundWaveToggleSvgStyle, soundWaveToggleStyle ]
         , onClick TogglePlay
         ]
-        [ Svg.rect
+        [ globalSvgStyle
+        , rect
             [ SvgAttr.class "sound-wave-toggle-dash"
             , SvgAttr.x "0.5"
             , SvgAttr.y "0.5"
@@ -256,21 +266,32 @@ viewSoundWaveToggle { playState, rects } =
             , SvgAttr.strokeOpacity "0.5"
             , SvgAttr.strokeDasharray "2 2"
             , SvgAttr.fill "none"
+            , css
+                [ soundWaveToggleCircleStyle ]
             ]
             []
-        , Svg.g
-            [ Svg.classList [ ( "sound-wave-toggle-rects", playState == Paused ) ]
+        , g
+            [ css
+                (soundWaveToggleRectsStyle
+                    :: (if playState == Paused then
+                            [ soundWaveTogglePausedRectsStyle ]
+
+                        else
+                            []
+                       )
+                )
             ]
             (let
-                rectView rect =
-                    Svg.rect
-                        [ SvgAttr.x <| fromFloat rect.x
-                        , SvgAttr.y <| fromFloat rect.y
-                        , SvgAttr.width <| fromFloat rect.w
-                        , SvgAttr.height <| fromFloat rect.h
-                        , SvgAttr.rx <| fromFloat rect.rx
+                rectView r =
+                    SvgStyledKeyed.node "rect"
+                        [ SvgAttr.x <| fromFloat r.x
+                        , SvgAttr.y <| fromFloat r.y
+                        , SvgAttr.width <| fromFloat r.w
+                        , SvgAttr.height <| fromFloat r.h
+                        , SvgAttr.rx <| fromFloat r.rx
                         , SvgAttr.fill "currentColor"
-                        , SvgAttr.transform <| "translate(0 " ++ fromFloat rect.translationY ++ ")"
+                        , SvgAttr.transform <| "translate(0 " ++ fromFloat r.translationY ++ ")"
+                        , css [ soundWaveToggleRectStyle ]
                         ]
                         []
              in
@@ -278,6 +299,95 @@ viewSoundWaveToggle { playState, rects } =
                 rectView
                 rects
                 |> Array.toList
+            )
+        ]
+
+
+
+-- STYLES
+
+
+globalSvgStyle : Html msg
+globalSvgStyle =
+    global
+        [ Global.typeSelector "svg:hover"
+            [ Global.descendants
+                [ Global.class "sound-wave-toggle-dash"
+                    [ Css.opacity (num 1)
+                    , Css.property "stroke-dashoffset" "50"
+                    , Css.property "stroke-dasharray" "10 0"
+                    ]
+                ]
+            ]
+        ]
+
+
+soundWaveToggleStyle : Style
+soundWaveToggleStyle =
+    Css.property "cursor" "pointer"
+
+
+soundWaveToggleSvgStyle : Style
+soundWaveToggleSvgStyle =
+    Css.batch
+        [ Css.property "color" "rgb(188, 188, 188)"
+        , Css.transform <| Css.scale 5
+        , Css.borderRadius (50 |> Css.pct)
+        ]
+
+
+soundWaveToggleCircleStyle : Style
+soundWaveToggleCircleStyle =
+    let
+        circOut =
+            "cubic-bezier(.075, .82, .165, 1)"
+    in
+    Css.batch
+        [ opacity (num 0.6)
+        , Css.property "transform-origin" "center center"
+        , Css.transformBox Css.fillBox
+        , Css.property "transition"
+            (interpolate "transform {0} {1}, stroke-dashoffset {0} {1}, stroke-dasharray {0} {1}"
+                [ ".8s"
+                , circOut
+                ]
+            )
+        ]
+
+
+soundWaveToggleRectsStyle : Style
+soundWaveToggleRectsStyle =
+    Css.batch
+        [ Css.property "transform-origin" "center"
+        , Css.transformBox Css.fillBox
+        , Css.transform <|
+            Css.scaleX 0.7
+        ]
+
+
+soundWaveTogglePausedRectsStyle : Style
+soundWaveTogglePausedRectsStyle =
+    Css.batch
+        [ Css.opacity (num 0.6)
+        , Css.transform <|
+            Css.scaleX 0.5
+        ]
+
+
+soundWaveToggleRectStyle : Style
+soundWaveToggleRectStyle =
+    let
+        expoOut =
+            "cubic-bezier(.19, 1, .22, 1)"
+    in
+    Css.batch
+        [ Css.property "transform-origin" "center"
+        , Css.property "transform" "translate(0 0)"
+        , Css.property "transition"
+            (interpolate "transform {0} {1}"
+                [ "1.2s"
+                , expoOut
+                ]
             )
         ]
 
