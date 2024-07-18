@@ -9,6 +9,7 @@ import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
 import Page.Physics
+import Page.SoundWaveToggle
 import Page.Term
 import Url exposing (Url)
 
@@ -23,6 +24,7 @@ type Page
     | Term
     | Asteroids
     | Dapp
+    | SoundWaveToggle
 
 
 type Msg
@@ -39,3 +41,4 @@ type Msg
     | TermPageMsg Page.Term.Msg
     | AsteroidsPageMsg Page.Asteroids.Msg
     | DappPageMsg Page.Dapp.Msg
+    | SoundWaveTogglePageMsg Page.SoundWaveToggle.Msg

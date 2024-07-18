@@ -38,18 +38,34 @@ The demo is a pure [SPA][] (100% clientside application) written in [elm][].
 
 List of showcases:
 
-- _asteroids_: A simple Asteroids clone in [Elm][] using the
-  [ECS](https://en.wikipedia.org/wiki/Entity_component_system) pattern and
-  [SVG](https://fr.wikipedia.org/wiki/Scalable_Vector_Graphics) for rendering.
-- _term_: A terminal which evaluates JavaScript code using elm ports.
-- _physics-engine_: Very simple physics engine using
-  [Verlet Integration](https://en.wikipedia.org/wiki/Verlet_integration) algorithm and rendered through an HTML5 canvas.
-- _maze_: A maze generator using a
+- [soundWave toggle](https://ccamel.github.io/playground-elm/#sound-wave-toggle): A simple sound wave toggle button
+  rendered in [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics).
+
+- [dApp](https://ccamel.github.io/playground-elm/#dapp): A straightforward decentralized application (dApp) that
+  interfaces with various wallets, utilizing [EIP-6963](https://eips.ethereum.org/EIPS/eip-6963).
+
+- [asteroids](https://ccamel.github.io/playground-elm/#asteroids): A simple clone of the classic game Asteroids,
+  implemented in [Elm][] using the
+  [Entity Component System (ECS)](https://en.wikipedia.org/wiki/Entity_component_system) pattern, rendered with
+  [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics).
+
+- [term](https://ccamel.github.io/playground-elm/#term): A web-based terminal that evaluates JavaScript code using
+  [Elm ports](https://guide.elm-lang.org/interop/ports.html) for interactivity.
+
+- [physics](https://ccamel.github.io/playground-elm/#physics-engine): A straightforward physics engine utilizing the
+  [Verlet Integration](https://en.wikipedia.org/wiki/Verlet_integration) algorithm, rendered on an HTML5 canvas.
+
+- [maze](https://ccamel.github.io/playground-elm/#maze): A maze generator crafted using the
   [recursive backtracking](https://en.wikipedia.org/wiki/Maze_generation_algorithm#Recursive_backtracker) algorithm.
-- _digital-clock_: A demo rendering a digital clock in [SVG](https://fr.wikipedia.org/wiki/Scalable_Vector_Graphics).
-- _lissajous_: Animated [Lissajous](https://en.wikipedia.org/wiki/Lissajous_curve) figures in
-  [SVG](https://fr.wikipedia.org/wiki/Scalable_Vector_Graphics)
-- _calc_: A very simple and basic calculator.
+
+- [digital clock](https://ccamel.github.io/playground-elm/#digital-clock): A digital clock demo, visually represented
+  using [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics).
+
+- [lissajous](https://ccamel.github.io/playground-elm/#lissajous): Animation of
+  [Lissajous](https://en.wikipedia.org/wiki/Lissajous_curve) figures, depicted in
+  [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics).
+
+- [calc](https://ccamel.github.io/playground-elm/#calc): A basic calculator designed for simple arithmetic operations.
 
 ## 🛠 Building and Running
 

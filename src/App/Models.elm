@@ -11,6 +11,7 @@ import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
 import Page.Physics
+import Page.SoundWaveToggle
 import Page.Term
 
 
@@ -24,6 +25,7 @@ type alias PagesModel =
     , termPage : Maybe Page.Term.Model
     , asteroidsPage : Maybe Page.Asteroids.Model
     , dappPage : Maybe Page.Dapp.Model
+    , soundWaveTogglePage : Maybe Page.SoundWaveToggle.Model
     }
 
 
@@ -37,7 +39,7 @@ type alias Model =
     }
 
 
-emptyPagesModel : { aboutPage : Maybe a, calcPage : Maybe b, lissajousPage : Maybe c, digitalClockPage : Maybe d, mazePage : Maybe e, physicsPage : Maybe f, termPage : Maybe g, asteroidsPage : Maybe h, dappPage : Maybe i }
+emptyPagesModel : { aboutPage : Maybe a, calcPage : Maybe b, lissajousPage : Maybe c, digitalClockPage : Maybe d, mazePage : Maybe e, physicsPage : Maybe f, termPage : Maybe g, asteroidsPage : Maybe h, dappPage : Maybe i, soundWaveTogglePage : Maybe j }
 emptyPagesModel =
     { aboutPage = Nothing
     , calcPage = Nothing
@@ -48,4 +50,5 @@ emptyPagesModel =
     , termPage = Nothing
     , asteroidsPage = Nothing
     , dappPage = Nothing
+    , soundWaveTogglePage = Nothing
     }

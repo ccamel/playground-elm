@@ -16,6 +16,7 @@ import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
 import Page.Physics
+import Page.SoundWaveToggle
 import Page.Term
 import Task
 import Tuple exposing (first, second)
@@ -87,6 +88,9 @@ update msg model =
 
                 ( dappModel, dappCmd ) =
                     Page.Dapp.init model.flags
+
+                ( soundWaveToggleModel, soundWaveToggleCmd ) =
+                    Page.SoundWaveToggle.init
             in
             case newRoute of
                 NotFoundRoute ->
@@ -122,6 +126,9 @@ update msg model =
                 Page Dapp ->
                     ( { clearedModel | route = newRoute, pages = { emptyPagesModel | dappPage = Just dappModel } }, Cmd.map DappPageMsg dappCmd )
 
+                Page SoundWaveToggle ->
+                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | soundWaveTogglePage = Just soundWaveToggleModel } }, Cmd.map SoundWaveTogglePageMsg soundWaveToggleCmd )
+
         -- messages from pages
         AboutPageMsg m ->
             convert model m .aboutPage Page.About.update (\mdl -> { model | pages = { pages | aboutPage = Just mdl } }) AboutPageMsg
@@ -149,6 +156,9 @@ update msg model =
 
         DappPageMsg m ->
             convert model m .dappPage Page.Dapp.update (\mdl -> { model | pages = { pages | dappPage = Just mdl } }) DappPageMsg
+
+        SoundWaveTogglePageMsg m ->
+            convert model m .soundWaveTogglePage Page.SoundWaveToggle.update (\mdl -> { model | pages = { pages | soundWaveTogglePage = Just mdl } }) SoundWaveTogglePageMsg
 
 
 init : Flags -> Url.Url -> Nav.Key -> ( Model, Cmd App.Messages.Msg )

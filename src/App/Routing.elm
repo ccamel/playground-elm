@@ -9,6 +9,7 @@ import Page.DigitalClock
 import Page.Lissajous
 import Page.Maze
 import Page.Physics
+import Page.SoundWaveToggle
 import Page.Term
 import Url exposing (Url)
 import Url.Parser exposing (Parser, fragment, map, parse)
@@ -61,6 +62,9 @@ parseFragment fragment =
 
             else if p == Page.Dapp.info.name then
                 Page Dapp
+
+            else if p == Page.SoundWaveToggle.info.name then
+                Page SoundWaveToggle
 
             else
                 NotFoundRoute
