@@ -1,5 +1,6 @@
 module App.View exposing (view)
 
+import App.Flags exposing (Flags)
 import App.Messages exposing (Msg, Page)
 import App.Models exposing (Model)
 import App.Pages exposing (pageDate, pageDescription, pageGithubLink, pageHash, pageName, pageView, pages)
@@ -7,6 +8,7 @@ import App.Routing exposing (Route(..))
 import Browser
 import Html exposing (Html, a, article, br, div, footer, h1, h2, h3, hr, i, img, p, section, span, strong, text)
 import Html.Attributes exposing (attribute, class, classList, href, src, title, width)
+import Html.Lazy exposing (lazy)
 import List exposing (intersperse)
 import String.Interpolate exposing (interpolate)
 
@@ -20,42 +22,49 @@ view model =
     { title = "playground-elm"
     , body =
         [ forkmeRibbon
-        , section
-            [ classList [ ( "hero", True ), ( "is-medium", isHomePage model ), ( "is-small", not (isHomePage model) ) ]
-            ]
-            [ div
-                [ class "hero-body"
-                ]
-                [ div
-                    [ class "container has-text-centered"
-                    ]
-                    [ h1 [ class "title pb-5" ]
-                        [ i [ class "quote-left fa fa-quote-left text-muted pr-4" ] []
-                        , span [ class "break" ] []
-                        , a [ href "#" ] [ text "playground" ]
-                        , span [ class "elm-pipe pl-1" ] [ text "|" ]
-                        , span [ class "elm-gt pr-1" ] [ text ">" ]
-                        , a [ href "http://elm-lang.org/" ] [ text "elm" ]
-                        , span [ class "break" ] []
-                        , i [ class "quote-right fa fa-quote-right text-muted pl-4" ] []
-                        ]
-                    , h2
-                        [ class "subtitle"
-                        ]
-                        [ text "A playground for fancy web experiences with Elm" ]
-                    ]
-                ]
-            ]
+        , lazy headerPart model.route
         , contentPart model
-        , footerPart model
+        , lazy footerPart model.flags
         ]
     }
 
 
+{-| the html elements for the header
+-}
+headerPart : Route -> Html Msg
+headerPart route =
+    section
+        [ classList [ ( "hero", True ), ( "is-medium", isHomePage route ), ( "is-small", not (isHomePage route) ) ]
+        ]
+        [ div
+            [ class "hero-body"
+            ]
+            [ div
+                [ class "container has-text-centered"
+                ]
+                [ h1 [ class "title pb-5" ]
+                    [ i [ class "quote-left fa fa-quote-left text-muted pr-4" ] []
+                    , span [ class "break" ] []
+                    , a [ href "#" ] [ text "playground" ]
+                    , span [ class "elm-pipe pl-1" ] [ text "|" ]
+                    , span [ class "elm-gt pr-1" ] [ text ">" ]
+                    , a [ href "http://elm-lang.org/" ] [ text "elm" ]
+                    , span [ class "break" ] []
+                    , i [ class "quote-right fa fa-quote-right text-muted pl-4" ] []
+                    ]
+                , h2
+                    [ class "subtitle"
+                    ]
+                    [ text "A playground for fancy web experiences with Elm" ]
+                ]
+            ]
+        ]
+
+
 {-| the html elements for the footer
 -}
-footerPart : Model -> Html Msg
-footerPart { flags } =
+footerPart : Flags -> Html Msg
+footerPart { version } =
     footer
         [ class "footer has-background-black-bis" ]
         [ div
@@ -96,7 +105,7 @@ footerPart { flags } =
                     ]
                 , p []
                     [ strong []
-                        [ text ("playground-elm v" ++ flags.version) ]
+                        [ text ("playground-elm v" ++ version) ]
                     , text " | "
                     , a [ href "https://github.com/ccamel" ]
                         [ text "© 2017-2024 Christophe Camel" ]
@@ -128,7 +137,7 @@ contentPart : Model -> Html Msg
 contentPart model =
     case model.route of
         Home ->
-            homePage model
+            lazy homePage model.flags
 
         Page page ->
             pagePart page model
@@ -137,8 +146,8 @@ contentPart model =
             notFound
 
 
-homePage : Model -> Html Msg
-homePage model =
+homePage : Flags -> Html Msg
+homePage flags =
     section [ class "section" ]
         [ div [ class "container" ]
             [ div [ class "columns" ]
@@ -146,7 +155,7 @@ homePage model =
                     (pages
                         |> List.sortBy pageDate
                         |> List.reverse
-                        |> List.indexedMap (showcase model)
+                        |> List.indexedMap (showcase flags)
                         |> intersperse (hr [] [])
                     )
                 ]
@@ -157,27 +166,32 @@ homePage model =
 pagePart : Page -> Model -> Html Msg
 pagePart page model =
     div []
-        [ section [ class "section has-background-black-bis" ]
-            [ div [ class "columns" ]
-                [ div [ class "column is-8 is-offset-2" ]
-                    [ div [ class "content is-medium" ]
-                        [ h2 [ class "title showcase-title mb-5" ] [ page |> pageName |> text ]
-                        , page |> pageDescription
-                        ]
-                    ]
-                ]
-            ]
+        [ lazy description page
         , pageView page model
         ]
 
 
-showcase : Model -> Int -> Page -> Html Msg
-showcase { flags } num page =
+description : Page -> Html Msg
+description page =
+    section [ class "section has-background-black-bis" ]
+        [ div [ class "columns" ]
+            [ div [ class "column is-8 is-offset-2" ]
+                [ div [ class "content is-medium" ]
+                    [ h2 [ class "title showcase-title mb-5" ] [ page |> pageName |> text ]
+                    , page |> pageDescription
+                    ]
+                ]
+            ]
+        ]
+
+
+showcase : Flags -> Int -> Page -> Html Msg
+showcase { basePath } num page =
     div [ class "columns featured-showcase is-multiline" ]
         [ div [ class "column is-12 showcase" ]
             [ article [ class "columns featured" ]
                 ([ div [ class "column is-7 showcase-img" ]
-                    [ img [ src <| interpolate "{0}{1}.webp" [ flags.basePath, pageHash page ], width 450 ]
+                    [ img [ src <| interpolate "{0}{1}.webp" [ basePath, pageHash page ], width 450 ]
                         []
                     ]
                  , div [ class "column is-5 featured-content va" ]
@@ -253,9 +267,9 @@ notFound =
         ]
 
 
-isHomePage : Model -> Bool
-isHomePage model =
-    case model.route of
+isHomePage : Route -> Bool
+isHomePage route =
+    case route of
         Home ->
             True
 
