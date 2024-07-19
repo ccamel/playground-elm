@@ -1258,11 +1258,9 @@ view (Model { world, frames }) =
     section [ class "section pt-1 has-background-black-bis" ]
         [ div [ class "columns" ]
             [ div [ class "column is-8 is-offset-2" ]
-                [ div [ class "content is-medium" ]
-                    [ p []
-                        [ text "Controls: ↑ move, ← rotate left, → rotate right, space shoot, s show bounding boxes."
-                        ]
-                    ]
+                [ Markdown.toHtml [ class "content is-medium" ] """
+**Controls:** `↑` to move, `←` to rotate left, `→` to rotate right, `space` to shoot, `s` to show bounding boxes.
+                """
                 , viewMaybe (renderInfos frames) world
                 ]
             ]
