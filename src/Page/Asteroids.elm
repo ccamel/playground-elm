@@ -16,14 +16,15 @@ import Ecs.EntityComponents exposing (foldFromLeft2)
 import Ecs.Singletons6
 import Html exposing (Html, div, p, section, text)
 import Html.Attributes as Attributes
+import Html.Extra exposing (viewMaybe)
 import Keyboard exposing (Key(..), KeyChange(..))
 import Keyboard.Arrows as Keyboard exposing (Direction(..))
-import Lib.Frame exposing (Frames, addFrame, createFrames, fpsText)
+import Lib.Frame exposing (Frames, addFrame, createFrames, fps)
 import Lib.Page
 import List exposing (foldl, length, singleton)
 import List.Extra exposing (uniquePairs)
 import Markdown
-import Maybe
+import Maybe exposing (withDefault)
 import Particle exposing (directionDegrees, leftPixels, topPixels)
 import Pixels exposing (Pixels, PixelsPerSecond, PixelsPerSecondSquared, inPixels, pixels, pixelsPerSecond, pixelsPerSecondSquared)
 import Point2d exposing (Point2d, translateBy, xCoordinate, yCoordinate)
@@ -1254,23 +1255,6 @@ subscriptions _ =
 
 view : Model -> Html Msg
 view (Model { world, frames }) =
-    let
-        asteroid =
-            div [ Attributes.class "asteroids" ]
-                (case world of
-                    Just w ->
-                        [ renderInfos frames w
-                        , div [ class "columns is-centered mt-1" ]
-                            [ div [ class "column is-four-fifths" ]
-                                [ renderWorld w
-                                ]
-                            ]
-                        ]
-
-                    _ ->
-                        []
-                )
-    in
     section [ class "section pt-1 has-background-black-bis" ]
         [ div [ class "columns" ]
             [ div [ class "column is-8 is-offset-2" ]
@@ -1279,10 +1263,15 @@ view (Model { world, frames }) =
                         [ text "Controls: ↑ move, ← rotate left, → rotate right, space shoot, s show bounding boxes."
                         ]
                     ]
+                , viewMaybe (renderInfos frames) world
                 ]
             ]
-        , div [ class "container" ]
-            [ asteroid
+        , div [ class "columns is-centered mt-1" ]
+            [ div [ class "column is-four-fifths" ]
+                [ div [ class "box has-text-centered" ]
+                    [ viewMaybe renderWorld world
+                    ]
+                ]
             ]
         , div [ class "columns" ]
             [ div [ class "column is-8 is-offset-2" ]
@@ -1310,15 +1299,65 @@ renderInfos frames world =
             Ecs.getSingleton specs.collisions world |> length
     in
     div
-        [ Attributes.class "is-family-monospace is-size-6 has-text-centered"
+        [ class "level is-mobile"
         ]
-        [ Html.text ("entities: " ++ (entityCount |> String.fromInt |> padLeft 3 '0'))
-        , Html.text " - "
-        , Html.text ("components: " ++ (componentCount |> String.fromInt |> padLeft 4 '0'))
-        , Html.text " - "
-        , Html.text ("collisions: " ++ (collisionCount |> String.fromInt |> padLeft 5 '0'))
-        , Html.text " - "
-        , Html.text <| fpsText frames
+        [ div
+            [ class "level-item has-text-centered"
+            ]
+            [ div []
+                [ p
+                    [ class "heading"
+                    ]
+                    [ text "Entities" ]
+                , p
+                    [ class "title"
+                    ]
+                    [ entityCount |> String.fromInt |> padLeft 3 '0' |> text ]
+                ]
+            ]
+        , div
+            [ class "level-item has-text-centered"
+            ]
+            [ div []
+                [ p
+                    [ class "heading"
+                    ]
+                    [ text "Components" ]
+                , p
+                    [ class "title"
+                    ]
+                    [ componentCount |> String.fromInt |> padLeft 4 '0' |> text ]
+                ]
+            ]
+        , div
+            [ class "level-item has-text-centered"
+            ]
+            [ div []
+                [ p
+                    [ class "heading"
+                    ]
+                    [ text "Collisions" ]
+                , p
+                    [ class "title"
+                    ]
+                    [ collisionCount |> String.fromInt |> padLeft 4 '0' |> text ]
+                ]
+            ]
+        , div
+            [ class "level-item has-text-centered"
+            ]
+            [ div []
+                [ p
+                    [ class "heading"
+                    ]
+                    [ text "Fps" ]
+                , p
+                    [ class "title"
+                    ]
+                    [ fps frames |> Maybe.map (round >> String.fromInt) |> withDefault "-" |> text
+                    ]
+                ]
+            ]
         ]
 
 
