@@ -1,22 +1,4 @@
 @font-face {
-  font-family: 'Bad Script';
-  font-style: normal;
-  font-weight: 400;
-  src:
-    local('Bad Script Regular'),
-    local('BadScript-Regular'),
-    /* from https://fonts.gstatic.com/s/badscript/v5/rL_b2ND61EQmMOJ8CRr1flQlYEbsez9cZjKsNMjLOwM.eot */
-      url('Bad_Script_400.eot?#iefix') format('embedded-opentype'),
-    /* from https://fonts.gstatic.com/s/badscript/v5/rL_b2ND61EQmMOJ8CRr1fhsxEYwM7FgeyaSgU71cLG0.woff */
-      url('Bad_Script_400.woff') format('woff'),
-    /* from https://fonts.gstatic.com/s/badscript/v5/rL_b2ND61EQmMOJ8CRr1fvk_vArhqVIZ0nv9q090hN8.woff2 */
-      url('Bad_Script_400.woff2') format('woff2'),
-    /* from https://fonts.gstatic.com/l/font?kit=rL_b2ND61EQmMOJ8CRr1fqWUboTb-jS2tyCOQMtm97g&skey=bab4df51e3e7f1cf&v=v5#BadScript */
-      url('Bad_Script_400.svg#BadScript') format('svg'),
-    /* from https://fonts.gstatic.com/s/badscript/v5/rL_b2ND61EQmMOJ8CRr1fi3USBnSvpkopQaUR-2r7iU.ttf */
-      url('Bad_Script_400.ttf') format('truetype');
-}
-@font-face {
   font-family: 'Orbitron';
   font-style: normal;
   font-weight: 500;
@@ -33,42 +15,6 @@
       url('Orbitron_500.svg#Orbitron') format('svg'),
     /* from https://fonts.gstatic.com/s/orbitron/v8/VK2oK8L4CJesxwY5dF3zxZ0EAVxt0G0biEntp43Qt6E.ttf */
       url('Orbitron_500.ttf') format('truetype');
-}
-@font-face {
-  font-family: 'Oxygen Mono';
-  font-style: normal;
-  font-weight: 400;
-  src:
-    local('Oxygen Mono'),
-    local('OxygenMono-Regular'),
-    /* from https://fonts.gstatic.com/s/oxygenmono/v4/BzV4DVOwAgGelLT9EC5xymfQcKutQXcIrRfyR5jdjY8.eot */
-      url('Oxygen_Mono_400.eot?#iefix') format('embedded-opentype'),
-    /* from https://fonts.gstatic.com/s/oxygenmono/v4/BzV4DVOwAgGelLT9EC5xyobN6UDyHWBl620a-IRfuBk.woff */
-      url('Oxygen_Mono_400.woff') format('woff'),
-    /* from https://fonts.gstatic.com/s/oxygenmono/v4/BzV4DVOwAgGelLT9EC5xyo4P5ICox8Kq3LLUNMylGO4.woff2 */
-      url('Oxygen_Mono_400.woff2') format('woff2'),
-    /* from https://fonts.gstatic.com/l/font?kit=BzV4DVOwAgGelLT9EC5xynNsigHlcrQGNV8nkUSFQfc&skey=464e9f9167c9e76a&v=v4#OxygenMono */
-      url('Oxygen_Mono_400.svg#OxygenMono') format('svg'),
-    /* from https://fonts.gstatic.com/s/oxygenmono/v4/BzV4DVOwAgGelLT9EC5xyp0EAVxt0G0biEntp43Qt6E.ttf */
-      url('Oxygen_Mono_400.ttf') format('truetype');
-}
-@font-face {
-  font-family: 'Roboto Mono';
-  font-style: normal;
-  font-weight: 500;
-  src:
-    local('Roboto Mono Medium'),
-    local('RobotoMono-Medium'),
-    /* from https://fonts.gstatic.com/s/robotomono/v4/N4duVc9C58uwPiY8_59FzyGu2KOSTawI8d9zCvShylg.eot */
-      url('Roboto_Mono_500.eot?#iefix') format('embedded-opentype'),
-    /* from https://fonts.gstatic.com/s/robotomono/v4/N4duVc9C58uwPiY8_59FzyqHEX2q--o2so14pIEl08w.woff */
-      url('Roboto_Mono_500.woff') format('woff'),
-    /* from https://fonts.gstatic.com/s/robotomono/v4/N4duVc9C58uwPiY8_59Fz7BojE9J5UnpMtv5N3zfxwk.woff2 */
-      url('Roboto_Mono_500.woff2') format('woff2'),
-    /* from https://fonts.gstatic.com/l/font?kit=N4duVc9C58uwPiY8_59Fz6057wUl25f8_0IloMUHk98&skey=8be08dae698074e5&v=v4#RobotoMono */
-      url('Roboto_Mono_500.svg#RobotoMono') format('svg'),
-    /* from https://fonts.gstatic.com/s/robotomono/v4/N4duVc9C58uwPiY8_59Fz_Mi34-dsJKaItLa5TRL9eU.ttf */
-      url('Roboto_Mono_500.ttf') format('truetype');
 }
 @font-face {
   font-family: 'Share Tech Mono';
