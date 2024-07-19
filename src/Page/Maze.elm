@@ -5,7 +5,7 @@ import Basics.Extra exposing (flip)
 import File.Download as Download
 import FormatNumber exposing (format)
 import FormatNumber.Locales exposing (Decimals(..), Locale, usLocale)
-import Html exposing (Html, button, div, i, label, option, p, select, span, text)
+import Html exposing (Html, button, div, i, label, option, p, section, select, span, text)
 import Html.Attributes exposing (attribute, class, classList, disabled, selected, title, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Json.Encode exposing (Value, encode, int, list, object, string)
@@ -31,7 +31,7 @@ info =
     { name = "maze"
     , hash = "maze"
     , date = "2020-12-19"
-    , description = Markdown.toHtml [ class "info" ] """
+    , description = Markdown.toHtml [ class "content" ] """
 
 A maze generator using a [recursive backtracking](https://en.wikipedia.org/wiki/Maze_generation_algorithm#Recursive_backtracker) algorithm.
        """
@@ -421,23 +421,31 @@ subscriptions (Model { auto }) =
 
 view : Model -> Html Msg
 view (Model model) =
-    div [ class "columns" ]
-        [ div [ class "column is-8 is-offset-2" ]
-            [ div [ class "content is-medium" ]
-                [ p []
-                    [ text "You can control the generation process with the control buttons below." ]
-                , controlView model
-                , mazeView model.maze
+    section [ class "section pt-1 has-background-black-bis" ]
+        [ div [ class "columns" ]
+            [ div [ class "column is-8 is-offset-2" ]
+                [ div [ class "content is-medium" ]
+                    [ p []
+                        [ text "You can control the generation process with the control buttons below." ]
+                    ]
                 ]
             ]
+        , div [ class "block" ]
+            [ controlView model ]
+        , div [ class "block" ]
+            [ mazeView model.maze ]
         ]
 
 
 mazeView : Maze -> Html Msg
 mazeView maze =
-    div [ class "mt-2 is-align-items-center" ]
-        [ div [ class "maze " ]
-            (rowsView maze)
+    div [ class "container" ]
+        [ div [ class "columns is-centered" ]
+            [ div [ class "columns is-narrow" ]
+                [ div [ class "maze" ]
+                    (rowsView maze)
+                ]
+            ]
         ]
 
 
@@ -565,24 +573,24 @@ progressView model =
                 , totalSteps model.maze |> fromInt |> padLeft 5 ' '
                 ]
     in
-    div
-        [ class "container"
-        ]
-        [ div
-            [ class "columns is-vcentered"
-            ]
+    div [ class "columns" ]
+        [ div [ class "column is-4 is-offset-4" ]
             [ div
-                [ class "column is-2"
+                [ class "field is-horizontal"
                 ]
-                [ label
-                    [ class "label"
+                [ div [ class "field-label is-normal" ]
+                    [ label
+                        [ class "label"
+                        ]
+                        [ text progressLabel ]
                     ]
-                    [ text progressLabel ]
-                ]
-            , div
-                [ class "column"
-                ]
-                [ Html.progress [ class "progress s-link is-small", value progressValue, Html.Attributes.max "100" ] [ text progressText ]
+                , div [ class "field-body" ]
+                    [ div [ class "field" ]
+                        [ div [ class "control" ]
+                            [ Html.progress [ class "progress is-link is-small mt-3", value progressValue, Html.Attributes.max "100" ] [ text progressText ]
+                            ]
+                        ]
+                    ]
                 ]
             ]
         ]

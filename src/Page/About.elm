@@ -1,7 +1,7 @@
 module Page.About exposing (Model, Msg, info, init, subscriptions, update, view)
 
 import App.Flags exposing (Flags)
-import Html exposing (Html, article, div, h1, img, p, text)
+import Html exposing (Html, article, div, h1, img, p, section, text)
 import Html.Attributes exposing (alt, class, src)
 import Lib.Page
 import Markdown
@@ -16,7 +16,7 @@ info =
     { name = "about"
     , hash = "about"
     , date = "2020-10-11"
-    , description = Markdown.toHtml [ class "info" ] """
+    , description = Markdown.toHtml [ class "content" ] """
 
 A very simple and minimal showcase that is used to lay the foundations of the navigation/routing (*and to test that the whole site works correctly*).
        """
@@ -94,31 +94,33 @@ view (Model model) =
               }
             ]
     in
-    div
-        [ class "container"
-        ]
-        [ div [ class "columns" ]
-            [ div [ class "column is-10 is-offset-1" ]
-                [ div [ class "columns is-multiline" ]
-                    (content
-                        |> List.map
-                            (\c ->
-                                div [ class "column showcase is-6" ]
-                                    [ article [ class "columns is-multiline" ]
-                                        [ div [ class "column is-12 showcase-img" ]
-                                            [ img [ src <| model.basePath ++ c.img, alt "placeholder" ] []
-                                            ]
-                                        , div [ class "column is-12 featured-content" ]
-                                            [ h1 [ class "title showcase-title" ]
-                                                [ text "» "
-                                                , text c.title
+    section [ class "section pt-1 has-background-black-bis" ]
+        [ div
+            [ class "container"
+            ]
+            [ div [ class "columns" ]
+                [ div [ class "column is-10 is-offset-1" ]
+                    [ div [ class "columns is-multiline" ]
+                        (content
+                            |> List.map
+                                (\c ->
+                                    div [ class "column showcase is-6" ]
+                                        [ article [ class "columns is-multiline" ]
+                                            [ div [ class "column is-12 showcase-img" ]
+                                                [ img [ src <| model.basePath ++ c.img, alt "placeholder" ] []
                                                 ]
-                                            , p [ class "showcase-excerpt" ] [ text c.text ]
+                                            , div [ class "column is-12 featured-content" ]
+                                                [ h1 [ class "title showcase-title" ]
+                                                    [ text "» "
+                                                    , text c.title
+                                                    ]
+                                                , p [ class "showcase-excerpt" ] [ text c.text ]
+                                                ]
                                             ]
                                         ]
-                                    ]
-                            )
-                    )
+                                )
+                        )
+                    ]
                 ]
             ]
         ]

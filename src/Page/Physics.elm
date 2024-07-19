@@ -11,7 +11,7 @@ import Canvas.Settings.Text as TextAlign exposing (align, font)
 import Color exposing (Color)
 import Color.Interpolate as Color exposing (interpolate)
 import Color.Manipulate exposing (darken, lighten)
-import Html exposing (Html, button, div, i, input, label, option, select, span, text)
+import Html exposing (Html, button, div, i, input, label, option, section, select, span, text)
 import Html.Attributes exposing (checked, class, disabled, selected, style, title, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Html.Events.Extra.Pointer as Pointer
@@ -34,7 +34,7 @@ info =
     { name = "physics-engine"
     , hash = "physics-engine"
     , date = "2020-12-27"
-    , description = Markdown.toHtml [ class "info" ] """
+    , description = Markdown.toHtml [ class "content" ] """
 Very simple physics engine using [Verlet Integration](https://en.wikipedia.org/wiki/Verlet_integration) algorithm and rendered through an HTML5 canvas.
        """
     , srcRel = "Page/Physics.elm"
@@ -1004,19 +1004,28 @@ subscriptions (Model { started }) =
 
 view : Model -> Html Msg
 view (Model model) =
-    div [ class "columns" ]
-        [ div [ class "column is-8 is-offset-2" ]
-            [ div [ class "content is-medium" ]
-                [ Markdown.toHtml [ class "mb-2" ] """
+    section [ class "section pt-1 has-background-black-bis" ]
+        [ div [ class "columns" ]
+            [ div [ class "column is-8 is-offset-2" ]
+                [ Markdown.toHtml [ class "content is-medium" ] """
 Click on the left button of the mouse or touch the screen to interact with the simulation.
-        """
-                , controlView model
-                , simulationView model
-                , Markdown.toHtml [ class "mt-2" ] """
+        """ ]
+            ]
+        , div [ class "block" ]
+            [ div [ class "columns" ]
+                [ div [ class "column is-8 is-offset-2" ]
+                    [ controlView model ]
+                ]
+            ]
+        , div [ class "block" ]
+            [ simulationView model ]
+        , div [ class "columns" ]
+            [ div [ class "column is-8 is-offset-2" ]
+                [ Markdown.toHtml [ class "content is-medium" ] """
 💡 Demonstrates how [elm](https://elm-lang.org/) can deal with some basic mathematical and physical calculations, as well as basic rendering of objects in an HTML canvas,
 using elementary functions from the fantastic [joakin/elm-canvas](https://package.elm-lang.org/packages/joakin/elm-canvas/latest/) package.
                 """
-                , Markdown.toHtml [ class "mt-2" ] """
+                , Markdown.toHtml [ class "content is-medium" ] """
 ℹ️ Implementation is inspired from [Making a Verlet Physics Engine in Javascript](https://anuraghazra.github.io/blog/making-a-verlet-physics-engine-in-javascript).
                 """
                 ]
@@ -1099,66 +1108,64 @@ statsText model =
 
 controlView : ModelRecord -> Html Msg
 controlView model =
-    div [ class "section" ]
-        [ div [ class "columns is-centered" ]
-            [ div [ class "column is-narrow" ]
-                [ div [ class "buttons has-addons is-centered are-small" ]
-                    [ button
-                        [ class "button is-danger ml-2"
-                        , type_ "button"
-                        , title "reset the simulation"
-                        , onClick Reset
+    div [ class "columns is-centered" ]
+        [ div [ class "column is-narrow" ]
+            [ div [ class "buttons has-addons is-centered are-small" ]
+                [ button
+                    [ class "button is-danger ml-2"
+                    , type_ "button"
+                    , title "reset the simulation"
+                    , onClick Reset
+                    ]
+                    [ span [ class "icon is-small" ] [ i [ class "fa fa-repeat" ] [] ] ]
+                , button
+                    [ class "button is-success"
+                    , disabled model.started
+                    , type_ "button"
+                    , title "start the simulation"
+                    , onClick Start
+                    ]
+                    [ span [ class "icon is-small" ] [ i [ class "fa fa-play" ] [] ] ]
+                , button
+                    [ class "button"
+                    , disabled (not model.started)
+                    , type_ "button"
+                    , title "pause the simulation"
+                    , onClick Stop
+                    ]
+                    [ span [ class "icon is-small" ] [ i [ class "fa fa-pause" ] [] ] ]
+                , div [ class "select is-info is-small ml-4" ]
+                    [ select
+                        [ onInput <|
+                            ChangeSimulation
+                                << Maybe.withDefault constants.defaultSimulation
+                                << simulationFromString
                         ]
-                        [ span [ class "icon is-small" ] [ i [ class "fa fa-repeat" ] [] ] ]
-                    , button
-                        [ class "button is-success"
-                        , disabled model.started
-                        , type_ "button"
-                        , title "start the simulation"
-                        , onClick Start
-                        ]
-                        [ span [ class "icon is-small" ] [ i [ class "fa fa-play" ] [] ] ]
-                    , button
-                        [ class "button"
-                        , disabled (not model.started)
-                        , type_ "button"
-                        , title "pause the simulation"
-                        , onClick Stop
-                        ]
-                        [ span [ class "icon is-small" ] [ i [ class "fa fa-pause" ] [] ] ]
-                    , div [ class "select is-info is-small ml-4" ]
-                        [ select
-                            [ onInput <|
-                                ChangeSimulation
-                                    << Maybe.withDefault constants.defaultSimulation
-                                    << simulationFromString
-                            ]
-                            (simulations
-                                |> List.map
-                                    (\name ->
-                                        option
-                                            [ selected (name == model.simulation)
-                                            , value <| simulationToString name
-                                            ]
-                                            [ text <| simulationToString name ]
-                                    )
-                            )
-                        ]
+                        (simulations
+                            |> List.map
+                                (\name ->
+                                    option
+                                        [ selected (name == model.simulation)
+                                        , value <| simulationToString name
+                                        ]
+                                        [ text <| simulationToString name ]
+                                )
+                        )
                     ]
                 ]
-            , div [ class "column is-narrow" ]
-                [ label [ class "checkbox is-inline-flex is-align-items-center ml-4" ]
-                    [ input [ type_ "checkbox", checked model.showDots, onClick ToggleShowDots ] []
-                    , span [ class "is-size-7 ml-2" ] [ text "dots" ]
-                    ]
-                , label [ class "checkbox is-inline-flex is-align-items-center ml-4" ]
-                    [ input [ type_ "checkbox", checked model.showSticks, onClick ToggleShowSticks ] []
-                    , span [ class "is-size-7 ml-2" ] [ text "sticks" ]
-                    ]
-                , label [ class "checkbox is-inline-flex is-align-items-center ml-4" ]
-                    [ input [ type_ "checkbox", checked model.showStickTension, onClick ToggleShowStickTension ] []
-                    , span [ class "is-size-7 ml-2" ] [ text "tension" ]
-                    ]
+            ]
+        , div [ class "column is-narrow" ]
+            [ label [ class "checkbox is-inline-flex is-align-items-center ml-4" ]
+                [ input [ type_ "checkbox", checked model.showDots, onClick ToggleShowDots ] []
+                , span [ class "is-size-7 ml-2" ] [ text "dots" ]
+                ]
+            , label [ class "checkbox is-inline-flex is-align-items-center ml-4" ]
+                [ input [ type_ "checkbox", checked model.showSticks, onClick ToggleShowSticks ] []
+                , span [ class "is-size-7 ml-2" ] [ text "sticks" ]
+                ]
+            , label [ class "checkbox is-inline-flex is-align-items-center ml-4" ]
+                [ input [ type_ "checkbox", checked model.showStickTension, onClick ToggleShowStickTension ] []
+                , span [ class "is-size-7 ml-2" ] [ text "tension" ]
                 ]
             ]
         ]

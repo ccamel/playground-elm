@@ -2,7 +2,7 @@ module Page.Calc exposing (Model, Msg, info, init, subscriptions, update, view)
 
 import Basics.Extra exposing (flip)
 import Browser.Events
-import Html exposing (Html, div, input, span, text)
+import Html exposing (Html, div, input, section, span, text)
 import Html.Attributes exposing (attribute, class, disabled, type_, value)
 import Html.Events exposing (onClick)
 import Json.Decode as Json
@@ -23,7 +23,7 @@ info =
     { name = "calc"
     , hash = "calc"
     , date = "2020-10-11"
-    , description = Markdown.toHtml [ class "info" ] """
+    , description = Markdown.toHtml [ class "content" ] """
 
 A very simple and basic calculator.
        """
@@ -470,9 +470,11 @@ subscriptions _ =
 
 view : Model -> Html Msg
 view (Model model) =
-    div [ class "columns is-centered" ]
-        [ div [ class "column is-one-third" ]
-            [ calc model
+    section [ class "section pt-1 has-background-black-bis" ]
+        [ div [ class "columns is-centered" ]
+            [ div [ class "column is-one-third" ]
+                [ calc model
+                ]
             ]
         ]
 

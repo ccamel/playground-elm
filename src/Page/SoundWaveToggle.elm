@@ -7,7 +7,7 @@ import Css.Global as Global exposing (global)
 import Html
 import Html.Attributes as HtmlAttr
 import Html.Attributes.Aria as Aria
-import Html.Styled exposing (Html, div, fromUnstyled, toUnstyled)
+import Html.Styled exposing (Html, div, fromUnstyled, section, toUnstyled)
 import Html.Styled.Attributes exposing (class, css)
 import Html.Styled.Events exposing (onClick)
 import Lib.Page
@@ -30,7 +30,7 @@ info =
     { name = "sound-wave-toggle"
     , hash = "sound-wave-toggle"
     , date = "2024-07-14"
-    , description = Markdown.toHtml [ HtmlAttr.class "info" ] """
+    , description = Markdown.toHtml [ HtmlAttr.class "content" ] """
 
 An amazing Sound Wave Toggle in pure SVG (as it can be found in [SOTD](https://rogierdeboeve.com/) website).
 
@@ -43,10 +43,11 @@ An amazing Sound Wave Toggle in pure SVG (as it can be found in [SOTD](https://r
 -- MODEL
 
 
-constants : { width : Float, height : Float, rectCount : Int, rectWidth : Float, rectHeight : Float, rectRx : Float, initialX : Float, initialY : Float, horizontalShift : Float, minTranslationY : Float, maxTranslationY : Float, animationSpeed : Float, color : Css.Color }
+constants : { width : Float, height : Float, scale : Float, rectCount : Int, rectWidth : Float, rectHeight : Float, rectRx : Float, initialX : Float, initialY : Float, horizontalShift : Float, minTranslationY : Float, maxTranslationY : Float, animationSpeed : Float, color : Css.Color }
 constants =
     { width = 28
     , height = 28
+    , scale = 5.0
     , rectCount = 16
     , rectWidth = 1.75
     , rectHeight = 1.75
@@ -238,18 +239,15 @@ subscriptions (Model { playState }) =
 view : Model -> Html.Html Msg
 view (Model model) =
     toUnstyled <|
-        div [ class "columns" ]
-            [ div [ class "column is-8 is-offset-2" ]
-                [ div [ class "content is-medium" ]
-                    [ fromUnstyled (Markdown.toHtml [ HtmlAttr.class "mt-4" ] """
+        section [ class "section pt-1 has-background-black-bis" ]
+            [ div [ class "columns" ]
+                [ div [ class "column is-8 is-offset-2" ]
+                    [ fromUnstyled (Markdown.toHtml [ HtmlAttr.class "content is-medium" ] """
 The component is an SVG element featured on the [SOTD](https://rogierdeboeve.com/) website, translated
 from a JavaScript implementation by [Lodz](https://codepen.io/loiclaudet/pen/RwzPajb) to Elm.
 """)
-                    ]
-                , div [ class "section has-text-centered" ]
-                    [ div [ class "has-text-centered" ]
-                        [ viewSoundWaveToggle model
-                        ]
+                    , div [ class "block has-text-centered py-6" ]
+                        [ viewSoundWaveToggle model ]
                     ]
                 ]
             ]
@@ -257,11 +255,15 @@ from a JavaScript implementation by [Lodz](https://codepen.io/loiclaudet/pen/Rwz
 
 viewSoundWaveToggle : ModelRecord -> Html Msg
 viewSoundWaveToggle { playState, wave } =
+    let
+        { width, height, scale } =
+            constants
+    in
     svg
         [ SvgAttr.version "1.1"
-        , SvgAttr.width <| fromFloat constants.width
-        , SvgAttr.height <| fromFloat constants.height
-        , SvgAttr.viewBox (join " " [ "0", "0", fromFloat constants.width, fromFloat constants.height ])
+        , SvgAttr.width <| fromFloat (width * scale)
+        , SvgAttr.height <| fromFloat (height * scale)
+        , SvgAttr.viewBox (join " " [ "0", "0", fromFloat width, fromFloat height ])
         , SvgAttr.class "sound-wave-toggle"
         , SvgAttr.fromUnstyled <| Aria.role "button"
         , SvgAttr.fromUnstyled <| Aria.ariaLabel "Toggle sound wave"
@@ -346,7 +348,6 @@ soundWaveToggleSvgStyle : Style
 soundWaveToggleSvgStyle =
     Css.batch
         [ Css.color constants.color
-        , Css.transform <| Css.scale 5
         , Css.borderRadius (50 |> Css.pct)
         ]
 
