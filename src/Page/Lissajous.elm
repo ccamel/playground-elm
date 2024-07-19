@@ -6,7 +6,7 @@ import Color exposing (rgb255)
 import ColorPicker
 import GraphicSVG exposing (LineType, Shape, Stencil, circle, filled, fixedwidth, group, line, move, openPolygon, outlined, rect, rotate, solid)
 import GraphicSVG.Widget as Widget
-import Html exposing (Html, a, div, input, p, text)
+import Html exposing (Html, a, div, input, p, section, text)
 import Html.Attributes exposing (class, href, id, name, size, step, style, type_, value)
 import Html.Events exposing (onInput)
 import Html.Events.Extra exposing (onClickPreventDefaultAndStopPropagation)
@@ -34,7 +34,7 @@ info =
     { name = "lissajous"
     , hash = "lissajous"
     , date = "2020-11-15"
-    , description = Markdown.toHtml [ class "info" ] """
+    , description = Markdown.toHtml [ class "content" ] """
 Animated [Lissajous figures](https://en.wikipedia.org/wiki/Lissajous_curve).
 
 This demo allows to visualize Lissajous curves in motion and adjust some parameters in real-time.
@@ -330,138 +330,144 @@ constants =
 
 view : Model -> Html Msg
 view (Model model) =
-    div [ class "columns" ]
-        [ div [ class "column is-8 is-offset-2" ]
-            [ div [ class "content is-medium" ]
-                [ p []
-                    [ text "You can "
-                    , if not model.started then
-                        a [ class "action", href "#lissajous", onClickPreventDefaultAndStopPropagation Start ] [ text "start" ]
+    section [ class "section pt-1 has-background-black-bis" ]
+        [ div [ class "columns" ]
+            [ div [ class "column is-8 is-offset-2" ]
+                [ div [ class "content is-medium" ]
+                    [ p []
+                        [ text "You can "
+                        , if not model.started then
+                            a [ class "action", href "#lissajous", onClickPreventDefaultAndStopPropagation Start ] [ text "start" ]
 
-                      else
-                        a [ class "action", href "#lissajous", onClickPreventDefaultAndStopPropagation Stop ] [ text "stop" ]
-                    , text " the animation. You can also "
-                    , a [ class "action", href "#lissajous", onClickPreventDefaultAndStopPropagation Reset ] [ text "reset" ]
-                    , text " the values to default."
-                    ]
-                , p [] [ text "The equations are:" ]
-                , p []
-                    [ text " •  x = "
-                    , text (fromInt constants.width)
-                    , text " sin("
-                    , input
-                        [ class "input input-number is-small is-inline"
-                        , name "a-parameter"
-                        , type_ "number"
-                        , size 1
-                        , value (fromInt model.a)
-                        , onInput SetAParemeter
+                          else
+                            a [ class "action", href "#lissajous", onClickPreventDefaultAndStopPropagation Stop ] [ text "stop" ]
+                        , text " the animation. You can also "
+                        , a [ class "action", href "#lissajous", onClickPreventDefaultAndStopPropagation Reset ] [ text "reset" ]
+                        , text " the values to default."
                         ]
-                        []
-                    , text "t + "
-                    , input
-                        [ class "input input-number is-small is-inline"
-                        , name "phase"
-                        , type_ "number"
-                        , size 1
-                        , value (Round.round 2 model.p)
-                        , onInput SetPhase
-                        ]
-                        []
-                    , text "°)"
-                    ]
-                , p []
-                    [ text " •  y = "
-                    , text (fromInt constants.width)
-                    , text " sin("
-                    , input
-                        [ class "input input-number is-small is-inline"
-                        , name "b-parameter"
-                        , type_ "number"
-                        , size 1
-                        , value (fromInt model.b)
-                        , onInput SetBParameter
-                        ]
-                        []
-                    , text "t)"
-                    ]
-                , let
-                    deltas =
-                        [ ( 1, 2 ), ( 3, 2 ), ( 3, 4 ), ( 5, 4 ) ]
-
-                    link ( pa, pb ) =
-                        let
-                            selected =
-                                if ( pa, pb ) == ( model.a, model.b ) then
-                                    " selected"
-
-                                else
-                                    ""
-
-                            clazz =
-                                "action" ++ selected
-                        in
-                        [ a [ class clazz, href "#lissajous", onClickPreventDefaultAndStopPropagation (Batch [ SetAParemeter (fromInt pa), SetBParameter (fromInt pb) ]) ]
-                            [ text (interpolate "({0},{1})" ([ pa, pb ] |> map fromInt))
+                    , p [] [ text "The equations are:" ]
+                    , p []
+                        [ text " •  x = "
+                        , text (fromInt constants.width)
+                        , text " sin("
+                        , input
+                            [ class "input input-number is-small is-inline"
+                            , name "a-parameter"
+                            , type_ "number"
+                            , size 1
+                            , value (fromInt model.a)
+                            , onInput SetAParemeter
                             ]
+                            []
+                        , text "t + "
+                        , input
+                            [ class "input input-number is-small is-inline"
+                            , name "phase"
+                            , type_ "number"
+                            , size 1
+                            , value (Round.round 2 model.p)
+                            , onInput SetPhase
+                            ]
+                            []
+                        , text "°)"
+                        ]
+                    , p []
+                        [ text " •  y = "
+                        , text (fromInt constants.width)
+                        , text " sin("
+                        , input
+                            [ class "input input-number is-small is-inline"
+                            , name "b-parameter"
+                            , type_ "number"
+                            , size 1
+                            , value (fromInt model.b)
+                            , onInput SetBParameter
+                            ]
+                            []
+                        , text "t)"
+                        ]
+                    , let
+                        deltas =
+                            [ ( 1, 2 ), ( 3, 2 ), ( 3, 4 ), ( 5, 4 ) ]
+
+                        link ( pa, pb ) =
+                            let
+                                selected =
+                                    if ( pa, pb ) == ( model.a, model.b ) then
+                                        " selected"
+
+                                    else
+                                        ""
+
+                                clazz =
+                                    "action" ++ selected
+                            in
+                            [ a [ class clazz, href "#lissajous", onClickPreventDefaultAndStopPropagation (Batch [ SetAParemeter (fromInt pa), SetBParameter (fromInt pb) ]) ]
+                                [ text (interpolate "({0},{1})" ([ pa, pb ] |> map fromInt))
+                                ]
+                            , text " "
+                            ]
+                      in
+                      p [] <|
+                        (text "You can also try some examples of Lissajouss figures with δ = π/2: "
+                            :: concatMap link deltas
+                        )
+                    ]
+                , div [ class "block" ]
+                    [ lissajouComponent model
+                    ]
+                , div [ class "content is-medium" ]
+                    [ p []
+                        [ text "The color for the plot is "
+                        , ColorSelector.view
+                            { elementId = "foreground-color-picker"
+                            , visible = model.foregroundColorPickerVisible
+                            , color = model.curveStyle.color
+                            , onVisibilityChange = ShowForegroundColorPicker
+                            , state = model.foregroundColorPicker
+                            , toMsg = ForegroundColorPickerMsg
+                            }
                         , text " "
+                        , text " (click to change)."
                         ]
-                  in
-                  p [] <|
-                    (text "You can also try some examples of Lissajouss figures with δ = π/2: "
-                        :: concatMap link deltas
-                    )
-                , lissajouComponent model
-                , p []
-                    [ text "The color for the plot is "
-                    , ColorSelector.view
-                        { elementId = "foreground-color-picker"
-                        , visible = model.foregroundColorPickerVisible
-                        , color = model.curveStyle.color
-                        , onVisibilityChange = ShowForegroundColorPicker
-                        , state = model.foregroundColorPicker
-                        , toMsg = ForegroundColorPickerMsg
-                        }
-                    , text " "
-                    , text " (click to change)."
-                    ]
-                , p []
-                    [ text "The afterglow effect is "
-                    , input
-                        [ class "input input-number is-small is-inline"
-                        , name "afterglow"
-                        , type_ "number"
-                        , size 3
-                        , value (fromInt model.afterglow)
-                        , onInput SetAfterglow
+                    , p []
+                        [ text "The afterglow effect is "
+                        , input
+                            [ class "input input-number is-small is-inline"
+                            , name "afterglow"
+                            , type_ "number"
+                            , size 3
+                            , value (fromInt model.afterglow)
+                            , onInput SetAfterglow
+                            ]
+                            []
+                        , text " (0 means no after glow)."
                         ]
-                        []
-                    , text " (0 means no after glow)."
-                    ]
-                , p []
-                    [ text "The animation consists in shifting the phase by "
-                    , input
-                        [ class "input input-number is-small is-inline"
-                        , name "phase-velocity"
-                        , type_ "number"
-                        , size 3
-                        , value (fromFloat model.vp)
-                        , onInput SetPhaseVelocity
+                    , p []
+                        [ text "The animation consists in shifting the phase by "
+                        , input
+                            [ class "input input-number is-small is-inline"
+                            , name "phase-velocity"
+                            , type_ "number"
+                            , size 3
+                            , value (fromFloat model.vp)
+                            , onInput SetPhaseVelocity
+                            ]
+                            []
+                        , a [ href "https://en.wikipedia.org/wiki/Revolutions_per_minute" ] [ text "rev/min" ]
+                        , text ". The resolution is "
+                        , input
+                            [ class "input input-number is-small is-normal is-inline"
+                            , name "curve-resolution"
+                            , type_ "number"
+                            , size 4
+                            , value (fromInt model.resolution)
+                            , step "10"
+                            , onInput SetResolution
+                            ]
+                            []
+                        , text ", which represents the total number of points used to draw the curve (more is better)."
                         ]
-                        []
-                    , a [ href "https://en.wikipedia.org/wiki/Revolutions_per_minute" ] [ text "rev/min" ]
-                    , text ". The resolution is "
-                    , input
-                        [ class "input input-number is-small is-normal is-inline"
-                        , name "curve-resolution"
-                        , type_ "number"
-                        , size 4
-                        , value (fromInt model.resolution)
-                        , step "10"
-                        , onInput SetResolution
-                        ]
-                        []
-                    , text ", which represents the total number of points used to draw the curve (more is better)."
                     ]
                 ]
             ]

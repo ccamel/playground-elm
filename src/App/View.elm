@@ -167,8 +167,7 @@ pagePart page model =
                     ]
                 ]
             ]
-        , section [ class "section pt-1 has-background-black-bis" ]
-            [ pageView page model ]
+        , pageView page model
         ]
 
 

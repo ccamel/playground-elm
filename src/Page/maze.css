@@ -1,28 +1,15 @@
-.centered-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
 .maze {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  max-width: 100%;
-  margin: 0 auto;
+  display: inline-block;
+  width: 100%;
 }
 
 .maze .maze-row {
   display: flex;
-  width: 100%;
+  justify-content: center;
 }
-
-.maze div.cell {
-  flex: 1;
-  width: auto;
-  max-width: 1.1em;
-  height: 1.1em;
+.maze .cell {
+  width: 20px;
+  height: 20px;
   border-style: solid;
   border-width: 1px;
   margin: 0;
@@ -31,7 +18,13 @@
   text-align: center;
   line-height: 0.8em;
   background-color: white;
-  overflow: hidden;
+}
+
+@media screen and (max-width: 768px) {
+  .maze .cell {
+    width: 10px;
+    height: 10px;
+  }
 }
 
 .maze .cell.up {

@@ -3,7 +3,7 @@ module Page.DigitalClock exposing (Model, Msg, info, init, subscriptions, update
 import Browser.Events
 import Color exposing (Color, rgb255, toCssString)
 import ColorPicker
-import Html exposing (Html, div, input, p, text)
+import Html exposing (Html, div, input, p, section, text)
 import Html.Attributes exposing (class, name, size, style, type_, value)
 import Html.Events exposing (onInput)
 import Lib.ColorSelector as ColorSelector
@@ -30,7 +30,7 @@ info =
     { name = "digital-clock"
     , hash = "digital-clock"
     , date = "2020-12-19"
-    , description = Markdown.toHtml [ class "info" ] """
+    , description = Markdown.toHtml [ class "content" ] """
 
 A demo rendering a digital clock in [SVG](https://fr.wikipedia.org/wiki/Scalable_Vector_Graphics).
        """
@@ -165,54 +165,59 @@ subscriptions (Model model) =
 
 view : Model -> Html Msg
 view (Model model) =
-    div [ class "columns" ]
-        [ div [ class "column is-8 is-offset-2" ]
-            [ div [ class "content is-medium" ]
-                [ p []
-                    [ text "Here is the current time." ]
-                , digitalClock model
-                , p []
-                    [ text "You can adjust some display settings if you wish. The space between digit is "
-                    , input
-                        [ class "input input-number is-small is-inline"
-                        , name "space-x"
-                        , type_ "number"
-                        , size 1
-                        , value (fromInt model.spaceX)
-                        , onInput SetSpaceX
+    section [ class "section pt-1 has-background-black-bis" ]
+        [ div [ class "columns" ]
+            [ div [ class "column is-8 is-offset-2" ]
+                [ div [ class "content is-medium" ]
+                    [ p []
+                        [ text "Here is the current time." ]
+                    ]
+                , div [ class "block" ]
+                    [ digitalClock model ]
+                , div [ class "content is-medium" ]
+                    [ p []
+                        [ text "You can adjust some display settings if you wish. The space between digit is "
+                        , input
+                            [ class "input input-number is-small is-inline"
+                            , name "space-x"
+                            , type_ "number"
+                            , size 1
+                            , value (fromInt model.spaceX)
+                            , onInput SetSpaceX
+                            ]
+                            []
+                        , text ", the tilt is "
+                        , input
+                            [ class "input input-number is-small is-inline"
+                            , name "tilt"
+                            , type_ "number"
+                            , size 1
+                            , value (fromInt model.tilt)
+                            , onInput SetTilt
+                            ]
+                            []
+                        , text ", the color used for the lcd is "
+                        , ColorSelector.view
+                            { elementId = "color-picker"
+                            , visible = model.colorPickerVisible
+                            , color = model.color
+                            , onVisibilityChange = ShowColorPicker
+                            , state = model.colorPicker
+                            , toMsg = ColorPickerMsg
+                            }
+                        , text " (click to change)"
+                        , text ", and the refresh interval is "
+                        , input
+                            [ class "input input-number is-small is-inline"
+                            , name "refresh-interval"
+                            , type_ "number"
+                            , size 1
+                            , value (fromInt model.refreshInterval)
+                            , onInput SetRefreshInterval
+                            ]
+                            []
+                        , text "."
                         ]
-                        []
-                    , text ", the tilt is "
-                    , input
-                        [ class "input input-number is-small is-inline"
-                        , name "tilt"
-                        , type_ "number"
-                        , size 1
-                        , value (fromInt model.tilt)
-                        , onInput SetTilt
-                        ]
-                        []
-                    , text ", the color used for the lcd is "
-                    , ColorSelector.view
-                        { elementId = "color-picker"
-                        , visible = model.colorPickerVisible
-                        , color = model.color
-                        , onVisibilityChange = ShowColorPicker
-                        , state = model.colorPicker
-                        , toMsg = ColorPickerMsg
-                        }
-                    , text " (click to change)"
-                    , text ", and the refresh interval is "
-                    , input
-                        [ class "input input-number is-small is-inline"
-                        , name "refresh-interval"
-                        , type_ "number"
-                        , size 1
-                        , value (fromInt model.refreshInterval)
-                        , onInput SetRefreshInterval
-                        ]
-                        []
-                    , text "."
                     ]
                 ]
             ]

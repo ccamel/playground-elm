@@ -1,4 +1,4 @@
-module Lib.Frame exposing (Frames, addFrame, createFrames, fpsText, resetFrames)
+module Lib.Frame exposing (Frames, addFrame, createFrames, fps, fpsText, resetFrames)
 
 import Array exposing (foldl)
 import Basics.Extra exposing (flip)

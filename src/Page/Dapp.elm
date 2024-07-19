@@ -26,7 +26,7 @@ info =
     { name = "dapp"
     , hash = "dapp"
     , date = "2024-07-09"
-    , description = Markdown.toHtml [ class "info" ] """
+    , description = Markdown.toHtml [ class "content" ] """
 A dApp utilizing [EIP-6963](https://eips.ethereum.org/EIPS/eip-6963) to discover multiple injected providers and connect to various wallets
 using [ELM ports](https://guide.elm-lang.org/interop/ports.html) to communicate with the browser extensions.
       """
@@ -389,39 +389,40 @@ notificationDecoder =
 
 view : Model -> Html Msg
 view (Model model) =
-    div []
-        [ trayView model.tray
-        , div [ class "columns" ]
-            [ div [ class "column is-8 is-offset-2" ]
-                [ div [ class "content is-medium" ]
-                    [ Markdown.toHtml [ class "mb-2" ] """
+    section [ class "section pt-1 has-background-black-bis" ]
+        [ div []
+            [ trayView model.tray
+            , div [ class "columns" ]
+                [ div [ class "column is-8 is-offset-2" ]
+                    [ div [ class "content is-medium" ]
+                        [ Markdown.toHtml [ class "content" ] """
 The discovered wallets are listed below. Click the `Connect` button to link a wallet and retrieve its addresses.
 """
+                        ]
                     ]
                 ]
+            , div [ class "block" ]
+                [ walletsView model ]
             ]
-        , walletsView model
         ]
 
 
 walletsView : ModelRecord -> Html Msg
 walletsView { wallets, copy } =
-    section []
-        [ div [ class "columns" ]
-            [ div [ class "column is-4 is-offset-4" ]
-                [ if Dict.isEmpty wallets then
-                    div [ class "container has-text-centered" ]
-                        [ p [ class "subtitle" ] [ text "No EIP-6963 providers found. Make sure you have a wallet installed." ]
-                        ]
+    div [ class "columns" ]
+        [ div [ class "column is-4 is-offset-4" ]
+            [ if Dict.isEmpty wallets then
+                div [ class "container has-text-centered" ]
+                    [ p [ class "subtitle" ] [ text "No EIP-6963 providers found. Make sure you have a wallet installed." ]
+                    ]
 
-                  else
-                    div []
-                        (wallets
-                            |> Dict.values
-                            |> List.sortBy (.provider >> .info >> .name)
-                            |> List.map (walletView copy)
-                        )
-                ]
+              else
+                div []
+                    (wallets
+                        |> Dict.values
+                        |> List.sortBy (.provider >> .info >> .name)
+                        |> List.map (walletView copy)
+                    )
             ]
         ]
 
