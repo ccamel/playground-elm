@@ -78,19 +78,19 @@ view (Model model) =
         content =
             [ { title = "Simple"
               , text = "Fairly simple and understandable. Every showcase is implemented in a single elm file."
-              , img = "about-simple.png"
+              , img = "about-simple.webp"
               }
             , { title = "Exploratory"
               , text = "Highlight some aspects of the elm language, like immutability, reactiveness, performance and interoperability with other JS libraries. Explore some architectural/design patterns around reactive static/serverless SPA."
-              , img = "about-exploratory.png"
+              , img = "about-exploratory.webp"
               }
             , { title = "Playable"
               , text = "As much as possible, provides a useful and functional content."
-              , img = "about-playable.png"
+              , img = "about-playable.webp"
               }
             , { title = "Scalable"
               , text = "The structure of the playground is designed to easily accommodate additional examples and showcases. Contributors can effortlessly expand the repository, ensuring it remains a relevant and up-to-date resource for learners and enthusiasts."
-              , img = "about-scalable.png"
+              , img = "about-scalable.webp"
               }
             ]
     in
