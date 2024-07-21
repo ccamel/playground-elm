@@ -6,7 +6,7 @@ import App.Models exposing (Model)
 import App.Pages exposing (pageDate, pageDescription, pageGithubLink, pageHash, pageName, pageView, pages)
 import App.Routing exposing (Route(..))
 import Browser
-import Html exposing (Html, a, article, br, div, footer, h1, h2, h3, hr, i, img, p, section, span, strong, text)
+import Html exposing (Html, a, article, br, div, footer, h1, h2, h3, hr, i, img, main_, p, section, span, strong, text)
 import Html.Attributes exposing (attribute, class, classList, href, src, title, width)
 import Html.Lazy exposing (lazy)
 import List exposing (intersperse)
@@ -34,7 +34,7 @@ view model =
 headerPart : Route -> Html Msg
 headerPart route =
     section
-        [ classList [ ( "hero", True ), ( "is-medium", isHomePage route ), ( "is-small", not (isHomePage route) ) ]
+        [ classList [ ( "hero header", True ), ( "is-medium", isHomePage route ), ( "is-small", not (isHomePage route) ) ]
         ]
         [ div
             [ class "hero-body"
@@ -148,16 +148,18 @@ contentPart model =
 
 homePage : Flags -> Html Msg
 homePage flags =
-    section [ class "section" ]
-        [ div [ class "container" ]
-            [ div [ class "columns" ]
-                [ div [ class "column is-10 is-offset-1" ]
-                    (pages
-                        |> List.sortBy pageDate
-                        |> List.reverse
-                        |> List.indexedMap (showcase flags)
-                        |> intersperse (hr [] [])
-                    )
+    main_ []
+        [ section [ class "section" ]
+            [ div [ class "container" ]
+                [ div [ class "columns" ]
+                    [ div [ class "column is-10 is-offset-1" ]
+                        (pages
+                            |> List.sortBy pageDate
+                            |> List.reverse
+                            |> List.indexedMap (showcase flags)
+                            |> intersperse (hr [] [])
+                        )
+                    ]
                 ]
             ]
         ]
@@ -165,7 +167,7 @@ homePage flags =
 
 pagePart : Page -> Model -> Html Msg
 pagePart page model =
-    div []
+    main_ []
         [ lazy description page
         , pageView page model
         ]
@@ -237,32 +239,34 @@ showcase { basePath } num page =
 -}
 notFound : Html Msg
 notFound =
-    section [ class "home-container" ]
-        [ div
-            [ class "container has-text-centered"
-            ]
-            [ h1
-                [ class "is-size-1 has-text-weight-bold"
+    main_ []
+        [ section [ class "home-container" ]
+            [ div
+                [ class "container has-text-centered"
                 ]
-                [ text "404" ]
-            , p
-                [ class "is-size-5 has-text-weight-medium"
-                ]
-                [ span
-                    [ class "has-text-danger"
+                [ h1
+                    [ class "is-size-1 has-text-weight-bold"
                     ]
-                    [ text "Opps!" ]
-                , text " Page not found."
+                    [ text "404" ]
+                , p
+                    [ class "is-size-5 has-text-weight-medium"
+                    ]
+                    [ span
+                        [ class "has-text-danger"
+                        ]
+                        [ text "Opps!" ]
+                    , text " Page not found."
+                    ]
+                , p
+                    [ class "is-size-6 mb-2"
+                    ]
+                    [ text "The page you’re looking for doesn’t exist." ]
+                , a
+                    [ href "#"
+                    , class "button"
+                    ]
+                    [ text "Go Home" ]
                 ]
-            , p
-                [ class "is-size-6 mb-2"
-                ]
-                [ text "The page you’re looking for doesn’t exist." ]
-            , a
-                [ href "#"
-                , class "button"
-                ]
-                [ text "Go Home" ]
             ]
         ]
 
