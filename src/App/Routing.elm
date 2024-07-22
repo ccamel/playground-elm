@@ -12,7 +12,7 @@ import Page.Physics
 import Page.SoundWaveToggle
 import Page.Term
 import Url exposing (Url)
-import Url.Parser exposing (Parser, fragment, map, parse)
+import Url.Parser exposing (Parser, fragment, map, oneOf, parse, s)
 
 
 type Route
@@ -23,7 +23,10 @@ type Route
 
 matchRoute : Parser (Route -> a) a
 matchRoute =
-    map parseFragment (fragment identity)
+    oneOf
+        [ fragment parseFragment
+        , map Home (s "index.html") -- maintain compatibility with old urls
+        ]
 
 
 parseFragment : Maybe String -> Route
