@@ -17,7 +17,7 @@
   "private": true,
   "repository": {
     "type": "git",
-    "url": "https://github.com/ccamel/playground-elm"
+    "url": "https://github.com/ccamel/playground-elm.git"
   },
   "bugs": {
     "url": "https://github.com/ccamel/playground-elm/issues",
