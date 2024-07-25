@@ -1,9 +1,15 @@
 {
+  "hooks": {
+    "before:github:release": "zip -r site.zip dist"
+  },
   "git": {
     "commitMessage": ":bookmark: Release v${version}"
   },
   "github": {
-    "release": true
+    "release": true,
+    "assets": [
+      "site.zip"
+    ]
   },
   "npm": {
     "publish": false
