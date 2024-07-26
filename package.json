@@ -41,6 +41,12 @@
     "lint": "elm-review && elm-format --validate src && eslint .",
     "elm-json": "elm-json"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "screenshot.webp",
+    "LICENSE"
+  ],
   "dependencies": {
     "animate.css": "^4.1.1",
     "elm-canvas": "^2.2.4",

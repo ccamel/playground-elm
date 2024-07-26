@@ -1,6 +1,9 @@
 {
   "hooks": {
-    "before:github:release": "zip -r site.zip dist"
+    "after:bump": [
+      "pnpm build",
+      "pnpm pack"
+    ]
   },
   "git": {
     "commitMessage": ":bookmark: Release v${version}"
@@ -8,7 +11,7 @@
   "github": {
     "release": true,
     "assets": [
-      "site.zip"
+      "playground-elm-${version}.tgz"
     ]
   },
   "npm": {
