@@ -79,8 +79,8 @@ importers:
         specifier: ^1.5.3
         version: 1.5.3(@parcel/core@2.12.0(@swc/helpers@0.5.1))(@swc/helpers@0.5.1)
       posthtml-expressions:
-        specifier: ^1.11.3
-        version: 1.11.3
+        specifier: ^1.11.4
+        version: 1.11.4
       prettier:
         specifier: ^3.3.3
         version: 3.3.3
@@ -2746,8 +2746,8 @@ packages:
     resolution: {integrity: sha512-PS08Iboia9mts/2ygV3eLpY5ghnUcfLV/EXTOW1E2qYxJKGGBUtNjN76FYHnMs36RmARn41bC0AZmn+rR0OVpQ==}
     engines: {node: ^10 || ^12 || >=14}
 
-  posthtml-expressions@1.11.3:
-    resolution: {integrity: sha512-S75Sp3UUoOQJV2vtubJOuv6u/R9hqJE62rgihOTxKCTog68A5OIRNBoIWLKMVD8VJ8l0vQaIEKzWZ4Vm3ht5hw==}
+  posthtml-expressions@1.11.4:
+    resolution: {integrity: sha512-tJI6KhKLcePRO0/i4d01MNXfcaBa2jIu4MuVLixvGwCRzxdY2D7LLm17ijNyQNQu3xOhCffBLtUMju0K64smmQ==}
     engines: {node: '>=10'}
 
   posthtml-match-helper@1.0.3:
@@ -6506,7 +6506,7 @@ snapshots:
       picocolors: 1.0.0
       source-map-js: 1.0.2
 
-  posthtml-expressions@1.11.3:
+  posthtml-expressions@1.11.4:
     dependencies:
       fclone: 1.0.11
       posthtml: 0.16.6
