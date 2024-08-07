@@ -44,9 +44,10 @@ const registerPorts = app => {
   app.ports.connectWalletWithProvider.subscribe(async uuid => {
     if (uuid in providers) {
       try {
-        const provider = providers[uuid].provider;
-        const address = await provider.request({ method: 'eth_requestAccounts' });
-        const chainID = await provider.request({
+        const provider = providers[uuid];
+        const proxy = providers[uuid].provider;
+        const address = await proxy.request({ method: 'eth_requestAccounts' });
+        const chainID = await proxy.request({
           method: 'eth_chainId'
         });
         const chainName = await chainIDtoName(chainID);
@@ -56,6 +57,13 @@ const registerPorts = app => {
           chainID,
           chainName
         };
+        proxy.on('disconnect', error => {
+          app.ports.receiveWalletDisconnected.send(uuid);
+          app.ports.receiveNotification.send({
+            message: `Wallet ${provider.info.name} disconnected` + (error ? `: ${error.message}` : ''),
+            type: 'error'
+          });
+        });
 
         app.ports.receiveWalletConnected.send(wallet);
       } catch (error) {

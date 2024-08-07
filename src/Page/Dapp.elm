@@ -126,6 +126,7 @@ type
     | ConnectWalletWithProvider Uuid
     | WalletConnected WalletConnection
     | WalletNotConnected Uuid
+    | WalletDisconnected Uuid
       -- notification
     | ToastMsg Toast.Msg
     | AddToast Notification
@@ -189,6 +190,23 @@ update msg (Model model) =
                 , Cmd.none
                 )
 
+            WalletDisconnected uuid ->
+                ( { model
+                    | wallets =
+                        Dict.update uuid
+                            (Maybe.map
+                                (\w ->
+                                    { w
+                                        | state =
+                                            NotConnected
+                                    }
+                                )
+                            )
+                            model.wallets
+                  }
+                , Cmd.none
+                )
+
             AddToast notification ->
                 let
                     ( tray, tmsg ) =
@@ -235,6 +253,7 @@ subscriptions _ =
         [ receiveProviderAnnouncement mapProviderAnnounced
         , receiveWalletConnected mapWalletConnected
         , receiveWalletNotConnected mapWalletNotConnected
+        , receiveWalletDisconnected mapWalletDisconnected
         , receiveNotification mapNotification
         ]
 
@@ -259,6 +278,9 @@ port receiveWalletConnected : (Json.Decode.Value -> msg) -> Sub msg
 
 
 port receiveWalletNotConnected : (Uuid -> msg) -> Sub msg
+
+
+port receiveWalletDisconnected : (Uuid -> msg) -> Sub msg
 
 
 port receiveNotification : (Json.Decode.Value -> msg) -> Sub msg
@@ -340,6 +362,11 @@ connectedWalletDecoder =
 mapWalletNotConnected : Uuid -> Msg
 mapWalletNotConnected uuid =
     WalletNotConnected uuid
+
+
+mapWalletDisconnected : Uuid -> Msg
+mapWalletDisconnected uuid =
+    WalletDisconnected uuid
 
 
 mapNotification : Json.Decode.Value -> Msg
