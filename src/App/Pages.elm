@@ -9,6 +9,7 @@ import Page.Asteroids
 import Page.Calc
 import Page.Dapp
 import Page.DigitalClock
+import Page.Glsl
 import Page.Lissajous
 import Page.Maze
 import Page.Physics
@@ -46,6 +47,7 @@ pages =
     , Asteroids
     , Dapp
     , SoundWaveToggle
+    , Glsl
     ]
 
 
@@ -114,6 +116,9 @@ pageSpec page =
 
         SoundWaveToggle ->
             toSpec Page.SoundWaveToggle.info Page.SoundWaveToggle.view Page.SoundWaveToggle.subscriptions SoundWaveTogglePageMsg (\model -> model.pages.soundWaveTogglePage)
+
+        Glsl ->
+            toSpec Page.Glsl.info Page.Glsl.view Page.Glsl.subscriptions GlslPageMsg (\model -> model.pages.glslPage)
 
 
 pageName : Page -> String

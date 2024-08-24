@@ -6,6 +6,7 @@ import Page.Asteroids
 import Page.Calc
 import Page.Dapp
 import Page.DigitalClock
+import Page.Glsl
 import Page.Lissajous
 import Page.Maze
 import Page.Physics
@@ -25,6 +26,7 @@ type Page
     | Asteroids
     | Dapp
     | SoundWaveToggle
+    | Glsl
 
 
 type Msg
@@ -42,3 +44,4 @@ type Msg
     | AsteroidsPageMsg Page.Asteroids.Msg
     | DappPageMsg Page.Dapp.Msg
     | SoundWaveTogglePageMsg Page.SoundWaveToggle.Msg
+    | GlslPageMsg Page.Glsl.Msg

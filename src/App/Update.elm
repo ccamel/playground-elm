@@ -13,6 +13,7 @@ import Page.Asteroids
 import Page.Calc
 import Page.Dapp
 import Page.DigitalClock
+import Page.Glsl
 import Page.Lissajous
 import Page.Maze
 import Page.Physics
@@ -91,6 +92,9 @@ update msg model =
 
                 ( soundWaveToggleModel, soundWaveToggleCmd ) =
                     Page.SoundWaveToggle.init
+
+                ( glslModel, glslCmd ) =
+                    Page.Glsl.init
             in
             case newRoute of
                 NotFoundRoute ->
@@ -129,6 +133,9 @@ update msg model =
                 Page SoundWaveToggle ->
                     ( { clearedModel | route = newRoute, pages = { emptyPagesModel | soundWaveTogglePage = Just soundWaveToggleModel } }, Cmd.map SoundWaveTogglePageMsg soundWaveToggleCmd )
 
+                Page Glsl ->
+                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | glslPage = Just glslModel } }, Cmd.map GlslPageMsg glslCmd )
+
         -- messages from pages
         AboutPageMsg m ->
             convert model m .aboutPage Page.About.update (\mdl -> { model | pages = { pages | aboutPage = Just mdl } }) AboutPageMsg
@@ -159,6 +166,9 @@ update msg model =
 
         SoundWaveTogglePageMsg m ->
             convert model m .soundWaveTogglePage Page.SoundWaveToggle.update (\mdl -> { model | pages = { pages | soundWaveTogglePage = Just mdl } }) SoundWaveTogglePageMsg
+
+        GlslPageMsg m ->
+            convert model m .glslPage Page.Glsl.update (\mdl -> { model | pages = { pages | glslPage = Just mdl } }) GlslPageMsg
 
 
 init : Flags -> Url.Url -> Nav.Key -> ( Model, Cmd App.Messages.Msg )

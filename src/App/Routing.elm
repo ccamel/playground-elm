@@ -6,6 +6,7 @@ import Page.Asteroids
 import Page.Calc
 import Page.Dapp
 import Page.DigitalClock
+import Page.Glsl
 import Page.Lissajous
 import Page.Maze
 import Page.Physics
@@ -68,6 +69,9 @@ parseFragment fragment =
 
             else if p == Page.SoundWaveToggle.info.name then
                 Page SoundWaveToggle
+
+            else if p == Page.Glsl.info.name then
+                Page Glsl
 
             else
                 NotFoundRoute
