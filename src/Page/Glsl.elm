@@ -1,12 +1,15 @@
 module Page.Glsl exposing (Model, Msg, info, init, subscriptions, update, view)
 
-import Browser.Events exposing (onAnimationFrameDelta)
+import Browser.Dom exposing (getElement)
+import Browser.Events exposing (onAnimationFrameDelta, onResize)
 import Html exposing (Html, div, section)
-import Html.Attributes as Attr exposing (class, style)
+import Html.Attributes as Attr exposing (class, id)
 import Lib.Page
 import Markdown
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 exposing (Vec3, vec3)
+import Platform.Sub exposing (batch)
+import Task
 import WebGL exposing (Mesh, Shader, indexedTriangles)
 
 
@@ -32,6 +35,8 @@ A nice GLSL shaders effect.
 
 type alias ModelRecord =
     { time : Float
+    , width : Int
+    , height : Int
     }
 
 
@@ -43,8 +48,10 @@ init : ( Model, Cmd Msg )
 init =
     ( Model
         { time = 0
+        , width = 800
+        , height = 600
         }
-    , Cmd.none
+    , getElementWidth "glsl"
     )
 
 
@@ -54,6 +61,8 @@ init =
 
 type Msg
     = Tick Float
+    | Resized
+    | GotNewWidth (Result Browser.Dom.Error Int)
 
 
 
@@ -69,6 +78,24 @@ update msg (Model model) =
                 , Cmd.none
                 )
 
+            Resized ->
+                ( model
+                , getElementWidth "glsl"
+                )
+
+            GotNewWidth (Ok newWidth) ->
+                ( { model | width = newWidth, height = round (toFloat newWidth / constants.aspectRatio) }, Cmd.none )
+
+            GotNewWidth (Err _) ->
+                ( model, Cmd.none )
+
+
+getElementWidth : String -> Cmd Msg
+getElementWidth id =
+    getElement id
+        |> Task.map (round << .width << .element)
+        |> Task.attempt GotNewWidth
+
 
 
 -- SUBSCRIPTIONS
@@ -76,28 +103,31 @@ update msg (Model model) =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    onAnimationFrameDelta Tick
+    batch
+        [ onAnimationFrameDelta Tick
+        , onResize (\_ _ -> Resized)
+        ]
 
 
 
 -- VIEW
 
 
-constants : { width : Int, height : Int }
+constants : { aspectRatio : Float }
 constants =
-    { -- width of the canvas
-      width = 800
-
-    -- height of the canvas
-    , height = 600
+    { -- aspect ratio of the canvas
+      aspectRatio = 4.0 / 3.0
     }
 
 
 view : Model -> Html Msg
 view (Model model) =
     section [ class "section pt-1 has-background-black-bis" ]
-        [ div [ class "columns is-centered" ]
-            [ div [ class "column is-one-third" ]
+        [ div [ class "container is-max-tablet" ]
+            [ div
+                [ id "glsl"
+                , class ""
+                ]
                 [ glsl model
                 ]
             ]
@@ -105,11 +135,8 @@ view (Model model) =
 
 
 glsl : ModelRecord -> Html Msg
-glsl { time } =
+glsl { time, width, height } =
     let
-        { width, height } =
-            constants
-
         perspectiveMatrix =
             Mat4.makePerspective 45 ((width |> toFloat) / (height |> toFloat)) 0.01 100
 
@@ -125,20 +152,18 @@ glsl { time } =
         modelViewMatrix =
             Mat4.mul viewMatrix modelMatrix
     in
-    div [ style "width" "100%", style "height" "100vh" ]
-        [ WebGL.toHtml
-            [ Attr.width width
-            , Attr.height height
-            ]
-            [ WebGL.entity
-                vertexShader
-                fragmentShader
-                (mesh 1 32 64)
-                { projectionMatrix = projectionMatrix
-                , modelViewMatrix = modelViewMatrix
-                , time = time / 1000
-                }
-            ]
+    WebGL.toHtml
+        [ Attr.width width
+        , Attr.height height
+        ]
+        [ WebGL.entity
+            vertexShader
+            fragmentShader
+            (mesh 1 32 64)
+            { projectionMatrix = projectionMatrix
+            , modelViewMatrix = modelViewMatrix
+            , time = time / 1000
+            }
         ]
 
 
