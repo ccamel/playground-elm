@@ -1,15 +1,21 @@
 module Page.Glsl exposing (Model, Msg, info, init, subscriptions, update, view)
 
+import Basics.Extra exposing (uncurry)
 import Browser.Dom exposing (getElement)
 import Browser.Events exposing (onAnimationFrameDelta, onResize)
 import Html exposing (Html, div, section)
-import Html.Attributes as Attr exposing (class, id)
+import Html.Attributes as Attr exposing (class, id, style)
+import Html.Events.Extra.Pointer as Pointer
 import Lib.Page
 import Markdown
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector3 exposing (Vec3, vec3)
+import Math.Vector2 as Vector2 exposing (Vec2, vec2)
+import Math.Vector3 as Vector3 exposing (Vec3, vec3)
+import Maybe
 import Platform.Sub exposing (batch)
+import Quaternion exposing (Quaternion)
 import Task
+import Vector exposing (fromVec3)
 import WebGL exposing (Mesh, Shader, indexedTriangles)
 
 
@@ -37,6 +43,19 @@ type alias ModelRecord =
     { time : Float
     , width : Int
     , height : Int
+    , interaction : Maybe Interaction
+    , lastRotation : Quaternion
+    , currentRotation : Quaternion
+    }
+
+
+rotation : ModelRecord -> Quaternion
+rotation { lastRotation, currentRotation } =
+    Quaternion.mul currentRotation lastRotation
+
+
+type alias Interaction =
+    { pos : Vec2
     }
 
 
@@ -50,6 +69,9 @@ init =
         { time = 0
         , width = 800
         , height = 600
+        , interaction = Nothing
+        , lastRotation = Quaternion.identity
+        , currentRotation = Quaternion.identity
         }
     , getElementWidth "glsl"
     )
@@ -63,6 +85,9 @@ type Msg
     = Tick Float
     | Resized
     | GotNewWidth (Result Browser.Dom.Error Int)
+    | PointerDown Vec2
+    | PointerMove Vec2
+    | PointerEnd
 
 
 
@@ -88,6 +113,36 @@ update msg (Model model) =
 
             GotNewWidth (Err _) ->
                 ( model, Cmd.none )
+
+            PointerDown pos ->
+                ( { model | interaction = Just <| Interaction pos }, Cmd.none )
+
+            PointerMove pos ->
+                case model.interaction of
+                    Just state ->
+                        let
+                            width =
+                                toFloat model.width
+
+                            height =
+                                toFloat model.width / constants.aspectRatio
+
+                            v2 =
+                                mapToSphere width height pos
+
+                            v1 =
+                                mapToSphere width height state.pos
+
+                            currRotation =
+                                computeRotation v1 v2
+                        in
+                        ( { model | currentRotation = currRotation }, Cmd.none )
+
+                    Nothing ->
+                        ( model, Cmd.none )
+
+            PointerEnd ->
+                ( { model | interaction = Nothing, lastRotation = rotation model, currentRotation = Quaternion.identity }, Cmd.none )
 
 
 getElementWidth : String -> Cmd Msg
@@ -135,10 +190,13 @@ view (Model model) =
 
 
 glsl : ModelRecord -> Html Msg
-glsl { time, width, height } =
+glsl model =
     let
+        { time, width, height } =
+            model
+
         perspectiveMatrix =
-            Mat4.makePerspective 45 ((width |> toFloat) / (height |> toFloat)) 0.01 100
+            Mat4.makePerspective 45 (toFloat width / toFloat height) 0.01 100
 
         viewMatrix =
             Mat4.makeLookAt (vec3 0 0 1.5) (vec3 0 0 0) (vec3 0 1 0)
@@ -147,15 +205,18 @@ glsl { time, width, height } =
             Mat4.mul perspectiveMatrix viewMatrix
 
         modelMatrix =
-            Mat4.identity
+            Quaternion.toMat4 <| rotation model
 
         modelViewMatrix =
             Mat4.mul viewMatrix modelMatrix
     in
     WebGL.toHtml
-        [ Attr.width width
-        , Attr.height height
-        ]
+        ([ Attr.width width
+         , Attr.height height
+         , style "touch-action" "none"
+         ]
+            |> withInteractionEvents
+        )
         [ WebGL.entity
             vertexShader
             fragmentShader
@@ -165,6 +226,20 @@ glsl { time, width, height } =
             , time = time / 1000
             }
         ]
+
+
+withInteractionEvents : List (Html.Attribute Msg) -> List (Html.Attribute Msg)
+withInteractionEvents attributes =
+    let
+        posLens =
+            uncurry vec2 << .offsetPos << .pointer
+    in
+    Pointer.onWithOptions "pointerdown" { stopPropagation = True, preventDefault = True } (PointerDown << posLens)
+        :: Pointer.onMove (PointerMove << posLens)
+        :: Pointer.onUp (always PointerEnd)
+        :: Pointer.onCancel (always PointerEnd)
+        :: Pointer.onOut (always PointerEnd)
+        :: attributes
 
 
 
@@ -372,3 +447,44 @@ fragmentShader =
             );
         }
     |]
+
+
+
+-- Arcball
+
+
+mapToSphere : Float -> Float -> Vec2 -> Vec3
+mapToSphere width height v =
+    let
+        { x, y } =
+            Vector2.toRecord v
+
+        n =
+            Vector2.fromRecord { x = (2 * x - width) / width, y = (height - 2 * y) / height }
+
+        lengthSquared =
+            Vector2.lengthSquared n
+
+        n2 =
+            if lengthSquared > 1 then
+                Vector2.normalize n
+
+            else
+                n
+
+        nz =
+            sqrt (1 - min 1 lengthSquared)
+    in
+    Vector3.vec3 (Vector2.getX n2) (Vector2.getY n2) nz
+
+
+computeRotation : Vec3 -> Vec3 -> Quaternion
+computeRotation v1 v2 =
+    let
+        axis =
+            Vector3.cross v1 v2
+
+        angle =
+            acos (min 1.0 (Vector3.dot v1 v2))
+    in
+    Quaternion.fromAxisAngle (fromVec3 axis) angle |> Maybe.withDefault Quaternion.identity
