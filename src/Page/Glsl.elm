@@ -29,7 +29,8 @@ info =
     , hash = "glsl"
     , date = "2024-08-07"
     , description = Markdown.toHtml [ class "content" ] """
-A nice GLSL shaders effect.
+A dynamic [WebGL](https://www.khronos.org/webgl/) electricity effect created with [GLSL](https://en.wikipedia.org/wiki/OpenGL_Shading_Language) shaders,
+featuring interactive 3D rotation with smooth inertia.
        """
     , srcRel = "Page/Glsl.elm"
     }
