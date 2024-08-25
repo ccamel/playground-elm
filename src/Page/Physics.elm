@@ -1038,7 +1038,8 @@ simulationView model =
     div ([ class "has-text-centered", style "touch-action" "none" ] |> withInteractionEvents)
         [ Canvas.toHtml
             ( constants.width, constants.height )
-            []
+            [ class "physics"
+            ]
             (List.concat
                 [ [ backgroundShape ]
                 , renderSticks model

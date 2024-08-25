@@ -38,6 +38,8 @@ The demo is a pure [SPA][] (100% clientside application) written in [elm][].
 
 List of showcases:
 
+- [glsl](https://ccamel.github.io/playground-elm/#glsl): A dynamic [WebGL](https://www.khronos.org/webgl/) electricity effect created with [GLSL](https://en.wikipedia.org/wiki/OpenGL_Shading_Language) shaders, featuring interactive 3D rotation with smooth inertia.
+
 - [soundWave toggle](https://ccamel.github.io/playground-elm/#sound-wave-toggle): A simple sound wave toggle button
   rendered in [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics).
 
@@ -138,6 +140,8 @@ The site is accessible through the `"/` endpoint.
   - [MacCASOutreach/graphicsvg](https://package.elm-lang.org/packages/MacCASOutreach/graphicsvg/latest/)
   - [harmboschloo/elm-ecs](https://package.elm-lang.org/packages/harmboschloo/elm-ecs/latest/)
   - [BrianHicks/elm-particle](https://github.com/BrianHicks/elm-particle)
+  - [elm-explorations/webgl](https://github.com/elm-explorations/webgl)
+  - [nphollon/geo3d](https://github.com/nphollon/geo3d)
 
 - [`parceljs`](https://parceljs.org/): Web application bundler
 - [`bulma`](https://bulma.io/): The modern CSS framework
