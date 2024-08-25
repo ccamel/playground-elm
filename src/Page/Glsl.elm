@@ -1,6 +1,6 @@
-module Page.Glsl exposing (Model, Msg, info, init, subscriptions, update, view)
+module Page.Glsl exposing (Attributes, Model, Msg, info, init, subscriptions, update, view)
 
-import Basics.Extra exposing (uncurry)
+import Basics.Extra exposing (flip, uncurry)
 import Browser.Dom exposing (getElement)
 import Browser.Events exposing (onAnimationFrameDelta, onResize)
 import Html exposing (Html, div, section)
@@ -46,6 +46,7 @@ type alias ModelRecord =
     , interaction : Maybe Interaction
     , lastRotation : Quaternion
     , currentRotation : Quaternion
+    , angularVelocity : Maybe Quaternion
     }
 
 
@@ -56,6 +57,7 @@ rotation { lastRotation, currentRotation } =
 
 type alias Interaction =
     { pos : Vec2
+    , angularVelocity : Quaternion
     }
 
 
@@ -72,6 +74,7 @@ init =
         , interaction = Nothing
         , lastRotation = Quaternion.identity
         , currentRotation = Quaternion.identity
+        , angularVelocity = Nothing
         }
     , getElementWidth "glsl"
     )
@@ -99,7 +102,34 @@ update msg (Model model) =
     Tuple.mapFirst Model <|
         case msg of
             Tick elapsed ->
-                ( { model | time = model.time + elapsed }
+                let
+                    newVelocity =
+                        model.angularVelocity |> Maybe.map (decayQuaternion constants.decayFactor)
+
+                    newRotation =
+                        newVelocity
+                            |> Maybe.map (flip Quaternion.mul model.lastRotation)
+                            |> Maybe.andThen Quaternion.normalize
+                            |> Maybe.withDefault model.lastRotation
+
+                    inertiaActive =
+                        case newVelocity of
+                            Just q ->
+                                angleOfRotation q > 1.0e-3
+
+                            Nothing ->
+                                False
+                in
+                ( { model
+                    | time = model.time + elapsed
+                    , lastRotation = newRotation
+                    , angularVelocity =
+                        if inertiaActive then
+                            newVelocity
+
+                        else
+                            Nothing
+                  }
                 , Cmd.none
                 )
 
@@ -115,7 +145,12 @@ update msg (Model model) =
                 ( model, Cmd.none )
 
             PointerDown pos ->
-                ( { model | interaction = Just <| Interaction pos }, Cmd.none )
+                ( { model
+                    | interaction = Just <| Interaction pos Quaternion.identity
+                    , angularVelocity = Nothing
+                  }
+                , Cmd.none
+                )
 
             PointerMove pos ->
                 case model.interaction of
@@ -135,14 +170,29 @@ update msg (Model model) =
 
                             currRotation =
                                 computeRotation v1 v2
+
+                            angularVelocity =
+                                Quaternion.mul currRotation (Quaternion.conjugate model.currentRotation)
                         in
-                        ( { model | currentRotation = currRotation }, Cmd.none )
+                        ( { model | currentRotation = currRotation, interaction = Just { pos = state.pos, angularVelocity = angularVelocity } }, Cmd.none )
 
                     Nothing ->
                         ( model, Cmd.none )
 
             PointerEnd ->
-                ( { model | interaction = Nothing, lastRotation = rotation model, currentRotation = Quaternion.identity }, Cmd.none )
+                ( case model.interaction of
+                    Just state ->
+                        { model
+                            | interaction = Nothing
+                            , lastRotation = rotation model
+                            , currentRotation = Quaternion.identity
+                            , angularVelocity = Just state.angularVelocity
+                        }
+
+                    Nothing ->
+                        model
+                , Cmd.none
+                )
 
 
 getElementWidth : String -> Cmd Msg
@@ -168,10 +218,13 @@ subscriptions _ =
 -- VIEW
 
 
-constants : { aspectRatio : Float }
+constants : { aspectRatio : Float, decayFactor : Float }
 constants =
     { -- aspect ratio of the canvas
       aspectRatio = 4.0 / 3.0
+
+    -- angular velocity decay factor
+    , decayFactor = 0.98
     }
 
 
@@ -181,7 +234,6 @@ view (Model model) =
         [ div [ class "container is-max-tablet" ]
             [ div
                 [ id "glsl"
-                , class ""
                 ]
                 [ glsl model
                 ]
@@ -214,6 +266,7 @@ glsl model =
         ([ Attr.width width
          , Attr.height height
          , style "touch-action" "none"
+         , class "is-clickable"
          ]
             |> withInteractionEvents
         )
@@ -488,3 +541,47 @@ computeRotation v1 v2 =
             acos (min 1.0 (Vector3.dot v1 v2))
     in
     Quaternion.fromAxisAngle (fromVec3 axis) angle |> Maybe.withDefault Quaternion.identity
+
+
+angleOfRotation : Quaternion -> Float
+angleOfRotation q =
+    if q.scalar == 0 then
+        pi
+
+    else
+        let
+            halfTurn =
+                Vector.length q.vector / q.scalar
+
+            s =
+                asin (2 * halfTurn / (1 + halfTurn ^ 2))
+        in
+        if abs halfTurn < 1 then
+            s
+
+        else
+            pi - s
+
+
+decayQuaternion : Float -> Quaternion -> Quaternion
+decayQuaternion factor q =
+    let
+        angle =
+            angleOfRotation q
+
+        scaledAngle =
+            angle * factor
+
+        axis =
+            Vector.normalize q.vector |> Maybe.withDefault Vector.identity
+
+        halfScaledAngle =
+            scaledAngle / 2
+
+        newScalar =
+            cos halfScaledAngle
+
+        newVector =
+            Vector.scale (sin halfScaledAngle) axis
+    in
+    { scalar = newScalar, vector = newVector }
