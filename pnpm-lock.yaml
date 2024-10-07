@@ -3306,8 +3306,8 @@ packages:
     resolution: {integrity: sha512-pjy2bYhSsufwWlKwPc+l3cN7+wuJlK6uz0YdJEOlQDbl6jo/YlPi4mb8agUkVC8BF7V8NuzeyPNqRksA3hztKQ==}
     engines: {node: '>= 0.8'}
 
-  unzip-stream@0.3.1:
-    resolution: {integrity: sha512-RzaGXLNt+CW+T41h1zl6pGz3EaeVhYlK+rdAap+7DxW5kqsqePO8kRtWPaCiVqdhZc86EctSPVYNix30YOMzmw==}
+  unzip-stream@0.3.4:
+    resolution: {integrity: sha512-PyofABPVv+d7fL7GOpusx7eRT9YETY2X04PhwbSipdj6bMxVCFJrr+nm0Mxqbf9hUiTin/UsnuFWBXlDZFy0Cw==}
 
   update-browserslist-db@1.0.11:
     resolution: {integrity: sha512-dCwEFf0/oT85M1fHBg4F0jtLwJrutGoHSQXCh7u4o2t1drG+c0a9Flnqww6XUKSfQMPpJBRjU8d4RXB09qtvaA==}
@@ -4674,7 +4674,7 @@ snapshots:
     dependencies:
       request: 2.88.2
       tar: 6.1.15
-      unzip-stream: 0.3.1
+      unzip-stream: 0.3.4
 
   bl@4.1.0:
     dependencies:
@@ -7054,7 +7054,7 @@ snapshots:
 
   unpipe@1.0.0: {}
 
-  unzip-stream@0.3.1:
+  unzip-stream@0.3.4:
     dependencies:
       binary: 0.3.0
       mkdirp: 0.5.6
