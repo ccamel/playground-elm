@@ -19,6 +19,7 @@ import Page.Maze
 import Page.Physics
 import Page.SoundWaveToggle
 import Page.Term
+import Page.Terrain
 import Task
 import Tuple exposing (first, second)
 import Url
@@ -95,6 +96,9 @@ update msg model =
 
                 ( glslModel, glslCmd ) =
                     Page.Glsl.init
+
+                ( terrainModel, terrainCmd ) =
+                    Page.Terrain.init
             in
             case newRoute of
                 NotFoundRoute ->
@@ -136,6 +140,9 @@ update msg model =
                 Page Glsl ->
                     ( { clearedModel | route = newRoute, pages = { emptyPagesModel | glslPage = Just glslModel } }, Cmd.map GlslPageMsg glslCmd )
 
+                Page Terrain ->
+                    ( { clearedModel | route = newRoute, pages = { emptyPagesModel | terrainPage = Just terrainModel } }, Cmd.map TerrainPageMsg terrainCmd )
+
         -- messages from pages
         AboutPageMsg m ->
             convert model m .aboutPage Page.About.update (\mdl -> { model | pages = { pages | aboutPage = Just mdl } }) AboutPageMsg
@@ -169,6 +176,9 @@ update msg model =
 
         GlslPageMsg m ->
             convert model m .glslPage Page.Glsl.update (\mdl -> { model | pages = { pages | glslPage = Just mdl } }) GlslPageMsg
+
+        TerrainPageMsg m ->
+            convert model m .terrainPage Page.Terrain.update (\mdl -> { model | pages = { pages | terrainPage = Just mdl } }) TerrainPageMsg
 
 
 init : Flags -> Url.Url -> Nav.Key -> ( Model, Cmd App.Messages.Msg )

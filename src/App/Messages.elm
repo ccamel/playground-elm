@@ -12,6 +12,7 @@ import Page.Maze
 import Page.Physics
 import Page.SoundWaveToggle
 import Page.Term
+import Page.Terrain
 import Url exposing (Url)
 
 
@@ -27,6 +28,7 @@ type Page
     | Dapp
     | SoundWaveToggle
     | Glsl
+    | Terrain
 
 
 type Msg
@@ -45,3 +47,4 @@ type Msg
     | DappPageMsg Page.Dapp.Msg
     | SoundWaveTogglePageMsg Page.SoundWaveToggle.Msg
     | GlslPageMsg Page.Glsl.Msg
+    | TerrainPageMsg Page.Terrain.Msg
