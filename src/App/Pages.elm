@@ -15,6 +15,7 @@ import Page.Maze
 import Page.Physics
 import Page.SoundWaveToggle
 import Page.Term
+import Page.Terrain
 
 
 emptyNode : Html msg
@@ -48,6 +49,7 @@ pages =
     , Dapp
     , SoundWaveToggle
     , Glsl
+    , Terrain
     ]
 
 
@@ -119,6 +121,9 @@ pageSpec page =
 
         Glsl ->
             toSpec Page.Glsl.info Page.Glsl.view Page.Glsl.subscriptions GlslPageMsg (\model -> model.pages.glslPage)
+
+        Terrain ->
+            toSpec Page.Terrain.info Page.Terrain.view Page.Terrain.subscriptions TerrainPageMsg (\model -> model.pages.terrainPage)
 
 
 pageName : Page -> String

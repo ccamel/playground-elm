@@ -12,6 +12,7 @@ import Page.Maze
 import Page.Physics
 import Page.SoundWaveToggle
 import Page.Term
+import Page.Terrain
 import Url exposing (Url)
 import Url.Parser exposing (Parser, fragment, map, oneOf, parse, s)
 
@@ -72,6 +73,9 @@ parseFragment fragment =
 
             else if p == Page.Glsl.info.name then
                 Page Glsl
+
+            else if p == Page.Terrain.info.name then
+                Page Terrain
 
             else
                 NotFoundRoute

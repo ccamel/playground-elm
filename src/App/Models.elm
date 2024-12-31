@@ -14,6 +14,7 @@ import Page.Maze
 import Page.Physics
 import Page.SoundWaveToggle
 import Page.Term
+import Page.Terrain
 
 
 type alias PagesModel =
@@ -28,6 +29,7 @@ type alias PagesModel =
     , dappPage : Maybe Page.Dapp.Model
     , soundWaveTogglePage : Maybe Page.SoundWaveToggle.Model
     , glslPage : Maybe Page.Glsl.Model
+    , terrainPage : Maybe Page.Terrain.Model
     }
 
 
@@ -41,7 +43,7 @@ type alias Model =
     }
 
 
-emptyPagesModel : { aboutPage : Maybe a, calcPage : Maybe b, lissajousPage : Maybe c, digitalClockPage : Maybe d, mazePage : Maybe e, physicsPage : Maybe f, termPage : Maybe g, asteroidsPage : Maybe h, dappPage : Maybe i, soundWaveTogglePage : Maybe j, glslPage : Maybe k }
+emptyPagesModel : { aboutPage : Maybe a, calcPage : Maybe b, lissajousPage : Maybe c, digitalClockPage : Maybe d, mazePage : Maybe e, physicsPage : Maybe f, termPage : Maybe g, asteroidsPage : Maybe h, dappPage : Maybe i, soundWaveTogglePage : Maybe j, glslPage : Maybe k, terrainPage : Maybe l }
 emptyPagesModel =
     { aboutPage = Nothing
     , calcPage = Nothing
@@ -54,4 +56,5 @@ emptyPagesModel =
     , dappPage = Nothing
     , soundWaveTogglePage = Nothing
     , glslPage = Nothing
+    , terrainPage = Nothing
     }
