@@ -2,15 +2,17 @@ module Page.Terrain exposing (Model, Msg, info, init, subscriptions, update, vie
 
 import Basics.Extra exposing (curry)
 import Browser.Events exposing (onAnimationFrameDelta)
-import Html exposing (Html, div, section)
-import Html.Attributes as Attr
+import Html exposing (Html, div, input, p, section, text)
+import Html.Attributes as Attr exposing (name, size, type_, value)
+import Html.Events exposing (onInput)
 import Lib.Page
+import Lib.String exposing (strToFloatWithMinMax)
 import Markdown
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Random exposing (Seed)
 import String exposing (fromFloat, fromInt, join)
-import Svg exposing (Svg, rect, svg)
-import Svg.Attributes exposing (class, d, fill, height, points, stroke, strokeWidth, style, transform, version, viewBox, width, x, y)
+import Svg exposing (Svg, rect)
+import Svg.Attributes as SvgAttr exposing (class, d, fill, points, stroke, strokeWidth, style, transform, version, viewBox, x, y)
 
 
 
@@ -42,6 +44,7 @@ type alias Parameters =
     , offsetFactor : Float
     , depth : Int
     , hurst : Float
+    , mountainProbability : Float
     }
 
 
@@ -67,7 +70,7 @@ init =
             Random.initialSeed 42
 
         curveGenerator =
-            generateFractal parameters.depth parameters.hurst
+            generateFractal parameters.depth parameters.hurst (initialCurve parameters.mountainProbability)
 
         ( curves, finalSeed ) =
             Random.step (terrainGenerator (\idx -> toFloat idx) curveGenerator parameters.nbCurves) initialSeed
@@ -86,12 +89,13 @@ initialParameters : Parameters
 initialParameters =
     { width = 320
     , height = 200
-    , speed = 20
+    , speed = 2
     , nbCurves = 40
     , near = 300
     , offsetFactor = 20.0
     , depth = 4
     , hurst = 0.3
+    , mountainProbability = 0.1
     }
 
 
@@ -101,6 +105,8 @@ initialParameters =
 
 type Msg
     = GotAnimationFrameDeltaMilliseconds Float
+    | SetSpeed String
+    | SetMountainProbability String
 
 
 
@@ -128,7 +134,7 @@ update msg (Model ({ terrain, time, parameters, seed } as model)) =
                         parameters.nbCurves - terrainSize
 
                     curveGenerator =
-                        generateFractal parameters.depth parameters.hurst
+                        generateFractal parameters.depth parameters.hurst (initialCurve parameters.mountainProbability)
 
                     ( newTerrain, newSeed ) =
                         Random.step (terrainGenerator (\idx -> toFloat (terrainSize + idx + 1)) curveGenerator neededLayers) seed
@@ -138,6 +144,26 @@ update msg (Model ({ terrain, time, parameters, seed } as model)) =
                     , terrain = updatedTerrain ++ newTerrain
                     , seed = newSeed
                   }
+                , Cmd.none
+                )
+
+            SetSpeed newSpeed ->
+                ( case strToFloatWithMinMax newSpeed 0 25 of
+                    Just v ->
+                        { model | parameters = { parameters | speed = v } }
+
+                    Nothing ->
+                        model
+                , Cmd.none
+                )
+
+            SetMountainProbability newPMountain ->
+                ( case strToFloatWithMinMax newPMountain 0 100 of
+                    Just v ->
+                        { model | parameters = { parameters | mountainProbability = v / 100 } }
+
+                    Nothing ->
+                        model
                 , Cmd.none
                 )
 
@@ -157,19 +183,6 @@ subscriptions _ =
 
 view : Model -> Html Msg
 view (Model { parameters, terrain }) =
-    let
-        scaleFactor =
-            2
-
-        offsetX =
-            toFloat parameters.width * (1 - scaleFactor) / 2
-
-        offsetYPct =
-            0.4
-
-        offsetY =
-            offsetYPct * toFloat parameters.height
-    in
     section [ Attr.class "section pt-1 has-background-black-bis" ]
         [ div [ Attr.class "container is-max-tablet" ]
             [ div
@@ -180,34 +193,38 @@ view (Model { parameters, terrain }) =
                             [ div
                                 [ style ""
                                 ]
-                                [ svg
-                                    [ version "1.1"
-                                    , class "world mx-auto"
-                                    , width "100%"
-                                    , style "max-width: 1024px"
-                                    , height "100%"
-                                    , viewBox (join " " [ "0", "0", fromInt parameters.width, fromInt parameters.height ])
-                                    ]
-                                    [ Svg.g
-                                        [ Attr.id "background" ]
-                                        [ rect
-                                            [ x "0"
-                                            , y "0"
-                                            , width (fromInt parameters.width)
-                                            , height (fromInt parameters.height)
-                                            , fill "black"
-                                            , strokeWidth "0"
-                                            ]
-                                            []
-                                        ]
-                                    , Svg.g
-                                        [ transform ("translate(" ++ fromFloat offsetX ++ "," ++ fromFloat (toFloat parameters.height + offsetY) ++ ") scale(" ++ fromFloat scaleFactor ++ ", -1)") ]
-                                        [ Svg.g
-                                            [ Attr.id "terrain" ]
-                                            (viewTerrain parameters terrain)
-                                        ]
-                                    ]
+                                [ viewTerrain parameters terrain
                                 ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        , div [ class "columns" ]
+            [ div [ class "column is-8 is-offset-2" ]
+                [ div [ class "content is-medium" ]
+                    [ div [ class "content is-medium" ]
+                        [ p []
+                            [ text "The speed of the flyover is "
+                            , input
+                                [ class "input input-number is-small is-inline"
+                                , name "speed"
+                                , type_ "number"
+                                , size 3
+                                , value (fromFloat parameters.speed)
+                                , onInput SetSpeed
+                                ]
+                                []
+                            , text ". You can also change the probability (%) of a mountain: "
+                            , input
+                                [ class "input input-number is-small is-inline"
+                                , name "mountainProbability"
+                                , type_ "number"
+                                , size 3
+                                , value (fromFloat <| parameters.mountainProbability * 100)
+                                , onInput SetMountainProbability
+                                ]
+                                []
                             ]
                         ]
                     ]
@@ -217,57 +234,90 @@ view (Model { parameters, terrain }) =
 
 
 type alias ViewTerrainParams a =
-    { a | width : Int, near : Float, offsetFactor : Float }
+    { a | width : Int, height : Int, near : Float, offsetFactor : Float }
 
 
-viewTerrain : ViewTerrainParams a -> Terrain -> List (Svg Msg)
-viewTerrain { width, near, offsetFactor } terrain =
-    terrain
-        |> List.reverse
-        |> List.indexedMap
-            (\idx { curve, offset } ->
-                let
-                    z =
-                        offset * offsetFactor
+viewTerrain : ViewTerrainParams a -> Terrain -> Svg Msg
+viewTerrain { width, height, near, offsetFactor } terrain =
+    let
+        scaleFactor =
+            2
 
-                    ( zoomX, zoomY ) =
-                        ( toFloat width / (toFloat <| List.length curve)
-                        , 1
-                        )
+        offsetYPct =
+            0.4
 
-                    perspectiveFactor =
-                        near / (near + z)
+        ( offsetX, offsetY ) =
+            ( toFloat width * (1 - scaleFactor) / 2, offsetYPct * toFloat height )
 
-                    ( perspectiveX, perspectiveY ) =
-                        ( perspectiveFactor, perspectiveFactor )
+        terrains =
+            terrain
+                |> List.reverse
+                |> List.indexedMap
+                    (\idx { curve, offset } ->
+                        let
+                            z =
+                                offset * offsetFactor
 
-                    ( scaleX, scaleY ) =
-                        ( zoomX * perspectiveX
-                        , zoomY * perspectiveY
-                        )
+                            ( zoomX, zoomY ) =
+                                ( toFloat width / (toFloat <| List.length curve), 1 )
 
-                    ( translateX, translateY ) =
-                        ( toFloat width * (1 - perspectiveX) / 2
-                        , z * perspectiveY
-                        )
-                in
-                Svg.g
-                    [ Attr.id ("layer-" ++ fromInt idx)
-                    , transform
-                        ("translate("
-                            ++ fromFloat translateX
-                            ++ ","
-                            ++ fromFloat translateY
-                            ++ ") "
-                            ++ "scale("
-                            ++ fromFloat scaleX
-                            ++ ","
-                            ++ fromFloat scaleY
-                            ++ ")"
-                        )
-                    ]
-                    (viewCurve curve)
-            )
+                            perspectiveFactor =
+                                near / (near + z)
+
+                            ( perspectiveX, perspectiveY ) =
+                                ( perspectiveFactor, perspectiveFactor )
+
+                            ( scaleX, scaleY ) =
+                                ( zoomX * perspectiveX, zoomY * perspectiveY )
+
+                            ( translateX, translateY ) =
+                                ( toFloat width * (1 - perspectiveX) / 2, z * perspectiveY )
+                        in
+                        Svg.g
+                            [ Attr.id ("layer-" ++ fromInt idx)
+                            , transform
+                                ("translate("
+                                    ++ fromFloat translateX
+                                    ++ ","
+                                    ++ fromFloat translateY
+                                    ++ ") "
+                                    ++ "scale("
+                                    ++ fromFloat scaleX
+                                    ++ ","
+                                    ++ fromFloat scaleY
+                                    ++ ")"
+                                )
+                            ]
+                            (viewCurve curve)
+                    )
+    in
+    Svg.svg
+        [ version "1.1"
+        , class "world mx-auto"
+        , SvgAttr.width "100%"
+        , style "max-width: 1024px"
+        , SvgAttr.height "100%"
+        , viewBox (join " " [ "0", "0", fromInt width, fromInt height ])
+        ]
+        [ Svg.g
+            [ Attr.id "background" ]
+            [ rect
+                [ x "0"
+                , y "0"
+                , SvgAttr.width (fromInt width)
+                , SvgAttr.height (fromInt height)
+                , fill "black"
+                , strokeWidth "0"
+                ]
+                []
+            ]
+        , Svg.g
+            [ transform ("translate(" ++ fromFloat offsetX ++ "," ++ fromFloat (toFloat height + offsetY) ++ ") scale(" ++ fromFloat scaleFactor ++ ", -1)") ]
+            [ Svg.g
+                [ Attr.id "terrain" ]
+                terrains
+            ]
+        ]
 
 
 viewCurve : Curve -> List (Svg Msg)
@@ -277,42 +327,18 @@ viewCurve curve =
             curve
                 |> curvePoints
                 |> List.map (\p -> ( p |> Vec2.getX, p |> Vec2.getY ))
+                |> List.map (\( x, y ) -> String.fromFloat x ++ "," ++ String.fromFloat y)
 
         path =
-            pts
-                |> List.indexedMap
-                    (\idx ( x, y ) ->
-                        let
-                            sx =
-                                x |> String.fromFloat
-
-                            sy =
-                                y |> String.fromFloat
-
-                            point =
-                                sx ++ "," ++ sy
-                        in
-                        if idx == 0 then
-                            "M 0, 0 L " ++ point
-
-                        else if idx == List.length curve - 1 then
-                            point ++ " L " ++ sx ++ ", 0 L 0, 0"
-
-                        else
-                            "L " ++ point
-                    )
-                |> join " "
+            "M 0,0 "
+                ++ List.foldl (\p acc -> acc ++ " L " ++ p) "" pts
+                ++ " V 0 Z"
 
         polyline =
-            pts
-                |> List.map
-                    (\( x, y ) ->
-                        String.fromFloat x ++ "," ++ String.fromFloat y
-                    )
-                |> join " "
+            join " " pts
     in
     [ Svg.path [ d path, fill "black", stroke "none" ] []
-    , Svg.polyline [ points polyline, stroke "blue", strokeWidth "0.5" ] []
+    , Svg.polyline [ points polyline, fill "none", stroke "blue", strokeWidth "0.5" ] []
     ]
 
 
@@ -356,13 +382,13 @@ curvePoints =
     curvePointsWith toFloat
 
 
-initialCurve : Random.Generator Curve
-initialCurve =
+initialCurve : Float -> Random.Generator Curve
+initialCurve mountainProbability =
     Random.list 7
-        (Random.float 0 100
+        (Random.float 0 1
             |> Random.andThen
                 (\p ->
-                    if p < 70 then
+                    if p < mountainProbability then
                         Random.float 10 100
 
                     else
@@ -371,9 +397,9 @@ initialCurve =
         )
 
 
-generateFractal : Int -> Float -> Random.Generator Curve
-generateFractal depth hurst =
-    fBm depth hurst initialCurve
+generateFractal : Int -> Float -> Random.Generator Curve -> Random.Generator Curve
+generateFractal depth hurst curveGenerator =
+    fBm depth hurst curveGenerator
 
 
 

@@ -7,5 +7,5 @@ module Lib.Range exposing (limitRange)
 limitRange : ( comparable, comparable ) -> comparable -> comparable
 limitRange ( minv, maxv ) v =
     v
-        |> Basics.min maxv
-        |> Basics.max minv
+        |> min maxv
+        |> max minv
