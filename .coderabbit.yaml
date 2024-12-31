@@ -1,0 +1,27 @@
+language: "en-US"
+early_access: true
+tone_instructions: >-
+  Maintain a friendly tone, focusing on identifying issues and suggesting
+  elegant, pragmatic solutions.
+reviews:
+  profile: "chill"
+  request_changes_workflow: true
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  path_instructions:
+    - path: "**/*.elm"
+      instructions: >-
+        Review the Elm code with attention to:
+        - Principles of clean code (readability, simplicity, minimalism).
+        - Expressiveness and idiomatic use of Elm.
+        - Performance considerations in functional programming.
+
+        Suggest best practices and improvements where applicable.
+  auto_review:
+    enabled: true
+    drafts: false
+    auto_incremental_review: false # review on demand
+chat:
+  auto_reply: true
