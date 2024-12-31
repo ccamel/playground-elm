@@ -44,6 +44,7 @@ type alias Parameters =
     , offsetFactor : Float
     , depth : Int
     , hurst : Float
+    , mountainProbability : Float
     }
 
 
@@ -69,7 +70,7 @@ init =
             Random.initialSeed 42
 
         curveGenerator =
-            generateFractal parameters.depth parameters.hurst
+            generateFractal parameters.depth parameters.hurst (initialCurve parameters.mountainProbability)
 
         ( curves, finalSeed ) =
             Random.step (terrainGenerator (\idx -> toFloat idx) curveGenerator parameters.nbCurves) initialSeed
@@ -94,6 +95,7 @@ initialParameters =
     , offsetFactor = 20.0
     , depth = 4
     , hurst = 0.3
+    , mountainProbability = 0.1
     }
 
 
@@ -104,6 +106,7 @@ initialParameters =
 type Msg
     = GotAnimationFrameDeltaMilliseconds Float
     | SetSpeed String
+    | SetMountainProbability String
 
 
 
@@ -131,7 +134,7 @@ update msg (Model ({ terrain, time, parameters, seed } as model)) =
                         parameters.nbCurves - terrainSize
 
                     curveGenerator =
-                        generateFractal parameters.depth parameters.hurst
+                        generateFractal parameters.depth parameters.hurst (initialCurve parameters.mountainProbability)
 
                     ( newTerrain, newSeed ) =
                         Random.step (terrainGenerator (\idx -> toFloat (terrainSize + idx + 1)) curveGenerator neededLayers) seed
@@ -148,6 +151,16 @@ update msg (Model ({ terrain, time, parameters, seed } as model)) =
                 ( case strToFloatWithMinMax newSpeed 0 25 of
                     Just v ->
                         { model | parameters = { parameters | speed = v } }
+
+                    Nothing ->
+                        model
+                , Cmd.none
+                )
+
+            SetMountainProbability newPMountain ->
+                ( case strToFloatWithMinMax newPMountain 0 100 of
+                    Just v ->
+                        { model | parameters = { parameters | mountainProbability = v / 100 } }
 
                     Nothing ->
                         model
@@ -202,7 +215,16 @@ view (Model { parameters, terrain }) =
                                 , onInput SetSpeed
                                 ]
                                 []
-                            , text "."
+                            , text ". You can also change the probability (%) of a mountain: "
+                            , input
+                                [ class "input input-number is-small is-inline"
+                                , name "mountainProbability"
+                                , type_ "number"
+                                , size 3
+                                , value (fromFloat <| parameters.mountainProbability * 100)
+                                , onInput SetMountainProbability
+                                ]
+                                []
                             ]
                         ]
                     ]
@@ -360,13 +382,13 @@ curvePoints =
     curvePointsWith toFloat
 
 
-initialCurve : Random.Generator Curve
-initialCurve =
+initialCurve : Float -> Random.Generator Curve
+initialCurve mountainProbability =
     Random.list 7
-        (Random.float 0 100
+        (Random.float 0 1
             |> Random.andThen
                 (\p ->
-                    if p < 70 then
+                    if p < mountainProbability then
                         Random.float 10 100
 
                     else
@@ -375,9 +397,9 @@ initialCurve =
         )
 
 
-generateFractal : Int -> Float -> Random.Generator Curve
-generateFractal depth hurst =
-    fBm depth hurst initialCurve
+generateFractal : Int -> Float -> Random.Generator Curve -> Random.Generator Curve
+generateFractal depth hurst curveGenerator =
+    fBm depth hurst curveGenerator
 
 
 
