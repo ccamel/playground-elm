@@ -38,6 +38,10 @@ type alias Parameters =
     , height : Int
     , speed : Float
     , nbCurves : Int
+    , near : Float
+    , offsetFactor : Float
+    , depth : Int
+    , hurst : Float
     }
 
 
@@ -62,8 +66,11 @@ init =
         initialSeed =
             Random.initialSeed 42
 
+        curveGenerator =
+            generateFractal parameters.depth parameters.hurst
+
         ( curves, finalSeed ) =
-            Random.step (terrainGenerator (\idx -> toFloat idx) parameters.nbCurves) initialSeed
+            Random.step (terrainGenerator (\idx -> toFloat idx) curveGenerator parameters.nbCurves) initialSeed
     in
     ( Model
         { parameters = parameters
@@ -81,6 +88,10 @@ initialParameters =
     , height = 200
     , speed = 20
     , nbCurves = 40
+    , near = 300
+    , offsetFactor = 20.0
+    , depth = 4
+    , hurst = 0.3
     }
 
 
@@ -116,8 +127,11 @@ update msg (Model ({ terrain, time, parameters, seed } as model)) =
                     neededLayers =
                         parameters.nbCurves - terrainSize
 
+                    curveGenerator =
+                        generateFractal parameters.depth parameters.hurst
+
                     ( newTerrain, newSeed ) =
-                        Random.step (terrainGenerator (\idx -> toFloat (terrainSize + idx + 1)) neededLayers) seed
+                        Random.step (terrainGenerator (\idx -> toFloat (terrainSize + idx + 1)) curveGenerator neededLayers) seed
                 in
                 ( { model
                     | time = time + delta
@@ -190,7 +204,7 @@ view (Model { parameters, terrain }) =
                                         [ transform ("translate(" ++ fromFloat offsetX ++ "," ++ fromFloat (toFloat parameters.height + offsetY) ++ ") scale(" ++ fromFloat scaleFactor ++ ", -1)") ]
                                         [ Svg.g
                                             [ Attr.id "terrain" ]
-                                            (viewTerrain parameters.width terrain)
+                                            (viewTerrain parameters terrain)
                                         ]
                                     ]
                                 ]
@@ -202,18 +216,19 @@ view (Model { parameters, terrain }) =
         ]
 
 
-viewTerrain : Int -> Terrain -> List (Svg Msg)
-viewTerrain width terrain =
+type alias ViewTerrainParams a =
+    { a | width : Int, near : Float, offsetFactor : Float }
+
+
+viewTerrain : ViewTerrainParams a -> Terrain -> List (Svg Msg)
+viewTerrain { width, near, offsetFactor } terrain =
     terrain
         |> List.reverse
         |> List.indexedMap
             (\idx { curve, offset } ->
                 let
-                    near =
-                        300.0
-
                     z =
-                        offset * 20
+                        offset * offsetFactor
 
                     ( zoomX, zoomY ) =
                         ( toFloat width / (toFloat <| List.length curve)
@@ -356,9 +371,9 @@ initialCurve =
         )
 
 
-generateFractal : Random.Generator Curve
-generateFractal =
-    fBm 4 0.3 initialCurve
+generateFractal : Int -> Float -> Random.Generator Curve
+generateFractal depth hurst =
+    fBm depth hurst initialCurve
 
 
 
@@ -376,9 +391,9 @@ moveTerrain delta =
     List.map (moveCurve delta)
 
 
-terrainGenerator : (Int -> Float) -> Int -> Random.Generator Terrain
-terrainGenerator indexToOffset count =
-    Random.list count generateFractal
+terrainGenerator : (Int -> Float) -> Random.Generator Curve -> Int -> Random.Generator Terrain
+terrainGenerator indexToOffset curveGenerator nbCurves =
+    Random.list nbCurves curveGenerator
         |> Random.map (List.indexedMap (\idx curve -> curveAt (indexToOffset idx) curve))
 
 
