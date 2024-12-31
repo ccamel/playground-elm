@@ -277,42 +277,18 @@ viewCurve curve =
             curve
                 |> curvePoints
                 |> List.map (\p -> ( p |> Vec2.getX, p |> Vec2.getY ))
+                |> List.map (\( x, y ) -> String.fromFloat x ++ "," ++ String.fromFloat y)
 
         path =
-            pts
-                |> List.indexedMap
-                    (\idx ( x, y ) ->
-                        let
-                            sx =
-                                x |> String.fromFloat
-
-                            sy =
-                                y |> String.fromFloat
-
-                            point =
-                                sx ++ "," ++ sy
-                        in
-                        if idx == 0 then
-                            "M 0, 0 L " ++ point
-
-                        else if idx == List.length curve - 1 then
-                            point ++ " L " ++ sx ++ ", 0 L 0, 0"
-
-                        else
-                            "L " ++ point
-                    )
-                |> join " "
+            "M 0,0 "
+                ++ List.foldl (\p acc -> acc ++ " L " ++ p) "" pts
+                ++ " V 0 Z"
 
         polyline =
-            pts
-                |> List.map
-                    (\( x, y ) ->
-                        String.fromFloat x ++ "," ++ String.fromFloat y
-                    )
-                |> join " "
+            join " " pts
     in
     [ Svg.path [ d path, fill "black", stroke "none" ] []
-    , Svg.polyline [ points polyline, stroke "blue", strokeWidth "0.5" ] []
+    , Svg.polyline [ points polyline, fill "none", stroke "blue", strokeWidth "0.5" ] []
     ]
 
 
