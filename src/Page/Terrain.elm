@@ -2,6 +2,8 @@ module Page.Terrain exposing (Model, Msg, info, init, subscriptions, update, vie
 
 import Basics.Extra exposing (curry)
 import Browser.Events exposing (onAnimationFrameDelta)
+import Color exposing (toCssString)
+import Color.Manipulate exposing (darken)
 import Html exposing (Html, div, input, p, section, text)
 import Html.Attributes as Attr exposing (name, size, type_, value)
 import Html.Events exposing (onInput)
@@ -46,6 +48,8 @@ type alias Parameters =
     , depth : Int
     , hurst : Float
     , mountainProbability : Float
+    , shapeColor : Color.Color
+    , groundColor : Color.Color
     }
 
 
@@ -98,6 +102,8 @@ initialParameters =
     , depth = 4
     , hurst = 0.3
     , mountainProbability = 0.1
+    , shapeColor = Color.blue
+    , groundColor = darken 0.3 Color.blue
     }
 
 
@@ -236,11 +242,11 @@ view (Model { parameters, terrain }) =
 
 
 type alias ViewTerrainParams a =
-    { a | width : Int, height : Int, near : Float, offsetFactor : Float, xScale : Float }
+    { a | width : Int, height : Int, near : Float, offsetFactor : Float, xScale : Float, shapeColor : Color.Color, groundColor : Color.Color }
 
 
 viewTerrain : ViewTerrainParams a -> Terrain -> Svg Msg
-viewTerrain { width, height, near, offsetFactor, xScale } terrain =
+viewTerrain ({ width, height, near, offsetFactor, xScale } as params) terrain =
     let
         offsetYPct =
             0.5
@@ -287,7 +293,7 @@ viewTerrain { width, height, near, offsetFactor, xScale } terrain =
                                     ++ ")"
                                 )
                             ]
-                            (viewCurve curve)
+                            (viewCurve params curve)
                     )
     in
     Svg.svg
@@ -319,25 +325,30 @@ viewTerrain { width, height, near, offsetFactor, xScale } terrain =
         ]
 
 
-viewCurve : Curve -> List (Svg Msg)
-viewCurve curve =
+type alias ViewCurveParams a =
+    { a | shapeColor : Color.Color, groundColor : Color.Color }
+
+
+viewCurve : ViewCurveParams a -> Curve -> List (Svg Msg)
+viewCurve { shapeColor, groundColor } curve =
     let
         pts =
             curve
                 |> curvePoints
-                |> List.map (\p -> ( p |> Vec2.getX, p |> Vec2.getY ))
-                |> List.map (\( x, y ) -> String.fromFloat x ++ "," ++ String.fromFloat y)
+                |> List.map (\p -> String.fromFloat (Vec2.getX p) ++ "," ++ String.fromFloat (Vec2.getY p))
 
         path =
-            "M 0,0 "
-                ++ List.foldl (\p acc -> acc ++ " L " ++ p) "" pts
-                ++ " V 0 Z"
+            "M 0,0 " ++ String.join " L " pts ++ " V 0 Z"
 
         polyline =
-            join " " pts
+            String.join " " pts
+
+        groundPath =
+            "M 0,0 L " ++ String.fromInt (List.length curve) ++ ",0"
     in
     [ Svg.path [ d path, fill "black", stroke "none" ] []
-    , Svg.polyline [ points polyline, fill "none", stroke "blue", strokeWidth "0.5" ] []
+    , Svg.polyline [ points polyline, fill "none", stroke <| toCssString shapeColor, strokeWidth "0.5" ] []
+    , Svg.path [ d groundPath, fill "none", stroke <| toCssString groundColor, strokeWidth "0.8" ] []
     ]
 
 
