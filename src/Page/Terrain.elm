@@ -42,6 +42,7 @@ type alias Parameters =
     , nbCurves : Int
     , near : Float
     , offsetFactor : Float
+    , xScale : Float
     , depth : Int
     , hurst : Float
     , mountainProbability : Float
@@ -93,6 +94,7 @@ initialParameters =
     , nbCurves = 40
     , near = 300
     , offsetFactor = 20.0
+    , xScale = 3.5
     , depth = 4
     , hurst = 0.3
     , mountainProbability = 0.1
@@ -234,20 +236,17 @@ view (Model { parameters, terrain }) =
 
 
 type alias ViewTerrainParams a =
-    { a | width : Int, height : Int, near : Float, offsetFactor : Float }
+    { a | width : Int, height : Int, near : Float, offsetFactor : Float, xScale : Float }
 
 
 viewTerrain : ViewTerrainParams a -> Terrain -> Svg Msg
-viewTerrain { width, height, near, offsetFactor } terrain =
+viewTerrain { width, height, near, offsetFactor, xScale } terrain =
     let
-        scaleFactor =
-            2
-
         offsetYPct =
-            0.4
+            0.5
 
         ( offsetX, offsetY ) =
-            ( toFloat width * (1 - scaleFactor) / 2, offsetYPct * toFloat height )
+            ( toFloat width * (1 - xScale) / 2, offsetYPct * toFloat height )
 
         terrains =
             terrain
@@ -312,7 +311,7 @@ viewTerrain { width, height, near, offsetFactor } terrain =
                 []
             ]
         , Svg.g
-            [ transform ("translate(" ++ fromFloat offsetX ++ "," ++ fromFloat (toFloat height + offsetY) ++ ") scale(" ++ fromFloat scaleFactor ++ ", -1)") ]
+            [ transform ("translate(" ++ fromFloat offsetX ++ "," ++ fromFloat (toFloat height + offsetY) ++ ") scale(" ++ fromFloat xScale ++ ", -1)") ]
             [ Svg.g
                 [ Attr.id "terrain" ]
                 terrains
