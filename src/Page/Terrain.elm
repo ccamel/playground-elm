@@ -1,8 +1,7 @@
 module Page.Terrain exposing (Model, Msg, info, init, subscriptions, update, view)
 
-import Basics.Extra exposing (curry)
 import Browser.Events exposing (onAnimationFrameDelta)
-import Color exposing (toCssString)
+import Color exposing (black, blue, toCssString)
 import Color.Manipulate exposing (darken)
 import Html exposing (Html, div, input, p, section, text)
 import Html.Attributes as Attr exposing (name, size, type_, value)
@@ -45,6 +44,7 @@ type alias Parameters =
     , near : Float
     , offsetFactor : Float
     , xScale : Float
+    , yScale : Float
     , depth : Int
     , hurst : Float
     , mountainProbability : Float
@@ -72,7 +72,7 @@ init =
             initialParameters
 
         initialSeed =
-            Random.initialSeed 42
+            Random.initialSeed 40
 
         curveGenerator =
             generateFractal parameters.depth parameters.hurst (initialCurve parameters.mountainProbability)
@@ -99,11 +99,12 @@ initialParameters =
     , near = 300
     , offsetFactor = 20.0
     , xScale = 3.5
+    , yScale = 1.5
     , depth = 4
-    , hurst = 0.3
+    , hurst = 1.2
     , mountainProbability = 0.1
-    , shapeColor = Color.blue
-    , groundColor = darken 0.3 Color.blue
+    , shapeColor = blue
+    , groundColor = darken 0.3 blue
     }
 
 
@@ -242,11 +243,11 @@ view (Model { parameters, terrain }) =
 
 
 type alias ViewTerrainParams a =
-    { a | width : Int, height : Int, near : Float, offsetFactor : Float, xScale : Float, shapeColor : Color.Color, groundColor : Color.Color }
+    { a | width : Int, height : Int, near : Float, offsetFactor : Float, xScale : Float, yScale : Float, shapeColor : Color.Color, groundColor : Color.Color }
 
 
 viewTerrain : ViewTerrainParams a -> Terrain -> Svg Msg
-viewTerrain ({ width, height, near, offsetFactor, xScale } as params) terrain =
+viewTerrain ({ width, height, near, offsetFactor, xScale, yScale } as params) terrain =
     let
         offsetYPct =
             0.5
@@ -264,7 +265,7 @@ viewTerrain ({ width, height, near, offsetFactor, xScale } as params) terrain =
                                 offset * offsetFactor
 
                             ( zoomX, zoomY ) =
-                                ( toFloat width / (toFloat <| List.length curve), 1 )
+                                ( toFloat width / (toFloat <| List.length curve), yScale )
 
                             perspectiveFactor =
                                 near / (near + z)
@@ -311,7 +312,7 @@ viewTerrain ({ width, height, near, offsetFactor, xScale } as params) terrain =
                 , y "0"
                 , SvgAttr.width (fromInt width)
                 , SvgAttr.height (fromInt height)
-                , fill "black"
+                , fill <| toCssString black
                 , strokeWidth "0"
                 ]
                 []
@@ -347,8 +348,9 @@ viewCurve { shapeColor, groundColor } curve =
             "M 0,0 L " ++ String.fromInt (List.length curve) ++ ",0"
     in
     [ Svg.path [ d path, fill "black", stroke "none" ] []
-    , Svg.polyline [ points polyline, fill "none", stroke <| toCssString shapeColor, strokeWidth "0.5" ] []
-    , Svg.path [ d groundPath, fill "none", stroke <| toCssString groundColor, strokeWidth "0.8" ] []
+    , Svg.polyline [ points polyline, fill "none", stroke <| toCssString shapeColor, strokeWidth "0.5" ]
+        []
+    , Svg.path [ d groundPath, fill "none", stroke <| toCssString groundColor, strokeWidth "2" ] []
     ]
 
 
@@ -434,75 +436,55 @@ terrainGenerator indexToOffset curveGenerator nbCurves =
 
 
 
--- MISCELLANEOUS
+-- FBM
 
 
 fBm : Int -> Float -> Random.Generator Curve -> Random.Generator Curve
-fBm depth hurst baseGenerator =
-    List.foldl
-        (\_ gen -> fBmAtDepth depth hurst gen)
-        baseGenerator
-        (List.range 1 depth)
-
-
-fBmAtDepth : Int -> Float -> Random.Generator Curve -> Random.Generator Curve
-fBmAtDepth depth hurst curveGenerator =
-    if depth == 0 then
-        curveGenerator
+fBm depth hurst genCurve =
+    if depth <= 0 then
+        genCurve
 
     else
-        let
-            generateMidpoint : Random.Generator Float -> Random.Generator Float -> Random.Generator Float
-            generateMidpoint a b =
-                Random.map2 (curry (midpointDisplacementGenerator (2 * hurst * (depth |> toFloat)))) a b
-                    |> Random.andThen identity
-
-            refine : List Float -> Random.Generator Curve
-            refine =
-                List.map Random.constant
-                    >> insertBetween generateMidpoint
-                    >> combineGenerators
-        in
-        curveGenerator
-            |> Random.andThen refine
+        genCurve
+            |> Random.andThen
+                (\points ->
+                    subdivideAndCombine points (\( a, b ) -> midpointDisplacementGenerator hurst ( a, b ))
+                        |> Random.andThen
+                            (\refinedPoints ->
+                                fBm (depth - 1) hurst (Random.constant refinedPoints)
+                            )
+                )
 
 
 midpointDisplacementGenerator : Float -> ( Float, Float ) -> Random.Generator Float
 midpointDisplacementGenerator hurst ( a, b ) =
     let
-        midpoint : Float
         midpoint =
             (a + b) / 2
 
-        delta : Float
         delta =
-            abs (a - b) * 2 ^ -hurst
+            abs (a - b) * (2 ^ -hurst)
 
-        rg : Random.Generator Float
-        rg =
+        randomDisplacement =
             Random.float -delta delta
     in
-    rg |> Random.map (\r -> midpoint + r)
+    Random.map (\d -> midpoint + d) randomDisplacement
 
 
-combineGenerators : List (Random.Generator a) -> Random.Generator (List a)
-combineGenerators list =
-    case list of
+subdivideAndCombine :
+    List Float
+    -> (( Float, Float ) -> Random.Generator Float)
+    -> Random.Generator Curve
+subdivideAndCombine points combine =
+    case points of
         [] ->
             Random.constant []
 
-        gen :: gens ->
-            Random.map2 (::) gen (combineGenerators gens)
-
-
-insertBetween : (a -> a -> a) -> List a -> List a
-insertBetween f list =
-    case list of
-        [] ->
-            []
-
         [ x ] ->
-            [ x ]
+            Random.constant [ x ]
 
         x :: y :: rest ->
-            x :: f x y :: insertBetween f (y :: rest)
+            Random.map2
+                (\mid newTail -> x :: mid :: newTail)
+                (combine ( x, y ))
+                (subdivideAndCombine (y :: rest) combine)
