@@ -124,7 +124,7 @@ The publication is launched with the following command:
 pnpm serve
 ```
 
-The site is accessible through the `"/` endpoint.
+The site is accessible through the `http://localhost:1234` endpoint.
 
 ## 🔋 Technologies
 
