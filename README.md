@@ -92,7 +92,7 @@ I finally managed to migrate to this new version but instabilities can be notice
 
 Be sure to have the following properly installed:
 
-- [Node.js](https://nodejs.org/ru/) `v18.17` ([hydrogen](https://nodejs.org/en/blog/release/v18.17.1/))
+- [Node.js](https://nodejs.org/ru/) `v20.18` ([lts/iron](https://nodejs.org/en/blog/release/v20.18.1))
 - [pnpm](https://pnpm.io/) `v8.3`
 
 ### Build
