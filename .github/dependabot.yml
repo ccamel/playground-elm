@@ -12,6 +12,18 @@ updates:
     commit-message:
       prefix: ":arrow_up:"
 
+  - package-ecosystem: elm
+    directory: "/review"
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    assignees:
+      - ccamel
+    reviewers:
+      - ccamel
+    commit-message:
+      prefix: ":arrow_up:"
+
   - package-ecosystem: npm
     directory: "/"
     schedule:
