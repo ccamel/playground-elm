@@ -1,7 +1,7 @@
 module App.Models exposing (Model, PagesModel, emptyPagesModel)
 
 import App.Flags exposing (Flags)
-import App.Routing exposing (Route)
+import App.Route exposing (Route)
 import Browser.Navigation as Nav
 import Page.About
 import Page.Asteroids

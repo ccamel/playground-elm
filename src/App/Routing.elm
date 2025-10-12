@@ -1,26 +1,9 @@
-module App.Routing exposing (Route(..), toRoute)
+module App.Routing exposing (toRoute)
 
-import App.Messages exposing (Page(..))
-import Page.About
-import Page.Asteroids
-import Page.Calc
-import Page.Dapp
-import Page.DigitalClock
-import Page.Glsl
-import Page.Lissajous
-import Page.Maze
-import Page.Physics
-import Page.SoundWaveToggle
-import Page.Term
-import Page.Terrain
+import App.Pages
+import App.Route exposing (Route(..))
 import Url exposing (Url)
 import Url.Parser exposing (Parser, fragment, map, oneOf, parse, s)
-
-
-type Route
-    = Home
-    | Page Page
-    | NotFoundRoute
 
 
 matchRoute : Parser (Route -> a) a
@@ -41,50 +24,26 @@ parseFragment fragment =
             Home
 
         Just p ->
-            if p == Page.About.info.name then
-                Page About
+            case App.Pages.pageFromSlug p of
+                Just page ->
+                    Page page
 
-            else if p == Page.Calc.info.name then
-                Page Calc
-
-            else if p == Page.Lissajous.info.name then
-                Page Lissajous
-
-            else if p == Page.DigitalClock.info.name then
-                Page DigitalClock
-
-            else if p == Page.Maze.info.name then
-                Page Maze
-
-            else if p == Page.Physics.info.name then
-                Page Physics
-
-            else if p == Page.Term.info.name then
-                Page Term
-
-            else if p == Page.Asteroids.info.name then
-                Page Asteroids
-
-            else if p == Page.Dapp.info.name then
-                Page Dapp
-
-            else if p == Page.SoundWaveToggle.info.name then
-                Page SoundWaveToggle
-
-            else if p == Page.Glsl.info.name then
-                Page Glsl
-
-            else if p == Page.Terrain.info.name then
-                Page Terrain
-
-            else
-                NotFoundRoute
+                Nothing ->
+                    NotFoundRoute
 
 
 {-| returns the route parsed given the provided Url
 -}
 toRoute : String -> Url -> Route
 toRoute basePath url =
-    { url | path = String.replace basePath "" url.path }
+    let
+        newPath =
+            if basePath == "" then
+                url.path
+
+            else
+                String.replace basePath "" url.path
+    in
+    { url | path = newPath }
         |> parse matchRoute
         |> Maybe.withDefault NotFoundRoute

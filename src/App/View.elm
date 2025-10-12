@@ -4,7 +4,7 @@ import App.Flags exposing (Flags)
 import App.Messages exposing (Msg, Page)
 import App.Models exposing (Model)
 import App.Pages exposing (pageDate, pageDescription, pageGithubLink, pageHash, pageName, pageView, pages)
-import App.Routing exposing (Route(..))
+import App.Route exposing (Route(..))
 import Browser
 import Html exposing (Html, a, article, br, div, footer, h1, h2, h3, hr, i, img, main_, p, section, span, strong, text)
 import Html.Attributes exposing (attribute, class, classList, href, src, title, width)
