@@ -24,9 +24,9 @@
     "email": "camel.christophe@gmail.com"
   },
   "engines": {
-    "node": "^22.20.0",
-    "pnpm": "^9.1.2"
+    "node": "^22.20.0"
   },
+  "packageManager": "pnpm@10.15.0",
   "targets": {
     "modern": {
       "engines": {

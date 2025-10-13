@@ -27,7 +27,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9.1.2
+          version: '10.15.0'
 
       - name: Setup node environment (for building)
         uses: actions/setup-node@v5
