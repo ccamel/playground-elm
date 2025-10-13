@@ -2,7 +2,7 @@ name: Publish
 
 on:
   push:
-    tags: ['*']
+    tags: ["*"]
 
 concurrency:
   group: publish-${{ github.ref }}
@@ -24,16 +24,26 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v5
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: '10.15.0'
-
       - name: Setup node environment (for building)
         uses: actions/setup-node@v5
         with:
-          node-version: '22.20'
-          cache: "pnpm"
+          node-version: "22.20"
+          package-manager-cache: false
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Get pnpm store path
+        id: pnpm-store
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
 
       - name: Fetch dependencies
         run: |
