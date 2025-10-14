@@ -67,7 +67,7 @@
     "elm-json": "^0.2.13",
     "elm-review": "^2.13.2",
     "eslint": "^9.23.0",
-    "eslint-config-prettier": "^10.1.1",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.2.5",
     "github-fork-ribbon-css": "^0.2.3",
     "globals": "^16.4.0",
