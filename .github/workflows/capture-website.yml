@@ -65,7 +65,7 @@ jobs:
             $WEBSITE_URL
 
       - name: Commit changes
-        uses: stefanzweifel/git-auto-commit-action@v6
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           file_pattern: ${{ env.SCREENSHOT_FILE }}
           commit_user_name: ${{ secrets.USER_NAME }}
