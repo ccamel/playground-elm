@@ -1,0 +1,10 @@
+onlyBuiltDependencies:
+  - '@swc/core'
+  - bufferutil
+  - core-js
+  - elm
+  - elm-format
+  - elm-json
+  - lmdb
+  - msgpackr-extract
+  - utf-8-validate
