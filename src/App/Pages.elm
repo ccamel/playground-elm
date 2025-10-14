@@ -71,7 +71,7 @@ toSpec :
     -> PageSpec
 toSpec page info initFn updateFn viewFn subscriptionsFn wrap unwrap getPage setPage =
     { page = page
-    , slug = info.name
+    , slug = info.hash
     , info =
         { name = info.name
         , hash = info.hash

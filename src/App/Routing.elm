@@ -41,8 +41,11 @@ toRoute basePath url =
             if basePath == "" then
                 url.path
 
+            else if String.startsWith basePath url.path then
+                String.dropLeft (String.length basePath) url.path
+
             else
-                String.replace basePath "" url.path
+                url.path
     in
     { url | path = newPath }
         |> parse matchRoute
