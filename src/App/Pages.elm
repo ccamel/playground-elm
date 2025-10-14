@@ -1,9 +1,26 @@
-module App.Pages exposing (PageSpec, pageDate, pageDescription, pageGithubLink, pageHash, pageName, pageSubscriptions, pageView, pages)
+module App.Pages exposing
+    ( PageSpec
+    , clearAll
+    , initPage
+    , pageDate
+    , pageDescription
+    , pageFromSlug
+    , pageGithubLink
+    , pageHash
+    , pageName
+    , pageSubscriptions
+    , pageView
+    , pages
+    , updateWithMsg
+    )
 
+import App.Flags exposing (Flags)
 import App.Messages exposing (Msg(..), Page(..))
-import App.Models exposing (Model)
+import App.Models exposing (Model, PagesModel)
+import Dict exposing (Dict)
 import Html exposing (Html)
 import Lib.Page exposing (PageInfo)
+import Maybe exposing (withDefault)
 import Page.About
 import Page.Asteroids
 import Page.Calc
@@ -18,161 +35,414 @@ import Page.Term
 import Page.Terrain
 
 
+type alias PageSpec =
+    { page : Page
+    , slug : String
+    , info : PageInfo Msg
+    , init : Flags -> Model -> ( Model, Cmd Msg )
+    , update : Msg -> Model -> Maybe ( Model, Cmd Msg )
+    , subscriptions : Model -> Sub Msg
+    , view : Model -> Html Msg
+    , clear : Model -> Model
+    }
+
+
 emptyNode : Html msg
 emptyNode =
     Html.text ""
 
 
-{-| PageSpec holds the whole specification about a page, including basic information (name, description, source) and a function
-to the view and the subscriptions.
-This way, it becomes easy to add new pages without changing the code everywhere.
--}
-type alias PageSpec =
-    { info : PageInfo Msg
-    , view : Model -> Html Msg
-    , subscriptions : Model -> Sub Msg
+updatePages : (PagesModel -> PagesModel) -> Model -> Model
+updatePages fn model =
+    { model | pages = fn model.pages }
+
+
+toSpec :
+    Page
+    -> PageInfo pageMsg
+    -> (Flags -> ( pageModel, Cmd pageMsg ))
+    -> (pageMsg -> pageModel -> ( pageModel, Cmd pageMsg ))
+    -> (pageModel -> Html pageMsg)
+    -> (pageModel -> Sub pageMsg)
+    -> (pageMsg -> Msg)
+    -> (Msg -> Maybe pageMsg)
+    -> (Model -> Maybe pageModel)
+    -> (Maybe pageModel -> Model -> Model)
+    -> PageSpec
+toSpec page info initFn updateFn viewFn subscriptionsFn wrap unwrap getPage setPage =
+    { page = page
+    , slug = info.hash
+    , info =
+        { name = info.name
+        , hash = info.hash
+        , date = info.date
+        , description = Html.map wrap info.description
+        , srcRel = info.srcRel
+        }
+    , init =
+        \flags model ->
+            let
+                ( pageModel, pageCmd ) =
+                    initFn flags
+            in
+            ( setPage (Just pageModel) model
+            , Cmd.map wrap pageCmd
+            )
+    , update =
+        \msg model ->
+            unwrap msg
+                |> Maybe.andThen
+                    (\pageMsg ->
+                        getPage model
+                            |> Maybe.map
+                                (\pageModel ->
+                                    let
+                                        ( nextModel, nextCmd ) =
+                                            updateFn pageMsg pageModel
+                                    in
+                                    ( setPage (Just nextModel) model
+                                    , Cmd.map wrap nextCmd
+                                    )
+                                )
+                    )
+    , subscriptions =
+        \model ->
+            getPage model
+                |> Maybe.map (subscriptionsFn >> Sub.map wrap)
+                |> Maybe.withDefault Sub.none
+    , view =
+        \model ->
+            getPage model
+                |> Maybe.map (viewFn >> Html.map wrap)
+                |> Maybe.withDefault emptyNode
+    , clear = \model -> setPage Nothing model
     }
+
+
+specs : List PageSpec
+specs =
+    [ toSpec About
+        Page.About.info
+        Page.About.init
+        Page.About.update
+        Page.About.view
+        Page.About.subscriptions
+        AboutPageMsg
+        (\msg ->
+            case msg of
+                AboutPageMsg subMsg ->
+                    Just subMsg
+
+                _ ->
+                    Nothing
+        )
+        (\model -> model.pages.aboutPage)
+        (\maybePage -> updatePages (\pageModels -> { pageModels | aboutPage = maybePage }))
+    , toSpec Calc
+        Page.Calc.info
+        (\_ -> Page.Calc.init)
+        Page.Calc.update
+        Page.Calc.view
+        Page.Calc.subscriptions
+        CalcPageMsg
+        (\msg ->
+            case msg of
+                CalcPageMsg subMsg ->
+                    Just subMsg
+
+                _ ->
+                    Nothing
+        )
+        (\model -> model.pages.calcPage)
+        (\maybePage -> updatePages (\pageModels -> { pageModels | calcPage = maybePage }))
+    , toSpec Lissajous
+        Page.Lissajous.info
+        (\_ -> Page.Lissajous.init)
+        Page.Lissajous.update
+        Page.Lissajous.view
+        Page.Lissajous.subscriptions
+        LissajousPageMsg
+        (\msg ->
+            case msg of
+                LissajousPageMsg subMsg ->
+                    Just subMsg
+
+                _ ->
+                    Nothing
+        )
+        (\model -> model.pages.lissajousPage)
+        (\maybePage -> updatePages (\pageModels -> { pageModels | lissajousPage = maybePage }))
+    , toSpec DigitalClock
+        Page.DigitalClock.info
+        (\_ -> Page.DigitalClock.init)
+        Page.DigitalClock.update
+        Page.DigitalClock.view
+        Page.DigitalClock.subscriptions
+        DigitalClockPageMsg
+        (\msg ->
+            case msg of
+                DigitalClockPageMsg subMsg ->
+                    Just subMsg
+
+                _ ->
+                    Nothing
+        )
+        (\model -> model.pages.digitalClockPage)
+        (\maybePage -> updatePages (\pageModels -> { pageModels | digitalClockPage = maybePage }))
+    , toSpec Maze
+        Page.Maze.info
+        (\_ -> Page.Maze.init)
+        Page.Maze.update
+        Page.Maze.view
+        Page.Maze.subscriptions
+        MazePageMsg
+        (\msg ->
+            case msg of
+                MazePageMsg subMsg ->
+                    Just subMsg
+
+                _ ->
+                    Nothing
+        )
+        (\model -> model.pages.mazePage)
+        (\maybePage -> updatePages (\pageModels -> { pageModels | mazePage = maybePage }))
+    , toSpec Physics
+        Page.Physics.info
+        (\_ -> Page.Physics.init)
+        Page.Physics.update
+        Page.Physics.view
+        Page.Physics.subscriptions
+        PhysicsPageMsg
+        (\msg ->
+            case msg of
+                PhysicsPageMsg subMsg ->
+                    Just subMsg
+
+                _ ->
+                    Nothing
+        )
+        (\model -> model.pages.physicsPage)
+        (\maybePage -> updatePages (\pageModels -> { pageModels | physicsPage = maybePage }))
+    , toSpec Term
+        Page.Term.info
+        (\_ -> Page.Term.init)
+        Page.Term.update
+        Page.Term.view
+        Page.Term.subscriptions
+        TermPageMsg
+        (\msg ->
+            case msg of
+                TermPageMsg subMsg ->
+                    Just subMsg
+
+                _ ->
+                    Nothing
+        )
+        (\model -> model.pages.termPage)
+        (\maybePage -> updatePages (\pageModels -> { pageModels | termPage = maybePage }))
+    , toSpec Asteroids
+        Page.Asteroids.info
+        (\_ -> Page.Asteroids.init)
+        Page.Asteroids.update
+        Page.Asteroids.view
+        Page.Asteroids.subscriptions
+        AsteroidsPageMsg
+        (\msg ->
+            case msg of
+                AsteroidsPageMsg subMsg ->
+                    Just subMsg
+
+                _ ->
+                    Nothing
+        )
+        (\model -> model.pages.asteroidsPage)
+        (\maybePage -> updatePages (\pageModels -> { pageModels | asteroidsPage = maybePage }))
+    , toSpec Dapp
+        Page.Dapp.info
+        Page.Dapp.init
+        Page.Dapp.update
+        Page.Dapp.view
+        Page.Dapp.subscriptions
+        DappPageMsg
+        (\msg ->
+            case msg of
+                DappPageMsg subMsg ->
+                    Just subMsg
+
+                _ ->
+                    Nothing
+        )
+        (\model -> model.pages.dappPage)
+        (\maybePage -> updatePages (\pageModels -> { pageModels | dappPage = maybePage }))
+    , toSpec SoundWaveToggle
+        Page.SoundWaveToggle.info
+        (\_ -> Page.SoundWaveToggle.init)
+        Page.SoundWaveToggle.update
+        Page.SoundWaveToggle.view
+        Page.SoundWaveToggle.subscriptions
+        SoundWaveTogglePageMsg
+        (\msg ->
+            case msg of
+                SoundWaveTogglePageMsg subMsg ->
+                    Just subMsg
+
+                _ ->
+                    Nothing
+        )
+        (\model -> model.pages.soundWaveTogglePage)
+        (\maybePage -> updatePages (\pageModels -> { pageModels | soundWaveTogglePage = maybePage }))
+    , toSpec Glsl
+        Page.Glsl.info
+        (\_ -> Page.Glsl.init)
+        Page.Glsl.update
+        Page.Glsl.view
+        Page.Glsl.subscriptions
+        GlslPageMsg
+        (\msg ->
+            case msg of
+                GlslPageMsg subMsg ->
+                    Just subMsg
+
+                _ ->
+                    Nothing
+        )
+        (\model -> model.pages.glslPage)
+        (\maybePage -> updatePages (\pageModels -> { pageModels | glslPage = maybePage }))
+    , toSpec Terrain
+        Page.Terrain.info
+        (\_ -> Page.Terrain.init)
+        Page.Terrain.update
+        Page.Terrain.view
+        Page.Terrain.subscriptions
+        TerrainPageMsg
+        (\msg ->
+            case msg of
+                TerrainPageMsg subMsg ->
+                    Just subMsg
+
+                _ ->
+                    Nothing
+        )
+        (\model -> model.pages.terrainPage)
+        (\maybePage -> updatePages (\pageModels -> { pageModels | terrainPage = maybePage }))
+    ]
+
+
+pageDict : Dict String PageSpec
+pageDict =
+    Dict.fromList (List.map (\spec -> ( spec.slug, spec )) specs)
+
+
+slugDict : Dict String PageSpec
+slugDict =
+    Dict.fromList (List.map (\spec -> ( spec.slug, spec )) specs)
 
 
 pages : List Page
 pages =
-    [ About
-
-    -- add new pages here:
-    , Calc
-    , Lissajous
-    , DigitalClock
-    , Maze
-    , Physics
-    , Term
-    , Asteroids
-    , Dapp
-    , SoundWaveToggle
-    , Glsl
-    , Terrain
-    ]
+    List.map .page specs
 
 
-toView : (a -> Html b) -> (b -> msg) -> (d -> Maybe a) -> d -> Html msg
-toView aPageView pageMsg modelExtractor model =
-    model
-        |> modelExtractor
-        |> Maybe.map aPageView
-        |> Maybe.map (Html.map pageMsg)
-        |> Maybe.withDefault emptyNode
+pageSpec : Page -> Maybe PageSpec
+pageSpec target =
+    let
+        slug =
+            case target of
+                About ->
+                    "about"
+
+                Calc ->
+                    "calc"
+
+                Lissajous ->
+                    "lissajous"
+
+                DigitalClock ->
+                    "digital-clock"
+
+                Maze ->
+                    "maze"
+
+                Physics ->
+                    "physics"
+
+                Term ->
+                    "term"
+
+                Asteroids ->
+                    "asteroids"
+
+                Dapp ->
+                    "dapp"
+
+                SoundWaveToggle ->
+                    "sound-wave-toggle"
+
+                Glsl ->
+                    "glsl"
+
+                Terrain ->
+                    "terrain"
+    in
+    Dict.get slug pageDict
 
 
-toSubscriptions : (a -> Sub b) -> (b -> msg) -> (d -> Maybe a) -> d -> Sub msg
-toSubscriptions aPageSubscriptions pageMsg modelExtractor model =
-    model
-        |> modelExtractor
-        |> Maybe.map aPageSubscriptions
-        |> Maybe.map (Sub.map pageMsg)
-        |> Maybe.withDefault Sub.none
-
-
-toSpec : PageInfo msg -> (model -> Html msg) -> (model -> Sub msg) -> (msg -> Msg) -> (Model -> Maybe model) -> PageSpec
-toSpec info aPageView aPageSubscriptions pageMsg modelExtractor =
-    { info =
-        { name = info.name
-        , hash = info.hash
-        , date = info.date
-        , description = Html.map pageMsg info.description
-        , srcRel = info.srcRel
-        }
-    , view = toView aPageView pageMsg modelExtractor --currified form
-    , subscriptions = toSubscriptions aPageSubscriptions pageMsg modelExtractor
-    }
-
-
-pageSpec : Page -> PageSpec
-pageSpec page =
-    case page of
-        -- add new pages here (the code is a little bit tricky but does the job fine)
-        About ->
-            toSpec Page.About.info Page.About.view Page.About.subscriptions (\x -> AboutPageMsg x) (\model -> model.pages.aboutPage)
-
-        Calc ->
-            toSpec Page.Calc.info Page.Calc.view Page.Calc.subscriptions (\x -> CalcPageMsg x) (\model -> model.pages.calcPage)
-
-        Lissajous ->
-            toSpec Page.Lissajous.info Page.Lissajous.view Page.Lissajous.subscriptions LissajousPageMsg (\model -> model.pages.lissajousPage)
-
-        DigitalClock ->
-            toSpec Page.DigitalClock.info Page.DigitalClock.view Page.DigitalClock.subscriptions DigitalClockPageMsg (\model -> model.pages.digitalClockPage)
-
-        Maze ->
-            toSpec Page.Maze.info Page.Maze.view Page.Maze.subscriptions MazePageMsg (\model -> model.pages.mazePage)
-
-        Physics ->
-            toSpec Page.Physics.info Page.Physics.view Page.Physics.subscriptions PhysicsPageMsg (\model -> model.pages.physicsPage)
-
-        Term ->
-            toSpec Page.Term.info Page.Term.view Page.Term.subscriptions TermPageMsg (\model -> model.pages.termPage)
-
-        Asteroids ->
-            toSpec Page.Asteroids.info Page.Asteroids.view Page.Asteroids.subscriptions AsteroidsPageMsg (\model -> model.pages.asteroidsPage)
-
-        Dapp ->
-            toSpec Page.Dapp.info Page.Dapp.view Page.Dapp.subscriptions DappPageMsg (\model -> model.pages.dappPage)
-
-        SoundWaveToggle ->
-            toSpec Page.SoundWaveToggle.info Page.SoundWaveToggle.view Page.SoundWaveToggle.subscriptions SoundWaveTogglePageMsg (\model -> model.pages.soundWaveTogglePage)
-
-        Glsl ->
-            toSpec Page.Glsl.info Page.Glsl.view Page.Glsl.subscriptions GlslPageMsg (\model -> model.pages.glslPage)
-
-        Terrain ->
-            toSpec Page.Terrain.info Page.Terrain.view Page.Terrain.subscriptions TerrainPageMsg (\model -> model.pages.terrainPage)
+pageFromSlug : String -> Maybe Page
+pageFromSlug slug =
+    Dict.get slug slugDict |> Maybe.map .page
 
 
 pageName : Page -> String
 pageName page =
-    pageSpec page
-        |> .info
-        |> .name
+    pageSpec page |> Maybe.map (.info >> .name) |> withDefault ""
 
 
 pageDescription : Page -> Html Msg
 pageDescription page =
-    pageSpec page
-        |> .info
-        |> .description
-
-
-pageSrc : Page -> String
-pageSrc page =
-    pageSpec page
-        |> .info
-        |> .srcRel
+    pageSpec page |> Maybe.map (.info >> .description) |> withDefault emptyNode
 
 
 pageGithubLink : Page -> String
 pageGithubLink page =
-    "https://github.com/ccamel/playground-elm/blob/main/src/" ++ pageSrc page
+    pageSpec page
+        |> Maybe.map (.info >> .srcRel)
+        |> Maybe.map (\src -> "https://github.com/ccamel/playground-elm/blob/main/src/" ++ src)
+        |> withDefault ""
 
 
 pageHash : Page -> String
 pageHash page =
-    pageSpec page
-        |> .info
-        |> .hash
+    pageSpec page |> Maybe.map (.info >> .hash) |> withDefault ""
 
 
 pageDate : Page -> String
 pageDate page =
-    pageSpec page
-        |> .info
-        |> .date
+    pageSpec page |> Maybe.map (.info >> .date) |> withDefault ""
 
 
 pageView : Page -> Model -> Html Msg
-pageView page =
-    pageSpec page
-        |> .view
+pageView page model =
+    pageSpec page |> Maybe.map (\spec -> spec.view model) |> withDefault emptyNode
 
 
 pageSubscriptions : Page -> Model -> Sub Msg
-pageSubscriptions page =
-    pageSpec page
-        |> .subscriptions
+pageSubscriptions page model =
+    pageSpec page |> Maybe.map (\spec -> spec.subscriptions model) |> withDefault Sub.none
+
+
+initPage : Page -> Flags -> Model -> ( Model, Cmd Msg )
+initPage page flags model =
+    pageSpec page |> Maybe.map (\spec -> spec.init flags model) |> withDefault ( model, Cmd.none )
+
+
+updateWithMsg : Msg -> Model -> ( Model, Cmd Msg )
+updateWithMsg msg model =
+    specs
+        |> List.filterMap (\spec -> spec.update msg model)
+        |> List.head
+        |> withDefault ( model, Cmd.none )
+
+
+clearAll : Model -> Model
+clearAll model =
+    List.foldl (\spec acc -> spec.clear acc) model specs

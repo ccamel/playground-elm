@@ -92,8 +92,8 @@ I finally managed to migrate to this new version but instabilities can be notice
 
 Be sure to have the following properly installed:
 
-- [Node.js](https://nodejs.org/ru/) `v20.18` ([lts/iron](https://nodejs.org/en/blog/release/v20.18.1))
-- [pnpm](https://pnpm.io/) `v8.3`
+- [Node.js](https://nodejs.org/ru/) `v22.20` ([lts/jod](https://nodejs.org/en/download/archive/v22.20.0))
+- [pnpm](https://pnpm.io/) `v10.15`
 
 ### Build
 
