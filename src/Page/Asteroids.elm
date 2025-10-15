@@ -1,4 +1,4 @@
-module Page.Asteroids exposing (Model, Msg, info, init, subscriptions, update, view)
+port module Page.Asteroids exposing (Model, Msg, info, init, subscriptions, update, view)
 
 import Angle exposing (inDegrees)
 import AngularAcceleration exposing (AngularAcceleration, radiansPerSecondSquared)
@@ -742,6 +742,13 @@ particleSystem world =
 
 
 
+-- PORTS
+
+
+port preventDefaultKeys : () -> Cmd msg
+
+
+
 -- MODEL
 
 
@@ -794,7 +801,10 @@ init =
         , keys = ( [], Nothing )
         , frames = createFrames 10 -- initial capacity
         }
-    , Task.perform GotTime Time.now
+    , Cmd.batch
+        [ Task.perform GotTime Time.now
+        , preventDefaultKeys ()
+        ]
     )
 
 

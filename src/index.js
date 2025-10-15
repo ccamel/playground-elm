@@ -32,3 +32,6 @@ portA(app);
 
 import { registerPorts as portB } from './Page/dapp.port.js';
 portB(app);
+
+import { registerPorts as portC } from './Page/asteroids.port.js';
+portC(app);
