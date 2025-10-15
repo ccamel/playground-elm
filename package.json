@@ -65,7 +65,7 @@
     "elm-format": "^0.8.8",
     "elm-hot": "^1.1.6",
     "elm-json": "^0.2.13",
-    "elm-review": "^2.13.2",
+    "elm-review": "^2.13.4",
     "eslint": "^9.23.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.2.5",
