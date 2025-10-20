@@ -44,7 +44,7 @@ jobs:
           token: ${{ secrets.RELEASE_TOKEN }}
 
       - name: Setup node environment (for building)
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: "22.20"
           package-manager-cache: false
