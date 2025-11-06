@@ -76,7 +76,7 @@
     "parcel-reporter-static-files-copy": "^1.5.3",
     "posthtml-expressions": "^1.11.4",
     "prettier": "^3.6.2",
-    "release-it": "^19.0.5",
+    "release-it": "^19.0.6",
     "resolve-url-loader": "^5.0.0",
     "rimraf": "^6.1.0"
   }
