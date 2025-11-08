@@ -7,7 +7,6 @@ import Basics as Math
 import Basics.Extra exposing (swap, uncurry)
 import BoundingBox2d exposing (minX, minY)
 import Browser.Events exposing (onAnimationFrameDelta)
-import Conditional.List exposing (addWhen)
 import Direction2d exposing (Direction2d, rotateBy, toAngle)
 import Duration exposing (Duration, milliseconds)
 import Ecs
@@ -21,7 +20,7 @@ import Keyboard exposing (Key(..), KeyChange(..))
 import Keyboard.Arrows as Keyboard exposing (Direction(..))
 import Lib.Frame exposing (Frames, addFrame, createFrames, fps)
 import Lib.Page
-import List exposing (foldl, length, singleton)
+import List exposing (filterMap, foldl, foldr, length, singleton)
 import List.Extra exposing (uniquePairs)
 import Markdown
 import Maybe exposing (withDefault)
@@ -34,8 +33,8 @@ import Random exposing (Generator, Seed)
 import Random.Float exposing (normal)
 import Rectangle2d
 import String exposing (fromFloat, fromInt, join, padLeft)
-import Svg exposing (Svg, g, line, polygon, rect, svg)
-import Svg.Attributes exposing (class, cx, cy, d, fill, fillRule, height, id, opacity, points, rx, ry, stroke, strokeLinecap, strokeWidth, style, transform, version, viewBox, width, x, x1, x2, y, y1, y2)
+import Svg exposing (Svg, circle, g, line, polygon, rect, svg)
+import Svg.Attributes exposing (class, cx, cy, d, fill, fillOpacity, fillRule, height, id, opacity, points, r, rx, ry, stroke, strokeDasharray, strokeLinecap, strokeOpacity, strokeWidth, style, transform, version, viewBox, width, x, x1, x2, y, y1, y2)
 import Task
 import Time
 import Tuple exposing (first)
@@ -206,7 +205,7 @@ type alias Collisions =
 
 
 type alias Parameters =
-    { showBoundingBox : Bool
+    { showOverlay : Bool
     }
 
 
@@ -414,15 +413,22 @@ optionsCommandSystem world =
     let
         ( keys, maybeKeyChange ) =
             Ecs.getSingleton specs.keys world
+
+        applyParameters updateFn =
+            let
+                parameters =
+                    Ecs.getSingleton specs.parameters world
+            in
+            Ecs.setSingleton specs.parameters (updateFn parameters)
+                >> Ecs.setSingleton specs.keys ( keys, Nothing )
     in
     world
         |> (case maybeKeyChange of
-                Just (KeyDown (Character "S")) ->
-                    let
-                        parameters =
-                            Ecs.getSingleton specs.parameters world
-                    in
-                    Ecs.setSingleton specs.parameters { parameters | showBoundingBox = not <| .showBoundingBox parameters } >> Ecs.setSingleton specs.keys ( keys, Nothing )
+                Just (KeyDown (Character "D")) ->
+                    applyParameters
+                        (\parameters ->
+                            { parameters | showOverlay = not parameters.showOverlay }
+                        )
 
                 _ ->
                     identity
@@ -813,7 +819,7 @@ initSingletons seed =
         ( [], Nothing )
         (Random.initialSeed seed)
         []
-        { showBoundingBox = False
+        { showOverlay = False
         }
 
 
@@ -1259,7 +1265,7 @@ view (Model { world, frames }) =
         [ div [ class "columns" ]
             [ div [ class "column is-8 is-offset-2" ]
                 [ Markdown.toHtml [ class "content is-medium" ] """
-**Controls:** `↑` to move, `←` to rotate left, `→` to rotate right, `space` to shoot, `s` to show bounding boxes.
+**Controls:** `↑` to move, `←` to rotate left, `→` to rotate right, `space` to shoot, `d` to toggle the debug overlay.
                 """
                 , viewMaybe (renderInfos frames) world
                 ]
@@ -1362,8 +1368,8 @@ renderInfos frames world =
 renderWorld : World -> Html.Html Msg
 renderWorld world =
     let
-        { showBoundingBox } =
-            Ecs.getSingleton specs.parameters world
+        overlay =
+            Ecs.getSingleton specs.parameters world |> .showOverlay
 
         ( wPixels, hPixels ) =
             ( constants.width, constants.height ) |> vApply inPixels
@@ -1388,16 +1394,12 @@ renderWorld world =
                     let
                         w2 =
                             Ecs.onEntity entityId world
+
+                        overlays =
+                            renderOverlays overlay entityId position w2
                     in
                     acc
-                        |> addWhen
-                            (if showBoundingBox then
-                                Ecs.getComponent specs.shape w2
-                                    |> Maybe.map (\shape -> renderShape entityId shape position w2)
-
-                             else
-                                Nothing
-                            )
+                        |> (\current -> foldr (::) current overlays)
                         |> (::)
                             (w2 |> renderEntity entityId render position)
                 )
@@ -1468,14 +1470,85 @@ renderShape entityId shape position world =
                 , y (boundingBox |> minY |> inPixels |> fromFloat)
                 , width (w |> inPixels |> fromFloat)
                 , height (h |> inPixels |> fromFloat)
-                , fill "none"
-                , stroke "white"
-                , strokeWidth "0.2"
+                , fill "#2dd4bf"
+                , fillOpacity "0.12"
+                , stroke "#5eead4"
+                , strokeOpacity "0.85"
+                , strokeWidth "0.4"
+                , strokeDasharray "3 2"
                 ]
                 []
 
         _ ->
             g [] []
+
+
+renderOverlays : Bool -> EntityId -> Position -> World -> List (Svg Msg)
+renderOverlays overlay entityId position world =
+    if not overlay then
+        []
+
+    else
+        [ world
+            |> Ecs.getComponent specs.shape
+            |> Maybe.map (\shape -> renderShape entityId shape position world)
+        , renderPositionVelocity entityId position world
+        ]
+            |> filterMap identity
+
+
+renderPositionVelocity : EntityId -> Position -> World -> Maybe (Svg Msg)
+renderPositionVelocity entityId position world =
+    world
+        |> Ecs.getComponent specs.positionVelocity
+        |> Maybe.andThen
+            (\velocity ->
+                if velocity |> Vector2d.length |> Quantity.lessThanOrEqualTo Quantity.zero then
+                    Nothing
+
+                else
+                    let
+                        vectorPreviewDuration =
+                            milliseconds 250
+
+                        startPoint =
+                            position
+
+                        endPoint =
+                            position
+                                |> translateBy (velocity |> Vector2d.for vectorPreviewDuration)
+
+                        ( startX, startY ) =
+                            startPoint |> Point2d.toTuple inPixels |> vApply fromFloat
+
+                        ( endX, endY ) =
+                            endPoint |> Point2d.toTuple inPixels |> vApply fromFloat
+                    in
+                    Just <|
+                        g []
+                            [ line
+                                [ id ("pv-" ++ fromInt entityId)
+                                , x1 startX
+                                , y1 startY
+                                , x2 endX
+                                , y2 endY
+                                , stroke "#facc15"
+                                , strokeWidth "0.7"
+                                , strokeDasharray "4 1"
+                                , strokeOpacity "0.95"
+                                , strokeLinecap "round"
+                                ]
+                                []
+                            , circle
+                                [ cx endX
+                                , cy endY
+                                , r "2"
+                                , fill "#facc15"
+                                , fillOpacity "0.95"
+                                ]
+                                []
+                            ]
+            )
 
 
 
