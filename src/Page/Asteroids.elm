@@ -901,10 +901,10 @@ spawnBulletEntity orientation position world =
 bulletSprite : Svg Msg
 bulletSprite =
     line
-        [ x1 <| fromFloat 0.0
-        , y1 <| fromFloat 0.0
-        , x2 <| fromFloat 5
-        , y2 <| fromFloat 0.0
+        [ x1 <| "0"
+        , y1 <| "0"
+        , x2 <| "5"
+        , y2 <| "0"
         , stroke "#D80707"
         , fill "none"
         , strokeWidth "1"
