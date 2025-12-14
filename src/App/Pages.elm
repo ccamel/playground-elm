@@ -26,6 +26,7 @@ import Page.Asteroids
 import Page.Calc
 import Page.Dapp
 import Page.DigitalClock
+import Page.DoubleHelix
 import Page.Glsl
 import Page.Lissajous
 import Page.Maze
@@ -325,6 +326,23 @@ specs =
         )
         (\model -> model.pages.terrainPage)
         (\maybePage -> updatePages (\pageModels -> { pageModels | terrainPage = maybePage }))
+    , toSpec DoubleHelix
+        Page.DoubleHelix.info
+        (\_ -> Page.DoubleHelix.init)
+        Page.DoubleHelix.update
+        Page.DoubleHelix.view
+        Page.DoubleHelix.subscriptions
+        DoubleHelixPageMsg
+        (\msg ->
+            case msg of
+                DoubleHelixPageMsg subMsg ->
+                    Just subMsg
+
+                _ ->
+                    Nothing
+        )
+        (\model -> model.pages.doubleHelixPage)
+        (\maybePage -> updatePages (\pageModels -> { pageModels | doubleHelixPage = maybePage }))
     ]
 
 
@@ -383,6 +401,9 @@ pageSpec target =
 
                 Terrain ->
                     "terrain"
+
+                DoubleHelix ->
+                    "double-helix"
     in
     Dict.get slug pageDict
 

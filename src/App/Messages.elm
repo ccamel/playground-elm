@@ -6,6 +6,7 @@ import Page.Asteroids
 import Page.Calc
 import Page.Dapp
 import Page.DigitalClock
+import Page.DoubleHelix
 import Page.Glsl
 import Page.Lissajous
 import Page.Maze
@@ -29,6 +30,7 @@ type Page
     | SoundWaveToggle
     | Glsl
     | Terrain
+    | DoubleHelix
 
 
 type Msg
@@ -48,3 +50,4 @@ type Msg
     | SoundWaveTogglePageMsg Page.SoundWaveToggle.Msg
     | GlslPageMsg Page.Glsl.Msg
     | TerrainPageMsg Page.Terrain.Msg
+    | DoubleHelixPageMsg Page.DoubleHelix.Msg
