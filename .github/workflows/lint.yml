@@ -27,6 +27,8 @@ jobs:
 
   lint-source:
     runs-on: ubuntu-22.04
+    env:
+      ELM_HOME: ${{ github.workspace }}/.elm
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -51,6 +53,14 @@ jobs:
           key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-
+
+      - name: Cache ELM_HOME
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.ELM_HOME }}
+          key: elm-${{ hashFiles('elm.json', 'review/elm.json') }}
+          restore-keys: |
+            elm-
 
       - name: Fetch dependencies
         run: |
