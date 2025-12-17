@@ -73,9 +73,12 @@ List of showcases:
 
 ## 🛠 Building and Running
 
-### Elm Version
+### Quick start
 
-This project targets Elm `0.19.1`.
+```bash
+pnpm install
+pnpm serve
+```
 
 ### Prerequisites
 
@@ -84,36 +87,27 @@ Be sure to have the following properly installed:
 - [Node.js](https://nodejs.org/ru/) `v22.20` ([lts/jod](https://nodejs.org/en/download/archive/v22.20.0))
 - [pnpm](https://pnpm.io/) `v10.15`
 
-### Build
+### Development / Build
 
-The project now relies on [parceljs][], a web application bundler which handles [elm][] builds at free.
+The project relies on [parceljs][], a web application bundler which handles [elm][] builds.
 
-At first, all the node packages this project depends on must be installed locally. This can be done with the following
-command:
-
-```bash
-pnpm install
-```
-
-The build can be launched with:
+Install dependencies and run the common commands:
 
 ```bash
-pnpm build
+pnpm install    # install dependencies
+pnpm serve      # development server
+pnpm build      # production build (output in ./dist)
+pnpm lint       # run linting/format checks
 ```
 
-Then, open `./dist/index.html` file in your browser.
+The development server serves the app on <http://localhost:1234>.
 
-If you prefer, the site can be published by a local HTTP server. In this mode, if any change is detected, the build of
-the project will be started again, and the site automatically updated in the browser; which is nice during the
-development phases.
+When running the dev server, changes are automatically rebuilt and reloaded in the browser.
 
-The publication is launched with the following command:
+### Contributing
 
-```bash
-pnpm serve
-```
-
-The site is accessible through the `http://localhost:1234` endpoint.
+Contributions are welcome — fork the repo, make changes, and open a PR. For local development, run `pnpm install` and
+`pnpm serve` to preview your changes.
 
 ## 🔋 Technologies
 
