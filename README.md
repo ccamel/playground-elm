@@ -73,20 +73,9 @@ List of showcases:
 
 ## 🛠 Building and Running
 
-### Elm 0.19
+### Elm Version
 
-Elm 0.19 broke me as many other coders, due to a lot of changes on topics I used in this project with previous version:
-
-- `elm.json` file
-- JSON decoding
-- String / Int / Float conversions
-- Browser application, routing
-- Url management
-- date time (`Posix`, `Zone`)
-- lots of incompatible packages
-- ...
-
-I finally managed to migrate to this new version but instabilities can be noticed though.
+This project targets Elm `0.19.1`.
 
 ### Prerequisites
 
