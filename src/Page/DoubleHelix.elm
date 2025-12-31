@@ -16,10 +16,57 @@ info =
     , hash = "double-helix"
     , date = "2025-12-14"
     , description = Markdown.toHtml [ class "content" ] """
-A simplified visualization of a DNA double helix using the elm-particle system.
-The particles flow in a double helix pattern, creating a smooth and mesmerizing visual effect.
+A *simplified* visualization of a DNA double helix using an elm particle system.
        """
     , srcRel = "Page/DoubleHelix.elm"
+    }
+
+
+{-| Configuration constants for the double helix visualization
+-}
+config :
+    { field : { width : number, height : number }
+    , helix : { radiusBase : number, radiusVariation : number, spinRate : Float, fallGravity : number }
+    , particles : { emissionRate : number, lifetimeMin : Float, lifetimeMax : Float, delayMin : number, delayMax : Float, speedMin : number, speedMax : number, sizeBase : number, sizeVariation : number, phaseJitter : Float, spawnY : number, spawnAngle : number }
+    , appearance : { radialScaleMin : Float, radialScaleMax : Float, strandOneHue : number, strandTwoHue : number, lightnessBase : number, lightnessDepth : number, lightnessFadeMin : Float, lightnessFadeMax : Float }
+    , randomSeed : number
+    }
+config =
+    { field =
+        { width = 640
+        , height = 640
+        }
+    , helix =
+        { radiusBase = 130
+        , radiusVariation = 16
+        , spinRate = 1.3
+        , fallGravity = 35
+        }
+    , particles =
+        { emissionRate = 5
+        , lifetimeMin = 4.7
+        , lifetimeMax = 6.2
+        , delayMin = 0
+        , delayMax = 0.25
+        , speedMin = 110
+        , speedMax = 150
+        , sizeBase = 6
+        , sizeVariation = 6
+        , phaseJitter = 0.4
+        , spawnY = -80
+        , spawnAngle = 270
+        }
+    , appearance =
+        { radialScaleMin = 0.55
+        , radialScaleMax = 0.45
+        , strandOneHue = 200
+        , strandTwoHue = 330
+        , lightnessBase = 30
+        , lightnessDepth = 40
+        , lightnessFadeMin = 0.45
+        , lightnessFadeMax = 0.55
+        }
+    , randomSeed = 42
     }
 
 
@@ -55,7 +102,7 @@ init : ( Model, Cmd Msg )
 init =
     ( { system = initialSystem
       , time = 0
-      , cannonRate = 5
+      , cannonRate = config.particles.emissionRate
       }
     , Cmd.none
     )
@@ -63,7 +110,7 @@ init =
 
 initialSystem : ParticleSystem.System HelixData
 initialSystem =
-    ParticleSystem.init (Random.initialSeed 42)
+    ParticleSystem.init (Random.initialSeed config.randomSeed)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -111,8 +158,8 @@ helixView model =
             div
                 [ id "double-helix-scope"
                 , class "mx-auto"
-                , style "width" (px fieldWidth)
-                , style "height" (px fieldHeight)
+                , style "width" (px config.field.width)
+                , style "height" (px config.field.height)
                 , style "background" "radial-gradient(circle at 50% 20%, #151522, #040405 60%)"
                 , style "position" "relative"
                 , style "overflow" "hidden"
@@ -132,36 +179,36 @@ renderParticle particle =
             Particle.lifetime particle
 
         angle =
-            data.startPhase + spinRate * age
+            data.startPhase + config.helix.spinRate * age
 
         depth =
             (sin angle + 1) / 2
 
         radialScale =
-            0.55 + depth * 0.45
+            config.appearance.radialScaleMin + depth * config.appearance.radialScaleMax
 
         x =
-            (fieldWidth / 2) + (data.radius * radialScale * cos angle)
+            (config.field.width / 2) + (data.radius * radialScale * cos angle)
 
         y =
             Particle.topPixels particle
 
         size =
-            6 + depth * 6
+            config.particles.sizeBase + depth * config.particles.sizeVariation
 
         hue =
             case data.strand of
                 StrandOne ->
-                    200
+                    config.appearance.strandOneHue
 
                 StrandTwo ->
-                    330
+                    config.appearance.strandTwoHue
 
         fade =
             Particle.lifetimePercent particle
 
         lightness =
-            (30 + depth * 40) * (0.45 + 0.55 * fade)
+            (config.appearance.lightnessBase + depth * config.appearance.lightnessDepth) * (config.appearance.lightnessFadeMin + config.appearance.lightnessFadeMax * fade)
     in
     div
         [ style "position" "absolute"
@@ -224,16 +271,16 @@ helixParticleGenerator phaseBase strand =
                     , radius = radius
                     }
                 )
-                (Random.float -0.4 0.4)
-                (Random.float (radiusBase - 16) (radiusBase + 16))
+                (Random.float -config.particles.phaseJitter config.particles.phaseJitter)
+                (Random.float (config.helix.radiusBase - config.helix.radiusVariation) (config.helix.radiusBase + config.helix.radiusVariation))
     in
     Particle.init dataGenerator
-        |> Particle.withLifetime (Random.float 4.7 6.2)
-        |> Particle.withDelay (Random.float 0 0.25)
-        |> Particle.withLocation (Random.constant { x = fieldWidth / 2, y = -80 })
-        |> Particle.withDirection (Random.constant (degrees 270))
-        |> Particle.withSpeed (Random.float 110 150)
-        |> Particle.withGravity fallGravity
+        |> Particle.withLifetime (Random.float config.particles.lifetimeMin config.particles.lifetimeMax)
+        |> Particle.withDelay (Random.float config.particles.delayMin config.particles.delayMax)
+        |> Particle.withLocation (Random.constant { x = config.field.width / 2, y = config.particles.spawnY })
+        |> Particle.withDirection (Random.constant (degrees config.particles.spawnAngle))
+        |> Particle.withSpeed (Random.float config.particles.speedMin config.particles.speedMax)
+        |> Particle.withGravity config.helix.fallGravity
 
 
 strandPhase : Strand -> Float
@@ -249,28 +296,3 @@ strandPhase strand =
 px : Float -> String
 px value =
     String.fromFloat value ++ "px"
-
-
-fieldWidth : Float
-fieldWidth =
-    640
-
-
-fieldHeight : Float
-fieldHeight =
-    640
-
-
-radiusBase : Float
-radiusBase =
-    130
-
-
-spinRate : Float
-spinRate =
-    1.3
-
-
-fallGravity : Float
-fallGravity =
-    35
