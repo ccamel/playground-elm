@@ -16,7 +16,7 @@ info =
     , hash = "double-helix"
     , date = "2025-12-14"
     , description = Markdown.toHtml [ class "content" ] """
-An *artistic interpretation* of a DNA double helix using an elm particle system.
+An *artistic interpretation* of a DNA double helix using [a particle system](https://github.com/BrianHicks/elm-particle).
        """
     , srcRel = "Page/DoubleHelix.elm"
     }

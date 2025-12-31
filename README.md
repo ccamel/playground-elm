@@ -38,9 +38,16 @@ The demo is a pure [SPA][] (100% clientside application) written in [elm][].
 
 List of showcases:
 
-- [terrain](https://ccamel.github.io/playground-elm/#terrain): A retro-inspired endless terrain flyover, featuring a procedurally generated 1D landscape, rendered in [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics).
+- [double helix](https://ccamel.github.io/playground-elm/#double-helix): An artistic interpretation of a DNA double
+  helix using [BrianHicks/elm-particle](https://github.com/BrianHicks/elm-particle), featuring connecting rungs and
+  depth-based glow effects.
 
-- [glsl](https://ccamel.github.io/playground-elm/#glsl): A dynamic [WebGL](https://www.khronos.org/webgl/) electricity effect created with [GLSL](https://en.wikipedia.org/wiki/OpenGL_Shading_Language) shaders, featuring interactive 3D rotation with smooth inertia.
+- [terrain](https://ccamel.github.io/playground-elm/#terrain): A retro-inspired endless terrain flyover, featuring a
+  procedurally generated 1D landscape, rendered in [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics).
+
+- [glsl](https://ccamel.github.io/playground-elm/#glsl): A dynamic [WebGL](https://www.khronos.org/webgl/) electricity
+  effect created with [GLSL](https://en.wikipedia.org/wiki/OpenGL_Shading_Language) shaders, featuring interactive 3D
+  rotation with smooth inertia.
 
 - [soundWave toggle](https://ccamel.github.io/playground-elm/#sound-wave-toggle): A simple sound wave toggle button
   rendered in [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics).
