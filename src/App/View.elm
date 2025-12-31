@@ -6,7 +6,7 @@ import App.Models exposing (Model)
 import App.Pages exposing (pageDate, pageDescription, pageGithubLink, pageHash, pageName, pageView, pages)
 import App.Route exposing (Route(..))
 import Browser
-import Html exposing (Html, a, article, br, div, footer, h1, h2, h3, hr, i, img, main_, p, section, span, strong, text)
+import Html exposing (Html, a, article, br, div, footer, h1, h2, h3, hr, i, img, main_, p, section, span, strong, sup, text)
 import Html.Attributes exposing (attribute, class, classList, href, src, title, width)
 import Html.Lazy exposing (lazy)
 import List exposing (intersperse)
@@ -179,7 +179,21 @@ description page =
         [ div [ class "columns" ]
             [ div [ class "column is-8 is-offset-2" ]
                 [ div [ class "content is-medium" ]
-                    [ h2 [ class "title showcase-title mb-5" ] [ page |> pageName |> text ]
+                    [ div [ class "level mb-5" ]
+                        [ div [ class "level-left" ]
+                            [ h2 [ class "title showcase-title mb-0" ]
+                                [ page |> pageName |> text
+                                , sup [ class "ml-2 is-size-5" ]
+                                    [ a
+                                        [ href (pageGithubLink page)
+                                        , class "has-text-grey-light"
+                                        , title "View source on GitHub"
+                                        ]
+                                        [ i [ class "fa fa-github" ] [] ]
+                                    ]
+                                ]
+                            ]
+                        ]
                     , page |> pageDescription
                     ]
                 ]
