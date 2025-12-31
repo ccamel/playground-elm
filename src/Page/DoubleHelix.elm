@@ -16,7 +16,7 @@ info =
     , hash = "double-helix"
     , date = "2025-12-14"
     , description = Markdown.toHtml [ class "content" ] """
-A *simplified* visualization of a DNA double helix using an elm particle system.
+An *artistic interpretation* of a DNA double helix using an elm particle system.
        """
     , srcRel = "Page/DoubleHelix.elm"
     }
@@ -48,7 +48,7 @@ config =
         , lifetimeMin = 4.7
         , lifetimeMax = 6.2
         , delayMin = 0
-        , delayMax = 0.25
+        , delayMax = 0.05
         , speedMin = 110
         , speedMax = 150
         , sizeBase = 6
