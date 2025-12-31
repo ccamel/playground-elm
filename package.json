@@ -39,7 +39,8 @@
     "serve": "BASE_URL=/ parcel src/index.html",
     "release": "release-it",
     "lint": "elm-review && elm-format --validate src && eslint .",
-    "elm-json": "elm-json"
+    "elm-json": "elm-json",
+    "fmt": "elm-format --yes src"
   },
   "files": [
     "dist",
