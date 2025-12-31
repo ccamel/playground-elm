@@ -354,6 +354,7 @@ renderStrandParticle particle =
         , style "left" (px x)
         , style "top" (px y)
         , style "transform" "translate(-50%, -50%)"
+        , style "z-index" (String.fromInt (round (depth * 1000)))
         ]
         [ -- Core particle
           div
