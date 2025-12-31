@@ -8,6 +8,8 @@ import Markdown
 import Particle exposing (Particle)
 import Particle.System as ParticleSystem
 import Random
+import Svg exposing (svg)
+import Svg.Attributes as SvgAttr
 
 
 info : Lib.Page.PageInfo Msg
@@ -185,10 +187,12 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
     section [ class "section pt-1 has-background-black-bis" ]
-        [ div [ class "columns" ]
-            [ div [ class "column is-8 is-offset-2" ]
-                [ div [ class "content is-medium has-text-centered" ]
-                    [ helixView model ]
+        [ div [ class "container is-max-tablet" ]
+            [ div [ class "columns is-centered" ]
+                [ div [ class "column is-four-fifths" ]
+                    [ div [ class "has-text-centered" ]
+                        [ helixView model ]
+                    ]
                 ]
             ]
         ]
@@ -204,16 +208,44 @@ helixView model =
     ParticleSystem.viewCustom
         renderStrandParticle
         (\particles ->
-            div
+            svg
                 [ id "double-helix-scope"
-                , class "mx-auto"
-                , style "width" (px config.field.width)
-                , style "height" (px config.field.height)
-                , style "background" "radial-gradient(circle at 50% 20%, #151522, #040405 60%)"
-                , style "position" "relative"
-                , style "overflow" "hidden"
+                , SvgAttr.width "100%"
+                , SvgAttr.height "100%"
+                , style "max-width" (px config.field.width)
+                , style "margin" "0 auto"
+                , style "display" "block"
+                , SvgAttr.viewBox ("0 0 " ++ String.fromFloat config.field.width ++ " " ++ String.fromFloat config.field.height)
+                , SvgAttr.preserveAspectRatio "xMidYMid meet"
                 ]
-                (rungElements ++ particles)
+                [ Svg.defs []
+                    [ Svg.radialGradient
+                        [ SvgAttr.id "bg-gradient"
+                        , SvgAttr.cx "50%"
+                        , SvgAttr.cy "20%"
+                        ]
+                        [ Svg.stop [ SvgAttr.offset "0%", SvgAttr.stopColor "#151522" ] []
+                        , Svg.stop [ SvgAttr.offset "60%", SvgAttr.stopColor "#040405" ] []
+                        ]
+                    ]
+                , Svg.rect
+                    [ SvgAttr.width (String.fromFloat config.field.width)
+                    , SvgAttr.height (String.fromFloat config.field.height)
+                    , SvgAttr.fill "url(#bg-gradient)"
+                    ]
+                    []
+                , Svg.foreignObject
+                    [ SvgAttr.width "100%"
+                    , SvgAttr.height "100%"
+                    ]
+                    [ div
+                        [ style "width" "100%"
+                        , style "height" "100%"
+                        , style "position" "relative"
+                        ]
+                        (rungElements ++ particles)
+                    ]
+                ]
         )
         model.system
 
