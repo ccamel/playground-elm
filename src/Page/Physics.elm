@@ -316,21 +316,22 @@ interactWithEntity maybeInteraction ({ dots, offset } as entity) =
 constraintDot : Vector2D -> Dot -> Dot
 constraintDot offset ({ pos, radius, pin } as dot) =
     let
-        d =
-            radius * 2
-
-        ( x, y ) =
-            pos |> getXY
-
-        ( limitHighW, limitHighH ) =
-            makeVector2D ( constants.width - d, constants.height - d ) |> flip sub offset |> getXY
-
-        ( limitLowW, limitLowH ) =
-            makeVector2D ( d, d ) |> flip sub offset |> getXY
-
         p =
             case pin of
                 Nothing ->
+                    let
+                        d =
+                            radius * 2
+
+                        ( x, y ) =
+                            pos |> getXY
+
+                        ( limitHighW, limitHighH ) =
+                            makeVector2D ( constants.width - d, constants.height - d ) |> flip sub offset |> getXY
+
+                        ( limitLowW, limitLowH ) =
+                            makeVector2D ( d, d ) |> flip sub offset |> getXY
+                    in
                     ( if x > limitHighW then
                         limitHighW
 

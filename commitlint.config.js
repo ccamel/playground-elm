@@ -9,6 +9,7 @@ module.exports = {
     }
   },
   rules: {
+    'body-max-line-length': [0, 'always'],
     'subject-case': [2, 'always', 'sentence-case'],
     'type-enum': [
       2,
