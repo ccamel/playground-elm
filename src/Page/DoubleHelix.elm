@@ -28,7 +28,7 @@ config :
     { field : { width : number, height : number }
     , helix : { radiusBase : number, radiusVariation : number, spinRate : Float, fallGravity : number }
     , particles : { emissionRate : number, lifetimeMin : Float, lifetimeMax : Float, delayMin : number, delayMax : Float, speedMin : number, speedMax : number, sizeBase : number, sizeVariation : number, phaseJitter : Float, spawnY : number, spawnAngle : number }
-    , appearance : { radialScaleMin : Float, radialScaleMax : Float, strandOneHue : number, strandTwoHue : number, lightnessBase : number, lightnessDepth : number, lightnessFadeMin : Float, lightnessFadeMax : Float }
+    , appearance : { radialScaleBase : Float, radialScaleDepth : Float, strandOneHue : number, strandTwoHue : number, lightnessBase : number, lightnessDepth : number, lightnessFadeMin : Float, lightnessFadeMax : Float }
     , rungs : { spacing : number, thickness : number, color : String, glowColor : String }
     , randomSeed : number
     }
@@ -58,8 +58,8 @@ config =
         , spawnAngle = 270
         }
     , appearance =
-        { radialScaleMin = 0.55
-        , radialScaleMax = 0.45
+        { radialScaleBase = 0.55
+        , radialScaleDepth = 0.45
         , strandOneHue = 200
         , strandTwoHue = 330
         , lightnessBase = 30
@@ -234,7 +234,7 @@ renderRung currentTime rung =
             (sin angle + 1) / 2
 
         radialScale =
-            config.appearance.radialScaleMin + depth * config.appearance.radialScaleMax
+            config.appearance.radialScaleBase + depth * config.appearance.radialScaleDepth
 
         centerX =
             config.field.width / 2
@@ -318,7 +318,7 @@ renderStrandParticle particle =
             (sin angle + 1) / 2
 
         radialScale =
-            config.appearance.radialScaleMin + depth * config.appearance.radialScaleMax
+            config.appearance.radialScaleBase + depth * config.appearance.radialScaleDepth
 
         x =
             (config.field.width / 2) + (data.radius * radialScale * cos angle)
