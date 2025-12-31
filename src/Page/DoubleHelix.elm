@@ -44,7 +44,7 @@ config =
         , fallGravity = 35
         }
     , particles =
-        { emissionRate = 5
+        { emissionRate = 9
         , lifetimeMin = 4.7
         , lifetimeMax = 6.2
         , delayMin = 0
