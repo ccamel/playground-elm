@@ -1,4 +1,4 @@
-module Page.DoubleHelix exposing (HelixData, Model, Msg, Strand, info, init, subscriptions, update, view)
+module Page.DoubleHelix exposing (HelixData, Model, Msg, Rung, Strand, info, init, subscriptions, update, view)
 
 import Browser.Events
 import Html exposing (Html, div, section)
@@ -29,6 +29,7 @@ config :
     , helix : { radiusBase : number, radiusVariation : number, spinRate : Float, fallGravity : number }
     , particles : { emissionRate : number, lifetimeMin : Float, lifetimeMax : Float, delayMin : number, delayMax : Float, speedMin : number, speedMax : number, sizeBase : number, sizeVariation : number, phaseJitter : Float, spawnY : number, spawnAngle : number }
     , appearance : { radialScaleMin : Float, radialScaleMax : Float, strandOneHue : number, strandTwoHue : number, lightnessBase : number, lightnessDepth : number, lightnessFadeMin : Float, lightnessFadeMax : Float }
+    , rungs : { spacing : number, thickness : number, color : String, glowColor : String }
     , randomSeed : number
     }
 config =
@@ -66,6 +67,12 @@ config =
         , lightnessFadeMin = 0.45
         , lightnessFadeMax = 0.55
         }
+    , rungs =
+        { spacing = 20
+        , thickness = 1
+        , color = "rgba(97, 125, 117, 0.48)"
+        , glowColor = "rgba(148, 200, 235, 0.44)"
+        }
     , randomSeed = 42
     }
 
@@ -90,6 +97,14 @@ type alias Model =
     { system : ParticleSystem.System HelixData
     , time : Float
     , cannonRate : Float
+    , rungs : List Rung
+    }
+
+
+type alias Rung =
+    { birthTime : Float
+    , phase : Float
+    , radius : Float
     }
 
 
@@ -103,6 +118,7 @@ init =
     ( { system = initialSystem
       , time = 0
       , cannonRate = config.particles.emissionRate
+      , rungs = []
       }
     , Cmd.none
     )
@@ -122,7 +138,35 @@ update msg model =
             )
 
         Tick delta ->
-            ( { model | time = model.time + (delta / 1000) }, Cmd.none )
+            let
+                newTime =
+                    model.time + (delta / 1000)
+
+                avgSpeed =
+                    (config.particles.speedMin + config.particles.speedMax) / 2
+
+                rungInterval =
+                    config.rungs.spacing / avgSpeed
+
+                shouldGenerateRung =
+                    floor (model.time / rungInterval) < floor (newTime / rungInterval)
+
+                newRung =
+                    if shouldGenerateRung then
+                        [ { birthTime = newTime
+                          , phase = 0
+                          , radius = config.helix.radiusBase
+                          }
+                        ]
+
+                    else
+                        []
+
+                activeRungs =
+                    (model.rungs ++ newRung)
+                        |> List.filter (\r -> newTime - r.birthTime < config.particles.lifetimeMax)
+            in
+            ( { model | time = newTime, rungs = activeRungs }, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -152,8 +196,13 @@ view model =
 
 helixView : Model -> Html Msg
 helixView model =
+    let
+        rungElements =
+            model.rungs
+                |> List.map (renderRung model.time)
+    in
     ParticleSystem.viewCustom
-        renderParticle
+        renderStrandParticle
         (\particles ->
             div
                 [ id "double-helix-scope"
@@ -164,13 +213,97 @@ helixView model =
                 , style "position" "relative"
                 , style "overflow" "hidden"
                 ]
-                particles
+                (rungElements ++ particles)
         )
         model.system
 
 
-renderParticle : HelixParticle -> Html Msg
-renderParticle particle =
+renderRung : Float -> Rung -> Html Msg
+renderRung currentTime rung =
+    let
+        age =
+            currentTime - rung.birthTime
+
+        y =
+            calculateRungY age
+
+        angle =
+            rung.phase + config.helix.spinRate * age
+
+        depth =
+            (sin angle + 1) / 2
+
+        radialScale =
+            config.appearance.radialScaleMin + depth * config.appearance.radialScaleMax
+
+        centerX =
+            config.field.width / 2
+
+        rungRadius =
+            rung.radius * radialScale
+
+        strand1X =
+            centerX + (rungRadius * cos angle)
+
+        strand2X =
+            centerX + (rungRadius * cos (angle + pi))
+
+        leftX =
+            min strand1X strand2X
+
+        rightX =
+            max strand1X strand2X
+
+        width =
+            rightX - leftX
+
+        opacity =
+            calculateRungOpacity age depth
+    in
+    div
+        [ style "position" "absolute"
+        , style "left" (px leftX)
+        , style "top" (px y)
+        , style "width" (px width)
+        , style "height" (px config.rungs.thickness)
+        , style "background" config.rungs.color
+        , style "box-shadow" ("0 0 8px " ++ config.rungs.glowColor)
+        , style "opacity" (String.fromFloat opacity)
+        , style "transform" "translateY(-50%)"
+        ]
+        []
+
+
+calculateRungY : Float -> Float
+calculateRungY age =
+    let
+        avgSpeed =
+            (config.particles.speedMin + config.particles.speedMax) / 2
+    in
+    config.particles.spawnY + (avgSpeed * age) + (config.helix.fallGravity * age * age / 2)
+
+
+calculateRungOpacity : Float -> Float -> Float
+calculateRungOpacity age depth =
+    let
+        lifetimePercent =
+            age / config.particles.lifetimeMax |> min 1.0
+
+        fade =
+            if lifetimePercent < 0.1 then
+                lifetimePercent / 0.1
+
+            else if lifetimePercent > 0.9 then
+                1 - ((lifetimePercent - 0.9) / 0.1)
+
+            else
+                1.0
+    in
+    fade * (0.4 + depth * 0.3)
+
+
+renderStrandParticle : HelixParticle -> Html Msg
+renderStrandParticle particle =
     let
         data =
             Particle.data particle
