@@ -342,19 +342,54 @@ renderStrandParticle particle =
 
         lightness =
             (config.appearance.lightnessBase + depth * config.appearance.lightnessDepth) * (config.appearance.lightnessFadeMin + config.appearance.lightnessFadeMax * fade)
+
+        color =
+            "hsl(" ++ String.fromFloat hue ++ ", 80%, " ++ String.fromFloat lightness ++ "%)"
+
+        glowIntensity =
+            1 - depth
     in
     div
         [ style "position" "absolute"
         , style "left" (px x)
         , style "top" (px y)
-        , style "width" (px size)
-        , style "height" (px size)
-        , style "background" ("hsl(" ++ String.fromFloat hue ++ ", 80%, " ++ String.fromFloat lightness ++ "%)")
-        , style "border-radius" "50%"
-        , style "filter" "blur(0.5px)"
         , style "transform" "translate(-50%, -50%)"
         ]
-        []
+        [ -- Core particle
+          div
+            [ style "position" "absolute"
+            , style "width" (px size)
+            , style "height" (px size)
+            , style "background" color
+            , style "border-radius" "50%"
+            , style "filter" "blur(0.5px)"
+            ]
+            []
+        , -- Medium glow layer
+          div
+            [ style "position" "absolute"
+            , style "width" (px (size * 1.5))
+            , style "height" (px (size * 1.5))
+            , style "background" color
+            , style "border-radius" "50%"
+            , style "filter" "blur(2px)"
+            , style "opacity" (String.fromFloat (0.6 * glowIntensity))
+            , style "transform" "translate(-16.5%, -16.5%)"
+            ]
+            []
+        , -- Outer glow layer
+          div
+            [ style "position" "absolute"
+            , style "width" (px (size * 2))
+            , style "height" (px (size * 2))
+            , style "background" color
+            , style "border-radius" "50%"
+            , style "filter" "blur(4px)"
+            , style "opacity" (String.fromFloat (0.4 * glowIntensity))
+            , style "transform" "translate(-25%, -25%)"
+            ]
+            []
+        ]
 
 
 helixParticleCannon : Float -> Strand -> Float -> Random.Generator (List HelixParticle)
