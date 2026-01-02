@@ -687,8 +687,8 @@ isWall x y maze =
         |> (==) 0
 
 
-isEntrance : Int -> Int -> Maze -> Bool
-isEntrance x y _ =
+isEntrance : Int -> Int -> Bool
+isEntrance x y =
     (x == 0) && (y == 0)
 
 
@@ -811,7 +811,7 @@ cellView maze y =
                         , ( "fa fa-caret-left", isExploredSide Left )
                         , ( "fa fa-caret-down", isExploredSide Down )
                         , ( "fa fa-crosshairs", isNoSideToExplore )
-                        , ( "entrance", isEntrance x y maze )
+                        , ( "entrance", isEntrance x y )
                         , ( "exit", isExit x y maze )
                         ]
                     ]

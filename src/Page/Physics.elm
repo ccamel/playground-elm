@@ -18,10 +18,8 @@ import Html.Events.Extra.Pointer as Pointer
 import Lib.Frame exposing (Frames, addFrame, createFrames, fpsText)
 import Lib.Gfx exposing (withAlpha)
 import Lib.Page
-import List
 import Markdown
 import Maybe exposing (withDefault)
-import String
 import Vector2 exposing (Index(..), Vector2, map2)
 
 

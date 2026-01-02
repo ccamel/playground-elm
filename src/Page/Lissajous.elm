@@ -18,7 +18,6 @@ import Lib.Page
 import Lib.String exposing (strToFloatWithMinMax, strToIntWithMinMax)
 import List exposing (concat, concatMap, filterMap, indexedMap, map, range)
 import Markdown
-import Maybe
 import Round
 import String exposing (fromFloat, fromInt)
 import String.Interpolate exposing (interpolate)

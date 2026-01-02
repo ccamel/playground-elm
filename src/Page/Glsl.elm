@@ -11,7 +11,6 @@ import Markdown
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vector2 exposing (Vec2, vec2)
 import Math.Vector3 as Vector3 exposing (Vec3, vec3)
-import Maybe
 import Platform.Sub exposing (batch)
 import Quaternion exposing (Quaternion)
 import Task

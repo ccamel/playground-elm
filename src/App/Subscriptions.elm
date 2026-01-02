@@ -9,7 +9,7 @@ import App.Route exposing (Route(..))
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ mainSubscriptions model
+        [ mainSubscriptions
         , case model.route of
             NotFoundRoute ->
                 Sub.none
@@ -22,6 +22,6 @@ subscriptions model =
         ]
 
 
-mainSubscriptions : Model -> Sub Msg
-mainSubscriptions _ =
+mainSubscriptions : Sub Msg
+mainSubscriptions =
     Sub.none
