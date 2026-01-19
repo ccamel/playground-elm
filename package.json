@@ -69,7 +69,7 @@
     "elm-review": "^2.13.5",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-prettier": "^5.5.5",
     "github-fork-ribbon-css": "^0.2.3",
     "globals": "^16.5.0",
     "node-elm-compiler": "^5.0.6",
