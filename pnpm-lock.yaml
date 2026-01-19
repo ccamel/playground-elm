@@ -55,8 +55,8 @@ importers:
         specifier: ^0.2.13
         version: 0.2.13
       elm-review:
-        specifier: ^2.13.4
-        version: 2.13.4
+        specifier: ^2.13.5
+        version: 2.13.5
       eslint:
         specifier: ^9.39.2
         version: 9.39.2(jiti@2.6.1)
@@ -931,9 +931,6 @@ packages:
   '@types/keyv@3.1.4':
     resolution: {integrity: sha512-BQ5aZNSCpj7D6K2ksrRCTmKRLEpnPvWDiLPfoGyhZ++8YtiK9d/3DBKPJgry359X/P1PfruyYwvnvwFjuEiEIg==}
 
-  '@types/node@24.7.2':
-    resolution: {integrity: sha512-/NbVmcGTP+lj5oa4yiYxxeBjRivKQ5Ns1eSZeB99ExsEQ6rX5XYU1Zy/gGxY/ilqtD4Etx9mKyrPxZRetiahhA==}
-
   '@types/node@25.0.9':
     resolution: {integrity: sha512-/rpCXHlCWeqClNBwUhDcusJxXYDjZTyE8v5oTO7WbL8eij2nKhUeU89/6xgjU7N4/Vh3He0BtyhJdQbDyhiXAw==}
 
@@ -1545,8 +1542,8 @@ packages:
   elm-pep@1.0.6:
     resolution: {integrity: sha512-1DJ6ReFk8+GtgoqRiEhBo28K69Rxe9Bfc7h16+1VMQT2KlCuPBYj5W33OYa2AZpqkuqCBLhcNzO10zxJVakapA==}
 
-  elm-review@2.13.4:
-    resolution: {integrity: sha512-TnH0qlEokvx3HEUag1g0FMEvFQ1OVYu28FdMFqk6Rqvg0swr75npG5ouAdzybEEKBmLIQKO1BhyxiY0VD483RQ==}
+  elm-review@2.13.5:
+    resolution: {integrity: sha512-Iw3YztGjmuGyn4nIEVOxqx+dacJialprpB0ZVrBHA0sBBOQ9+QhBaQnQ0tp0G8U8UoIAush0M7XoBqzUN1F/+A==}
     engines: {node: 14 >=14.21 || 16 >=16.20 || 18 || 20 || >=22}
     hasBin: true
 
@@ -3201,9 +3198,6 @@ packages:
   ultron@1.1.1:
     resolution: {integrity: sha512-UIEXBNeYmKptWH6z8ZnqTeS8fV74zG0/eRU9VGkpzz+LIJNs8W/zM/L+7ctCkRrgbNnnR0xxw4bKOr0cW0N0Og==}
 
-  undici-types@7.14.0:
-    resolution: {integrity: sha512-QQiYxHuyZ9gQUIrmPo3IA+hUl4KYk8uSA7cHrcKd/l3p1OTpZcM0Tbp9x7FAtXdAYhlasd60ncPpgu6ihG6TOA==}
-
   undici-types@7.16.0:
     resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
 
@@ -4416,7 +4410,7 @@ snapshots:
     dependencies:
       '@types/http-cache-semantics': 4.0.4
       '@types/keyv': 3.1.4
-      '@types/node': 24.7.2
+      '@types/node': 25.0.9
       '@types/responselike': 1.0.3
 
   '@types/eslint-scope@3.7.7':
@@ -4437,11 +4431,7 @@ snapshots:
 
   '@types/keyv@3.1.4':
     dependencies:
-      '@types/node': 24.7.2
-
-  '@types/node@24.7.2':
-    dependencies:
-      undici-types: 7.14.0
+      '@types/node': 25.0.9
 
   '@types/node@25.0.9':
     dependencies:
@@ -4453,7 +4443,7 @@ snapshots:
 
   '@types/responselike@1.0.3':
     dependencies:
-      '@types/node': 24.7.2
+      '@types/node': 25.0.9
 
   '@webassemblyjs/ast@1.14.1':
     dependencies:
@@ -5070,7 +5060,7 @@ snapshots:
 
   elm-pep@1.0.6: {}
 
-  elm-review@2.13.4:
+  elm-review@2.13.5:
     dependencies:
       chalk: 4.1.2
       chokidar: 3.6.0
@@ -6783,8 +6773,6 @@ snapshots:
   ultron@1.0.2: {}
 
   ultron@1.1.1: {}
-
-  undici-types@7.14.0: {}
 
   undici-types@7.16.0: {}
 
