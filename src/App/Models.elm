@@ -10,6 +10,7 @@ import Page.Dapp
 import Page.DigitalClock
 import Page.DoubleHelix
 import Page.Glsl
+import Page.Jellyfish
 import Page.Lissajous
 import Page.Maze
 import Page.Physics
@@ -31,6 +32,7 @@ type alias PagesModel =
     , soundWaveTogglePage : Maybe Page.SoundWaveToggle.Model
     , glslPage : Maybe Page.Glsl.Model
     , terrainPage : Maybe Page.Terrain.Model
+    , jellyfishPage : Maybe Page.Jellyfish.Model
     , doubleHelixPage : Maybe Page.DoubleHelix.Model
     }
 
@@ -45,7 +47,7 @@ type alias Model =
     }
 
 
-emptyPagesModel : { aboutPage : Maybe a, calcPage : Maybe b, lissajousPage : Maybe c, digitalClockPage : Maybe d, mazePage : Maybe e, physicsPage : Maybe f, termPage : Maybe g, asteroidsPage : Maybe h, dappPage : Maybe i, soundWaveTogglePage : Maybe j, glslPage : Maybe k, terrainPage : Maybe l, doubleHelixPage : Maybe m }
+emptyPagesModel : { aboutPage : Maybe a, calcPage : Maybe b, lissajousPage : Maybe c, digitalClockPage : Maybe d, mazePage : Maybe e, physicsPage : Maybe f, termPage : Maybe g, asteroidsPage : Maybe h, dappPage : Maybe i, soundWaveTogglePage : Maybe j, glslPage : Maybe k, terrainPage : Maybe l, jellyfishPage : Maybe m, doubleHelixPage : Maybe n }
 emptyPagesModel =
     { aboutPage = Nothing
     , calcPage = Nothing
@@ -59,5 +61,6 @@ emptyPagesModel =
     , soundWaveTogglePage = Nothing
     , glslPage = Nothing
     , terrainPage = Nothing
+    , jellyfishPage = Nothing
     , doubleHelixPage = Nothing
     }

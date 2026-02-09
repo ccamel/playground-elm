@@ -28,6 +28,7 @@ import Page.Dapp
 import Page.DigitalClock
 import Page.DoubleHelix
 import Page.Glsl
+import Page.Jellyfish
 import Page.Lissajous
 import Page.Maze
 import Page.Physics
@@ -326,6 +327,23 @@ specs =
         )
         (\model -> model.pages.terrainPage)
         (\maybePage -> updatePages (\pageModels -> { pageModels | terrainPage = maybePage }))
+    , toSpec Jellyfish
+        Page.Jellyfish.info
+        (\_ -> Page.Jellyfish.init)
+        Page.Jellyfish.update
+        Page.Jellyfish.view
+        Page.Jellyfish.subscriptions
+        JellyfishPageMsg
+        (\msg ->
+            case msg of
+                JellyfishPageMsg subMsg ->
+                    Just subMsg
+
+                _ ->
+                    Nothing
+        )
+        (\model -> model.pages.jellyfishPage)
+        (\maybePage -> updatePages (\pageModels -> { pageModels | jellyfishPage = maybePage }))
     , toSpec DoubleHelix
         Page.DoubleHelix.info
         (\_ -> Page.DoubleHelix.init)
@@ -401,6 +419,9 @@ pageSpec target =
 
                 Terrain ->
                     "terrain"
+
+                Jellyfish ->
+                    "jellyfish"
 
                 DoubleHelix ->
                     "double-helix"

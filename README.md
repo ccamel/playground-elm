@@ -38,6 +38,10 @@ The demo is a pure [SPA][] (100% clientside application) written in [elm][].
 
 List of showcases:
 
+- [jellyfish](https://ccamel.github.io/playground-elm/#jellyfish): A compact p5.js-inspired animation translated to
+  Elm and rendered with [joakin/elm-canvas](https://package.elm-lang.org/packages/joakin/elm-canvas/latest/),
+  featuring ethereal jellyfish-like white line forms on a black canvas.
+
 - [double helix](https://ccamel.github.io/playground-elm/#double-helix): An artistic interpretation of a DNA double
   helix using [BrianHicks/elm-particle](https://github.com/BrianHicks/elm-particle), featuring connecting rungs and
   depth-based glow effects.

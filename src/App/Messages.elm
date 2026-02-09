@@ -8,6 +8,7 @@ import Page.Dapp
 import Page.DigitalClock
 import Page.DoubleHelix
 import Page.Glsl
+import Page.Jellyfish
 import Page.Lissajous
 import Page.Maze
 import Page.Physics
@@ -30,6 +31,7 @@ type Page
     | SoundWaveToggle
     | Glsl
     | Terrain
+    | Jellyfish
     | DoubleHelix
 
 
@@ -50,4 +52,5 @@ type Msg
     | SoundWaveTogglePageMsg Page.SoundWaveToggle.Msg
     | GlslPageMsg Page.Glsl.Msg
     | TerrainPageMsg Page.Terrain.Msg
+    | JellyfishPageMsg Page.Jellyfish.Msg
     | DoubleHelixPageMsg Page.DoubleHelix.Msg

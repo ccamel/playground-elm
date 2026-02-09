@@ -1,0 +1,7 @@
+.jellyfish canvas {
+  width: 100% !important;
+  height: auto !important;
+  max-width: 400px;
+  display: block;
+  margin: 0 auto;
+}

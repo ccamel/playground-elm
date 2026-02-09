@@ -9,6 +9,7 @@ import './Page/asteroids.css';
 import './Page/calc.css';
 import './Page/digital-clock.css';
 import './Page/lissajous.css';
+import './Page/jellyfish.css';
 import './Page/maze.css';
 import './Page/physics.css';
 import './Page/term.css';
