@@ -13,6 +13,9 @@ const gitignorePath = path.resolve(__dirname, '.gitignore');
 
 export default [
   includeIgnoreFile(gitignorePath),
+  {
+    ignores: ['.elm/**', 'elm-stuff/**', '.parcel-cache/**', '.cache/**']
+  },
   js.configs.recommended,
   {
     languageOptions: {
