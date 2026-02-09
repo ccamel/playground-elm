@@ -44,7 +44,7 @@ appendToBoundedArray value ({ values, length, capacity, default } as array) =
 -}
 createBoundedArray : Int -> (() -> a) -> BoundedArray a
 createBoundedArray capacity default =
-    { values = Array.initialize capacity (always <| default ()), length = 0, capacity = capacity, default = default }
+    { values = Array.repeat capacity (default ()), length = 0, capacity = capacity, default = default }
 
 
 {-| reset the bounded array to its initial state.
