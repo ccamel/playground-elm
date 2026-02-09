@@ -1,6 +1,6 @@
 module Page.Maze exposing (Model, Msg, info, init, subscriptions, update, view)
 
-import Array exposing (Array, get, initialize, set)
+import Array exposing (Array, get, set)
 import Basics.Extra exposing (flip)
 import File.Download as Download
 import FormatNumber exposing (format)
@@ -166,7 +166,7 @@ emptyMaze : Int -> Int -> Maze
 emptyMaze width height =
     { width = width
     , height = height
-    , cells = initialize width (\_ -> initialize height (always []))
+    , cells = Array.repeat width (Array.repeat height [])
     , state = Created
     }
 
@@ -365,9 +365,8 @@ update msg (Model model) =
                     let
                         -- produce n commands, each one sending a tick on "time.now"
                         cmd =
-                            Time.now
+                            Task.perform Tick Time.now
                                 |> repeat n
-                                |> map (Task.perform Tick)
                                 |> Cmd.batch
                     in
                     ( model, cmd )
