@@ -6,7 +6,7 @@
  */
 const registerPorts = app => {
   app.ports.evalJS.subscribe(code => {
-    let result = '';
+    let result;
     try {
       result = eval(code);
     } catch (err) {
