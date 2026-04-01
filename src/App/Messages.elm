@@ -10,6 +10,7 @@ import Page.DoubleHelix
 import Page.Glsl
 import Page.Lissajous
 import Page.Maze
+import Page.Organic
 import Page.Physics
 import Page.SoundWaveToggle
 import Page.Term
@@ -30,6 +31,7 @@ type Page
     | SoundWaveToggle
     | Glsl
     | Terrain
+    | Organic
     | DoubleHelix
 
 
@@ -50,4 +52,5 @@ type Msg
     | SoundWaveTogglePageMsg Page.SoundWaveToggle.Msg
     | GlslPageMsg Page.Glsl.Msg
     | TerrainPageMsg Page.Terrain.Msg
+    | OrganicPageMsg Page.Organic.Msg
     | DoubleHelixPageMsg Page.DoubleHelix.Msg
