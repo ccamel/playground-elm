@@ -30,6 +30,7 @@ import Page.DoubleHelix
 import Page.Glsl
 import Page.Lissajous
 import Page.Maze
+import Page.Organic
 import Page.Physics
 import Page.SoundWaveToggle
 import Page.Term
@@ -326,6 +327,23 @@ specs =
         )
         (\model -> model.pages.terrainPage)
         (\maybePage -> updatePages (\pageModels -> { pageModels | terrainPage = maybePage }))
+    , toSpec Organic
+        Page.Organic.info
+        (\_ -> Page.Organic.init)
+        Page.Organic.update
+        Page.Organic.view
+        Page.Organic.subscriptions
+        OrganicPageMsg
+        (\msg ->
+            case msg of
+                OrganicPageMsg subMsg ->
+                    Just subMsg
+
+                _ ->
+                    Nothing
+        )
+        (\model -> model.pages.organicPage)
+        (\maybePage -> updatePages (\pageModels -> { pageModels | organicPage = maybePage }))
     , toSpec DoubleHelix
         Page.DoubleHelix.info
         (\_ -> Page.DoubleHelix.init)
@@ -401,6 +419,9 @@ pageSpec target =
 
                 Terrain ->
                     "terrain"
+
+                Organic ->
+                    "organic"
 
                 DoubleHelix ->
                     "double-helix"

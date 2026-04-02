@@ -38,6 +38,10 @@ The demo is a pure [SPA][] (100% clientside application) written in [elm][].
 
 List of showcases:
 
+- [organic](https://ccamel.github.io/playground-elm/#organic): A compact organic showcase translated to Elm and
+  rendered with [joakin/elm-canvas](https://package.elm-lang.org/packages/joakin/elm-canvas/latest/), with animated
+  organism-inspired mini demos.
+
 - [double helix](https://ccamel.github.io/playground-elm/#double-helix): An artistic interpretation of a DNA double
   helix using [BrianHicks/elm-particle](https://github.com/BrianHicks/elm-particle), featuring connecting rungs and
   depth-based glow effects.
