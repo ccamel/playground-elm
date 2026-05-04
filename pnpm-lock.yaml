@@ -70,8 +70,8 @@ importers:
         specifier: ^0.2.3
         version: 0.2.3
       globals:
-        specifier: ^17.5.0
-        version: 17.5.0
+        specifier: ^17.6.0
+        version: 17.6.0
       node-elm-compiler:
         specifier: ^5.0.6
         version: 5.0.6
@@ -1896,8 +1896,8 @@ packages:
     resolution: {integrity: sha512-AhO5QUcj8llrbG09iWhPU2B204J1xnPeL8kQmVorSsy+Sjj1sk8gIyh6cUocGmH4L0UuhAJy+hJMRA4mgA4mFQ==}
     engines: {node: '>=8'}
 
-  globals@17.5.0:
-    resolution: {integrity: sha512-qoV+HK2yFl/366t2/Cb3+xxPUo5BuMynomoDmiaZBIdbs+0pYbjfZU+twLhGKp4uCZ/+NbtpVepH5bGCxRyy2g==}
+  globals@17.6.0:
+    resolution: {integrity: sha512-sepffkT8stwnIYbsMBpoCHJuJM5l98FUF2AnE07hfvE0m/qp3R586hw4jF4uadbhvg1ooIdzuu7CsfD2jzCaNA==}
     engines: {node: '>=18'}
 
   got@11.8.6:
@@ -5412,7 +5412,7 @@ snapshots:
     dependencies:
       type-fest: 0.20.2
 
-  globals@17.5.0: {}
+  globals@17.6.0: {}
 
   got@11.8.6:
     dependencies:
