@@ -19,7 +19,7 @@ jobs:
       ELM_HOME: ${{ github.workspace }}/.elm
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup node environment (for building)
         uses: actions/setup-node@v7

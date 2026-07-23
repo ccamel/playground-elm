@@ -18,7 +18,7 @@ jobs:
     if: github.actor != 'dependabot[bot]'
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -31,7 +31,7 @@ jobs:
       ELM_HOME: ${{ github.workspace }}/.elm
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup node environment (for building)
         uses: actions/setup-node@v7
@@ -74,7 +74,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Lint markdown files
         uses: avto-dev/markdown-lint@v1.5.0
@@ -86,7 +86,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Lint yaml files
         uses: ibiqlik/action-yamllint@v3.1.1
@@ -95,7 +95,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Lint shell scripts
         uses: ludeeus/action-shellcheck@master
@@ -107,7 +107,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
