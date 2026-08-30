@@ -1,10 +1,10 @@
-onlyBuiltDependencies:
-  - '@swc/core'
-  - bufferutil
-  - core-js
-  - elm
-  - elm-format
-  - elm-json
-  - lmdb
-  - msgpackr-extract
-  - utf-8-validate
+allowBuilds:
+  '@swc/core': true
+  bufferutil: true
+  core-js: true
+  elm: true
+  elm-format: true
+  elm-json: true
+  lmdb: true
+  msgpackr-extract: true
+  utf-8-validate: true
