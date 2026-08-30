@@ -27,6 +27,7 @@ import Page.Calc
 import Page.Dapp
 import Page.DigitalClock
 import Page.DoubleHelix
+import Page.Euclid
 import Page.Glsl
 import Page.Lissajous
 import Page.Maze
@@ -361,6 +362,23 @@ specs =
         )
         (\model -> model.pages.doubleHelixPage)
         (\maybePage -> updatePages (\pageModels -> { pageModels | doubleHelixPage = maybePage }))
+    , toSpec Euclid
+        Page.Euclid.info
+        (\_ -> Page.Euclid.init)
+        Page.Euclid.update
+        Page.Euclid.view
+        Page.Euclid.subscriptions
+        EuclidPageMsg
+        (\msg ->
+            case msg of
+                EuclidPageMsg subMsg ->
+                    Just subMsg
+
+                _ ->
+                    Nothing
+        )
+        (\model -> model.pages.euclidPage)
+        (\maybePage -> updatePages (\pageModels -> { pageModels | euclidPage = maybePage }))
     ]
 
 
@@ -425,6 +443,9 @@ pageSpec target =
 
                 DoubleHelix ->
                     "double-helix"
+
+                Euclid ->
+                    "euclid"
     in
     Dict.get slug pageDict
 

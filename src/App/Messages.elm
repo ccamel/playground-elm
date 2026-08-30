@@ -7,6 +7,7 @@ import Page.Calc
 import Page.Dapp
 import Page.DigitalClock
 import Page.DoubleHelix
+import Page.Euclid
 import Page.Glsl
 import Page.Lissajous
 import Page.Maze
@@ -33,6 +34,7 @@ type Page
     | Terrain
     | Organic
     | DoubleHelix
+    | Euclid
 
 
 type Msg
@@ -54,3 +56,4 @@ type Msg
     | TerrainPageMsg Page.Terrain.Msg
     | OrganicPageMsg Page.Organic.Msg
     | DoubleHelixPageMsg Page.DoubleHelix.Msg
+    | EuclidPageMsg Page.Euclid.Msg
