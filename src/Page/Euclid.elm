@@ -1,6 +1,10 @@
-module Page.Euclid exposing (Model, Msg, info, init, subscriptions, update, view)
+module Page.Euclid exposing (Components, Draggable, EntityId, FeatureKind, FeatureRef, Geometry, Interaction, Model, Msg, Node, PointExpr, Selectable, Singletons, World, info, init, subscriptions, update, view)
 
 import Dict exposing (Dict)
+import Ecs
+import Ecs.Components4
+import Ecs.EntityComponents
+import Ecs.Singletons1
 import Html exposing (Html, div)
 import Html.Attributes exposing (class, style)
 import Html.Events exposing (on)
@@ -10,6 +14,10 @@ import Markdown
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Svg
 import Svg.Attributes exposing (cursor, cx, cy, fill, height, r, stroke, strokeWidth, viewBox, width)
+
+
+
+-- PAGE INFO
 
 
 info : Lib.Page.PageInfo Msg
@@ -24,8 +32,16 @@ An experimental 2D vector playground for geometric construction, manipulation, a
     }
 
 
-type alias NodeId =
+
+-- ENTITY
+
+
+type alias EntityId =
     Int
+
+
+
+-- COMPONENTS
 
 
 type Node
@@ -36,20 +52,71 @@ type PointExpr
     = Literal Vec2
 
 
-type alias Document =
-    { nodes : Dict NodeId Node
-    , nextId : Int
-    }
-
-
 type Geometry
     = GPoint Vec2
 
 
-type alias EvaluatedNode =
-    { id : NodeId
-    , geometry : Geometry
+type Selectable
+    = Selectable
+
+
+type Draggable
+    = Draggable
+
+
+type alias Components =
+    Ecs.Components4.Components4 EntityId Node Geometry Selectable Draggable
+
+
+
+-- SINGLETONS
+
+
+type alias Singletons =
+    Ecs.Singletons1.Singletons1 EntityId
+
+
+
+-- SPECS
+
+
+type alias Specs =
+    { all : AllComponentsSpec
+    , expression : ComponentSpec Node
+    , evaluated : ComponentSpec Geometry
+    , selectable : ComponentSpec Selectable
+    , draggable : ComponentSpec Draggable
+    , nextEntityId : SingletonSpec EntityId
     }
+
+
+type alias AllComponentsSpec =
+    Ecs.AllComponentsSpec EntityId Components
+
+
+type alias ComponentSpec a =
+    Ecs.ComponentSpec EntityId a Components
+
+
+type alias SingletonSpec a =
+    Ecs.SingletonSpec a Singletons
+
+
+
+-- WORLD
+
+
+type alias World =
+    Ecs.World EntityId Components Singletons
+
+
+specs : Specs
+specs =
+    Specs |> Ecs.Components4.specs |> Ecs.Singletons1.specs
+
+
+
+-- FEATURES
 
 
 type FeatureKind
@@ -57,7 +124,7 @@ type FeatureKind
 
 
 type alias FeatureRef =
-    { owner : NodeId
+    { owner : EntityId
     , kind : FeatureKind
     }
 
@@ -66,6 +133,10 @@ type alias Feature =
     { ref : FeatureRef
     , position : Vec2
     }
+
+
+
+-- INTERACTION
 
 
 type Interaction
@@ -79,11 +150,18 @@ type alias DragState =
     }
 
 
+
+-- MODEL
+
+
 type alias Model =
-    { document : Document
+    { world : World
     , interaction : Interaction
-    , pointer : Vec2
     }
+
+
+
+-- MESSAGES
 
 
 type Msg
@@ -92,48 +170,62 @@ type Msg
     | PointerUp Vec2
 
 
+
+-- INIT
+
+
 init : ( Model, Cmd Msg )
 init =
-    ( { document = { nodes = Dict.empty, nextId = 0 }
+    ( { world = Ecs.emptyWorld specs.all (Ecs.Singletons1.init 0)
       , interaction = Idle
-      , pointer = vec2 0 0
       }
     , Cmd.none
     )
+
+
+
+-- UPDATE
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         PointerDown pointer ->
-            ( startDrag pointer { model | pointer = pointer }, Cmd.none )
+            ( startDrag pointer model, Cmd.none )
 
         PointerMoved pointer ->
-            ( movePointer pointer { model | pointer = pointer }, Cmd.none )
+            ( movePointer pointer model, Cmd.none )
 
         PointerUp pointer ->
-            ( { model
-                | pointer = pointer
-                , interaction = interactionAt pointer model.document
-              }
-            , Cmd.none
-            )
+            ( { model | interaction = interactionAt pointer model.world }, Cmd.none )
+
+
+
+-- SYSTEMS
 
 
 startDrag : Vec2 -> Model -> Model
 startDrag pointer model =
-    case hitTest pointer model.document of
+    case hitTest pointer model.world of
         Just feature ->
-            { model | interaction = Dragging { feature = feature } }
+            if
+                model.world
+                    |> Ecs.onEntity feature.owner
+                    |> Ecs.hasComponent specs.draggable
+            then
+                { model | interaction = Dragging { feature = feature } }
+
+            else
+                { model | interaction = Hovering feature }
 
         Nothing ->
             let
-                ( nodeId, document ) =
-                    addPoint pointer model.document
+                ( entityId, world ) =
+                    addPoint pointer model.world
             in
             { model
-                | document = document
-                , interaction = Dragging { feature = { owner = nodeId, kind = PointLocation } }
+                | world = world
+                , interaction = Dragging { feature = { owner = entityId, kind = PointLocation } }
             }
 
 
@@ -141,52 +233,60 @@ movePointer : Vec2 -> Model -> Model
 movePointer pointer model =
     case model.interaction of
         Dragging drag ->
-            { model | document = rewriteDocument drag.feature pointer model.document }
+            { model | world = dragSystem drag.feature pointer model.world }
 
         _ ->
-            { model | interaction = interactionAt pointer model.document }
+            { model | interaction = interactionAt pointer model.world }
 
 
-addPoint : Vec2 -> Document -> ( NodeId, Document )
-addPoint point document =
+addPoint : Vec2 -> World -> ( EntityId, World )
+addPoint position world =
     let
-        nodeId =
-            document.nextId
+        entityId =
+            Ecs.getSingleton specs.nextEntityId world
     in
-    ( nodeId
-    , { document
-        | nodes = Dict.insert nodeId (Point (Literal point)) document.nodes
-        , nextId = document.nextId + 1
-      }
+    ( entityId
+    , world
+        |> Ecs.insertEntity entityId
+        |> Ecs.insertComponent specs.expression (Point (Literal position))
+        |> Ecs.insertComponent specs.selectable Selectable
+        |> Ecs.insertComponent specs.draggable Draggable
+        |> Ecs.updateSingleton specs.nextEntityId (\id -> id + 1)
+        |> evaluationSystem
     )
 
 
-rewriteDocument : FeatureRef -> Vec2 -> Document -> Document
-rewriteDocument feature point document =
-    case feature.kind of
-        PointLocation ->
-            { document
-                | nodes =
-                    Dict.update feature.owner
-                        (Maybe.map (rewriteNode point))
-                        document.nodes
-            }
+rewriteNode : FeatureKind -> Vec2 -> Node -> Maybe Node
+rewriteNode PointLocation position (Point (Literal _)) =
+    Just (Point (Literal position))
 
 
-rewriteNode : Vec2 -> Node -> Node
-rewriteNode point node =
-    case node of
-        Point _ ->
-            Point (Literal point)
+dragSystem : FeatureRef -> Vec2 -> World -> World
+dragSystem feature position world =
+    let
+        activeWorld =
+            Ecs.onEntity feature.owner world
+    in
+    (case ( Ecs.hasEntity activeWorld, Ecs.hasComponent specs.draggable activeWorld, Ecs.getComponent specs.expression activeWorld ) of
+        ( True, True, Just node ) ->
+            case rewriteNode feature.kind position node of
+                Just rewrittenNode ->
+                    Ecs.insertComponent specs.expression rewrittenNode activeWorld
+
+                Nothing ->
+                    world
+
+        _ ->
+            world
+    )
+        |> evaluationSystem
 
 
-evaluateNode : NodeId -> Node -> EvaluatedNode
-evaluateNode nodeId node =
+evaluateNode : Node -> Geometry
+evaluateNode node =
     case node of
         Point expression ->
-            { id = nodeId
-            , geometry = GPoint (evaluatePoint expression)
-            }
+            GPoint (evaluatePoint expression)
 
 
 evaluatePoint : PointExpr -> Vec2
@@ -196,19 +296,27 @@ evaluatePoint expression =
             position
 
 
-evaluateDocument : Document -> List EvaluatedNode
-evaluateDocument document =
-    document.nodes
-        |> Dict.toList
-        |> List.map (\( nodeId, node ) -> evaluateNode nodeId node)
+evaluateExpressions : Dict EntityId Node -> Dict EntityId Geometry
+evaluateExpressions =
+    Dict.map (\_ node -> evaluateNode node)
 
 
-featuresOf : EvaluatedNode -> List Feature
-featuresOf evaluated =
-    case evaluated.geometry of
+evaluationSystem : World -> World
+evaluationSystem world =
+    Ecs.setComponents specs.evaluated
+        (world
+            |> Ecs.getComponents specs.expression
+            |> evaluateExpressions
+        )
+        world
+
+
+featuresOf : EntityId -> Geometry -> List Feature
+featuresOf entityId geometry =
+    case geometry of
         GPoint position ->
             [ { ref =
-                    { owner = evaluated.id
+                    { owner = entityId
                     , kind = PointLocation
                     }
               , position = position
@@ -216,16 +324,16 @@ featuresOf evaluated =
             ]
 
 
-allFeatures : Document -> List Feature
-allFeatures document =
-    document.nodes
-        |> Dict.toList
-        |> List.concatMap (\( nodeId, node ) -> node |> evaluateNode nodeId |> featuresOf)
-
-
-hitTest : Vec2 -> Document -> Maybe FeatureRef
-hitTest pointer document =
-    allFeatures document
+hitTest : Vec2 -> World -> Maybe FeatureRef
+hitTest pointer world =
+    Ecs.EntityComponents.foldFromRight2
+        specs.selectable
+        specs.evaluated
+        (\entityId _ geometry accumulator ->
+            featuresOf entityId geometry ++ accumulator
+        )
+        []
+        world
         |> List.filter (isWithinHitRadius pointer)
         |> List.sortBy (Vec2.distanceSquared pointer << .position)
         |> List.head
@@ -237,9 +345,9 @@ isWithinHitRadius pointer feature =
     Vec2.distanceSquared pointer feature.position <= 196
 
 
-interactionAt : Vec2 -> Document -> Interaction
-interactionAt pointer document =
-    hitTest pointer document
+interactionAt : Vec2 -> World -> Interaction
+interactionAt pointer world =
+    hitTest pointer world
         |> Maybe.map Hovering
         |> Maybe.withDefault Idle
 
@@ -255,6 +363,10 @@ isHighlighted feature model =
 
         Dragging drag ->
             drag.feature == feature
+
+
+
+-- EVENTS
 
 
 pointerPositionDecoder : Decode.Decoder Vec2
@@ -279,6 +391,10 @@ onPointerUp =
     on "pointerup" (Decode.map PointerUp pointerPositionDecoder)
 
 
+
+-- VIEWS
+
+
 view : Model -> Html Msg
 view model =
     div [ class "columns is-centered mt-1" ]
@@ -300,9 +416,13 @@ view model =
                         , fill "#000000"
                         ]
                         []
-                        :: (model.document
-                                |> evaluateDocument
-                                |> List.map (viewGeometry model)
+                        :: (model.world
+                                |> Ecs.EntityComponents.foldFromRight
+                                    specs.evaluated
+                                    (\entityId geometry accumulator ->
+                                        viewGeometry model entityId geometry :: accumulator
+                                    )
+                                    []
                            )
                     )
                 ]
@@ -323,13 +443,13 @@ cursorFor interaction =
             "grabbing"
 
 
-viewGeometry : Model -> EvaluatedNode -> Html Msg
-viewGeometry model evaluated =
-    case evaluated.geometry of
+viewGeometry : Model -> EntityId -> Geometry -> Html Msg
+viewGeometry model entityId geometry =
+    case geometry of
         GPoint point ->
             let
                 feature =
-                    { owner = evaluated.id, kind = PointLocation }
+                    { owner = entityId, kind = PointLocation }
             in
             Svg.circle
                 [ cx (String.fromFloat (Vec2.getX point))
@@ -346,6 +466,10 @@ viewGeometry model evaluated =
                 , strokeWidth "2"
                 ]
                 []
+
+
+
+-- SUBSCRIPTIONS
 
 
 subscriptions : Model -> Sub Msg
