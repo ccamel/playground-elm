@@ -5,9 +5,9 @@ import Ecs
 import Ecs.Components4
 import Ecs.EntityComponents
 import Ecs.Singletons1
-import Html exposing (Html, div)
-import Html.Attributes exposing (class, style)
-import Html.Events exposing (on)
+import Html exposing (Html, button, div, i, span, text)
+import Html.Attributes exposing (class, style, title, type_)
+import Html.Events exposing (on, onClick)
 import Json.Decode as Decode
 import Lib.Page
 import Markdown
@@ -157,6 +157,7 @@ type alias DragState =
 type alias Model =
     { world : World
     , interaction : Interaction
+    , pointToolActive : Bool
     }
 
 
@@ -165,7 +166,8 @@ type alias Model =
 
 
 type Msg
-    = PointerMoved Vec2
+    = TogglePointTool
+    | PointerMoved Vec2
     | PointerDown Vec2
     | PointerUp Vec2
 
@@ -178,6 +180,7 @@ init : ( Model, Cmd Msg )
 init =
     ( { world = Ecs.emptyWorld specs.all (Ecs.Singletons1.init 0)
       , interaction = Idle
+      , pointToolActive = False
       }
     , Cmd.none
     )
@@ -190,6 +193,14 @@ init =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        TogglePointTool ->
+            ( { model
+                | pointToolActive = not model.pointToolActive
+                , interaction = Idle
+              }
+            , Cmd.none
+            )
+
         PointerDown pointer ->
             ( startDrag pointer model, Cmd.none )
 
@@ -399,17 +410,15 @@ view : Model -> Html Msg
 view model =
     div [ class "columns is-centered mt-1" ]
         [ div [ class "column is-four-fifths" ]
-            [ div [ class "box has-text-centered" ]
+            [ pointToolToolbar model
+            , div [ class "box has-text-centered" ]
                 [ Svg.svg
-                    [ width "800"
-                    , height "600"
-                    , viewBox "0 0 800 600"
-                    , cursor (cursorFor model.interaction)
-                    , style "touch-action" "none"
-                    , onPointerDown
-                    , onPointerMove
-                    , onPointerUp
-                    ]
+                    ([ width "800"
+                     , height "600"
+                     , viewBox "0 0 800 600"
+                     ]
+                        ++ svgInteractionAttributes model
+                    )
                     (Svg.rect
                         [ width "800"
                         , height "600"
@@ -428,6 +437,47 @@ view model =
                 ]
             ]
         ]
+
+
+pointToolToolbar : Model -> Html Msg
+pointToolToolbar model =
+    div [ class "buttons has-addons mb-4", Html.Attributes.attribute "role" "toolbar" ]
+        [ button
+            [ class <|
+                if model.pointToolActive then
+                    "button is-link is-selected"
+
+                else
+                    "button"
+            , type_ "button"
+            , title "Enable or disable points addition"
+            , Html.Attributes.attribute "aria-pressed"
+                (if model.pointToolActive then
+                    "true"
+
+                 else
+                    "false"
+                )
+            , onClick TogglePointTool
+            ]
+            [ span [ class "icon is-small" ] [ i [ class "fa fa-crosshairs" ] [] ]
+            , span [] [ text "Add points" ]
+            ]
+        ]
+
+
+svgInteractionAttributes : Model -> List (Svg.Attribute Msg)
+svgInteractionAttributes model =
+    if model.pointToolActive then
+        [ cursor (cursorFor model.interaction)
+        , style "touch-action" "none"
+        , onPointerDown
+        , onPointerMove
+        , onPointerUp
+        ]
+
+    else
+        []
 
 
 cursorFor : Interaction -> String
