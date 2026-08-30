@@ -13,7 +13,7 @@ import Lib.Page
 import Markdown
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Svg
-import Svg.Attributes exposing (cursor, cx, cy, fill, height, r, stroke, strokeWidth, viewBox, width)
+import Svg.Attributes exposing (cursor, cx, cy, fill, height, opacity, r, stroke, strokeDasharray, strokeWidth, viewBox, width, x1, x2, y1, y2)
 
 
 
@@ -133,6 +133,11 @@ type alias Feature =
     { ref : FeatureRef
     , position : Vec2
     }
+
+
+type Guide
+    = VerticalGuide Float
+    | HorizontalGuide Float
 
 
 
@@ -335,8 +340,8 @@ featuresOf entityId geometry =
             ]
 
 
-hitTest : Vec2 -> World -> Maybe FeatureRef
-hitTest pointer world =
+featuresIn : World -> List Feature
+featuresIn world =
     Ecs.EntityComponents.foldFromRight2
         specs.selectable
         specs.evaluated
@@ -345,6 +350,61 @@ hitTest pointer world =
         )
         []
         world
+
+
+alignmentThreshold : Float
+alignmentThreshold =
+    12
+
+
+isAligned : (Vec2 -> Float) -> Feature -> Feature -> Bool
+isAligned coordinate draggedFeature candidate =
+    abs (coordinate candidate.position - coordinate draggedFeature.position) <= alignmentThreshold
+
+
+nearestGuide : (Float -> Guide) -> (Vec2 -> Float) -> Feature -> List Feature -> Maybe Guide
+nearestGuide guide coordinate draggedFeature candidates =
+    candidates
+        |> List.filter (isAligned coordinate draggedFeature)
+        |> List.sortBy (\candidate -> abs (coordinate candidate.position - coordinate draggedFeature.position))
+        |> List.head
+        |> Maybe.map (\candidate -> guide (coordinate candidate.position))
+
+
+alignmentGuides : Feature -> List Feature -> List Guide
+alignmentGuides draggedFeature candidates =
+    List.filterMap identity
+        [ nearestGuide VerticalGuide Vec2.getX draggedFeature candidates
+        , nearestGuide HorizontalGuide Vec2.getY draggedFeature candidates
+        ]
+
+
+guidesFor : Model -> List Guide
+guidesFor model =
+    case model.interaction of
+        Dragging drag ->
+            let
+                features =
+                    featuresIn model.world
+            in
+            features
+                |> List.filter (\feature -> feature.ref == drag.feature)
+                |> List.head
+                |> Maybe.map
+                    (\draggedFeature ->
+                        features
+                            |> List.filter (\feature -> feature.ref /= draggedFeature.ref)
+                            |> alignmentGuides draggedFeature
+                    )
+                |> Maybe.withDefault []
+
+        _ ->
+            []
+
+
+hitTest : Vec2 -> World -> Maybe FeatureRef
+hitTest pointer world =
+    featuresIn world
         |> List.filter (isWithinHitRadius pointer)
         |> List.sortBy (Vec2.distanceSquared pointer << .position)
         |> List.head
@@ -425,13 +485,15 @@ view model =
                         , fill "#000000"
                         ]
                         []
-                        :: (model.world
-                                |> Ecs.EntityComponents.foldFromRight
-                                    specs.evaluated
-                                    (\entityId geometry accumulator ->
-                                        viewGeometry model entityId geometry :: accumulator
-                                    )
-                                    []
+                        :: (List.map viewGuide (guidesFor model)
+                                ++ (model.world
+                                        |> Ecs.EntityComponents.foldFromRight
+                                            specs.evaluated
+                                            (\entityId geometry accumulator ->
+                                                viewGeometry model entityId geometry :: accumulator
+                                            )
+                                            []
+                                   )
                            )
                     )
                 ]
@@ -491,6 +553,45 @@ cursorFor interaction =
 
         Dragging _ ->
             "grabbing"
+
+
+viewGuide : Guide -> Html Msg
+viewGuide guide =
+    let
+        coordinate =
+            case guide of
+                VerticalGuide value ->
+                    String.fromFloat value
+
+                HorizontalGuide value ->
+                    String.fromFloat value
+    in
+    case guide of
+        VerticalGuide _ ->
+            Svg.line
+                [ x1 coordinate
+                , y1 "0"
+                , x2 coordinate
+                , y2 "600"
+                , stroke "#94a3b8"
+                , strokeWidth "1"
+                , strokeDasharray "4 6"
+                , opacity "0.45"
+                ]
+                []
+
+        HorizontalGuide _ ->
+            Svg.line
+                [ x1 "0"
+                , y1 coordinate
+                , x2 "800"
+                , y2 coordinate
+                , stroke "#94a3b8"
+                , strokeWidth "1"
+                , strokeDasharray "4 6"
+                , opacity "0.45"
+                ]
+                []
 
 
 viewGeometry : Model -> EntityId -> Geometry -> Html Msg
