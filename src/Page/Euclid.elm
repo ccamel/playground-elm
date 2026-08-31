@@ -942,6 +942,66 @@ isHighlighted geometryPart model =
            )
 
 
+isDependencyHighlighted : GeometryPartRef -> Model -> Bool
+isDependencyHighlighted geometryPart model =
+    case ( geometryPart.kind, model.interaction ) of
+        ( SegmentBody, Hovering hovered ) ->
+            model.world
+                |> Ecs.onEntity hovered.owner
+                |> Ecs.getComponent specs.expression
+                |> Maybe.map (isMidpointOf geometryPart)
+                |> Maybe.withDefault False
+
+        _ ->
+            False
+
+
+isMidpointPoint : EntityId -> World -> Bool
+isMidpointPoint entityId world =
+    world
+        |> Ecs.onEntity entityId
+        |> Ecs.getComponent specs.expression
+        |> Maybe.map isMidpointOfPointExpression
+        |> Maybe.withDefault False
+
+
+isMidpointOf : GeometryPartRef -> Node -> Bool
+isMidpointOf segment node =
+    case node of
+        Point (Midpoint source) ->
+            source == segment
+
+        _ ->
+            False
+
+
+isMidpointOfPointExpression : Node -> Bool
+isMidpointOfPointExpression node =
+    case node of
+        Point (Midpoint _) ->
+            True
+
+        _ ->
+            False
+
+
+midpointHoverPosition : Model -> Maybe Vec2
+midpointHoverPosition model =
+    case model.interaction of
+        Hovering geometryPart ->
+            if isMidpointPoint geometryPart.owner model.world then
+                geometryPartsIn model.world
+                    |> List.filter (\geometryPart_ -> geometryPart_.ref == geometryPart)
+                    |> List.head
+                    |> Maybe.map .position
+
+            else
+                Nothing
+
+        _ ->
+            Nothing
+
+
 
 -- EVENTS
 
@@ -997,7 +1057,9 @@ view model =
                             [ SvgAttr.id "layer-graphics"
                             , style "pointer-events" "none"
                             ]
-                            [ viewPointerPosition model.pointerPosition ]
+                            [ viewPointerPosition model.pointerPosition
+                            , viewMidpointHoverLabel model
+                            ]
                         ]
                     ]
                 ]
@@ -1098,6 +1160,31 @@ viewPointerPosition position =
                     ++ ")"
             ]
         ]
+
+
+viewMidpointHoverLabel : Model -> Html Msg
+viewMidpointHoverLabel model =
+    case midpointHoverPosition model of
+        Just position ->
+            Svg.text_
+                [ SvgAttr.x (String.fromFloat (Vec2.getX position + 12))
+                , SvgAttr.y
+                    (String.fromFloat
+                        (if Vec2.getY position < 26 then
+                            Vec2.getY position + 22
+
+                         else
+                            Vec2.getY position - 12
+                        )
+                    )
+                , fill "#f5a623"
+                , SvgAttr.fontFamily "monospace"
+                , SvgAttr.fontSize "12"
+                ]
+                [ Svg.text "Midpoint of segment" ]
+
+        Nothing ->
+            Svg.g [] []
 
 
 geometryToolbar : Model -> Html Msg
@@ -1358,22 +1445,43 @@ viewGeometry model entityId geometry =
             let
                 geometryPart =
                     { owner = entityId, kind = PointLocation }
-            in
-            Svg.circle
-                [ cx (String.fromFloat (Vec2.getX point))
-                , cy (String.fromFloat (Vec2.getY point))
-                , r "7"
-                , fill
-                    (if isHighlighted geometryPart model then
-                        "#f5a623"
 
-                     else
-                        "#3273dc"
-                    )
-                , stroke "#1f2933"
-                , strokeWidth "2"
-                ]
-                []
+                isMidpoint =
+                    isMidpointPoint entityId model.world
+            in
+            Svg.g []
+                (Svg.circle
+                    [ cx (String.fromFloat (Vec2.getX point))
+                    , cy (String.fromFloat (Vec2.getY point))
+                    , r "7"
+                    , fill
+                        (if isHighlighted geometryPart model then
+                            "#f5a623"
+
+                         else
+                            "#3273dc"
+                        )
+                    , stroke "#1f2933"
+                    , strokeWidth "2"
+                    ]
+                    []
+                    :: (if isMidpoint then
+                            [ Svg.title [] [ Svg.text "Midpoint of segment" ]
+                            , Svg.circle
+                                [ cx (String.fromFloat (Vec2.getX point))
+                                , cy (String.fromFloat (Vec2.getY point))
+                                , r "2"
+                                , fill "#e2e8f0"
+                                , stroke "#1f2933"
+                                , strokeWidth "1"
+                                ]
+                                []
+                            ]
+
+                        else
+                            []
+                       )
+                )
 
         GSegment start end ->
             let
@@ -1389,12 +1497,18 @@ viewGeometry model entityId geometry =
                     (if isHighlighted geometryPart model then
                         "#f5a623"
 
+                     else if isDependencyHighlighted geometryPart model then
+                        "#cbd5e1"
+
                      else
                         "#94a3b8"
                     )
                 , strokeWidth
                     (if isHighlighted geometryPart model then
                         "4"
+
+                     else if isDependencyHighlighted geometryPart model then
+                        "3"
 
                      else
                         "2"
