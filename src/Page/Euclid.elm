@@ -51,6 +51,7 @@ type Node
 
 type PointExpr
     = Literal Vec2
+    | Midpoint GeometryPartRef
 
 
 type SegmentExpr
@@ -164,6 +165,7 @@ type Tool
     = SelectTool
     | PointTool
     | SegmentTool
+    | MidpointTool
 
 
 type Interaction
@@ -267,6 +269,9 @@ startInteraction pointer model =
         Just SegmentTool ->
             startSegment pointer model
 
+        Just MidpointTool ->
+            startMidpoint pointer model
+
         Nothing ->
             model
 
@@ -349,6 +354,19 @@ startSegment pointer model =
             }
 
 
+startMidpoint : Vec2 -> Model -> Model
+startMidpoint pointer model =
+    case segmentBodyAt pointer model.world of
+        Just segment ->
+            { model
+                | world = addMidpoint segment model.world
+                , interaction = Hovering segment
+            }
+
+        Nothing ->
+            { model | interaction = Idle }
+
+
 movePointer : Vec2 -> Model -> Model
 movePointer pointer model =
     case model.interaction of
@@ -373,6 +391,12 @@ movePointer pointer model =
                         , pointerPosition = pointer
                     }
 
+                Just MidpointTool ->
+                    { model
+                        | interaction = midpointInteractionAt pointer model.world
+                        , pointerPosition = pointer
+                    }
+
                 _ ->
                     { model | interaction = Idle, pointerPosition = pointer }
 
@@ -388,6 +412,9 @@ endInteraction pointer model =
                 | interaction = interactionAt pointer model.world
                 , segmentPreviewEnd = Just pointer
             }
+
+        Just MidpointTool ->
+            { model | interaction = midpointInteractionAt pointer model.world }
 
         _ ->
             { model | interaction = Idle }
@@ -408,6 +435,20 @@ addPoint position world =
         |> Ecs.updateSingleton specs.nextEntityId (\id -> id + 1)
         |> evaluationSystem
     )
+
+
+addMidpoint : GeometryPartRef -> World -> World
+addMidpoint segment world =
+    let
+        entityId =
+            Ecs.getSingleton specs.nextEntityId world
+    in
+    world
+        |> Ecs.insertEntity entityId
+        |> Ecs.insertComponent specs.expression (Point (Midpoint segment))
+        |> Ecs.insertComponent specs.selectable Selectable
+        |> Ecs.updateSingleton specs.nextEntityId (\id -> id + 1)
+        |> evaluationSystem
 
 
 addSegment : GeometryPartRef -> GeometryPartRef -> World -> World
@@ -518,7 +559,8 @@ evaluateNode : Resolver -> EvaluationState -> Node -> Evaluation Geometry
 evaluateNode activeResolver state node =
     case node of
         Point expression ->
-            ( Ok (GPoint (evaluatePoint expression)), state )
+            evaluatePoint activeResolver state expression
+                |> Tuple.mapFirst (Result.map GPoint)
 
         Segment expression ->
             evaluateSegment activeResolver state expression
@@ -573,6 +615,20 @@ pointPosition geometryPart geometry =
                 Err (MissingGeometryPart geometryPart)
 
 
+midpointPosition : GeometryPartRef -> Geometry -> Result EvaluationError Vec2
+midpointPosition geometryPart geometry =
+    case ( geometryPart.kind, geometry ) of
+        ( SegmentBody, GSegment start end ) ->
+            Ok (midpoint start end)
+
+        _ ->
+            if hasGeometryPart geometryPart.kind geometry then
+                Err (ExpectedPointGeometryPart geometryPart)
+
+            else
+                Err (MissingGeometryPart geometryPart)
+
+
 hasGeometryPart : GeometryPartKind -> Geometry -> Bool
 hasGeometryPart geometryPartKind geometry =
     case geometry of
@@ -602,11 +658,18 @@ cyclePathFrom entityId entityIds =
                 cyclePathFrom entityId remaining
 
 
-evaluatePoint : PointExpr -> Vec2
-evaluatePoint expression =
+evaluatePoint : Resolver -> EvaluationState -> PointExpr -> Evaluation Vec2
+evaluatePoint activeResolver state expression =
     case expression of
         Literal position ->
-            position
+            ( Ok position, state )
+
+        Midpoint segment ->
+            let
+                ( segmentResult, evaluatedState ) =
+                    activeResolver.resolveGeometry state segment.owner
+            in
+            ( Result.andThen (midpointPosition segment) segmentResult, evaluatedState )
 
 
 evaluateExpressions : EvaluationSnapshot -> Dict EntityId (Result EvaluationError Geometry)
@@ -660,6 +723,34 @@ geometryPartsOf entityId geometry =
               , position = end
               }
             ]
+
+
+type alias SegmentHitTarget =
+    { ref : GeometryPartRef
+    , start : Vec2
+    , end : Vec2
+    }
+
+
+segmentBodiesIn : World -> List SegmentHitTarget
+segmentBodiesIn world =
+    Ecs.EntityComponents.foldFromRight2
+        specs.selectable
+        specs.evaluated
+        (\entityId _ evaluated accumulator ->
+            case evaluated of
+                Ok (GSegment start end) ->
+                    { ref = { owner = entityId, kind = SegmentBody }
+                    , start = start
+                    , end = end
+                    }
+                        :: accumulator
+
+                _ ->
+                    accumulator
+        )
+        []
+        world
 
 
 geometryPartsIn : World -> List GeometryPart
@@ -767,6 +858,67 @@ isWithinHitRadius pointer geometryPart =
     Vec2.distanceSquared pointer geometryPart.position <= 196
 
 
+segmentBodyAt : Vec2 -> World -> Maybe GeometryPartRef
+segmentBodyAt pointer world =
+    segmentBodiesIn world
+        |> List.filter (isWithinSegmentHitRadius pointer)
+        |> List.sortBy (segmentDistanceSquared pointer)
+        |> List.head
+        |> Maybe.map .ref
+
+
+isWithinSegmentHitRadius : Vec2 -> SegmentHitTarget -> Bool
+isWithinSegmentHitRadius pointer segment =
+    segmentDistanceSquared pointer segment <= 196
+
+
+segmentDistanceSquared : Vec2 -> SegmentHitTarget -> Float
+segmentDistanceSquared pointer segment =
+    let
+        startX =
+            Vec2.getX segment.start
+
+        startY =
+            Vec2.getY segment.start
+
+        deltaX =
+            Vec2.getX segment.end - startX
+
+        deltaY =
+            Vec2.getY segment.end - startY
+
+        lengthSquared =
+            deltaX * deltaX + deltaY * deltaY
+
+        projection =
+            if lengthSquared == 0 then
+                0
+
+            else
+                clamp 0
+                    1
+                    (((Vec2.getX pointer - startX) * deltaX + (Vec2.getY pointer - startY) * deltaY) / lengthSquared)
+
+        nearest =
+            vec2 (startX + projection * deltaX) (startY + projection * deltaY)
+    in
+    Vec2.distanceSquared pointer nearest
+
+
+midpoint : Vec2 -> Vec2 -> Vec2
+midpoint start end =
+    vec2
+        ((Vec2.getX start + Vec2.getX end) / 2)
+        ((Vec2.getY start + Vec2.getY end) / 2)
+
+
+midpointInteractionAt : Vec2 -> World -> Interaction
+midpointInteractionAt pointer world =
+    segmentBodyAt pointer world
+        |> Maybe.map Hovering
+        |> Maybe.withDefault Idle
+
+
 interactionAt : Vec2 -> World -> Interaction
 interactionAt pointer world =
     hitTest pointer world
@@ -855,9 +1007,9 @@ view model =
 
 canvasLayers : Model -> List (Html Msg)
 canvasLayers model =
-    List.map viewGuide (guidesFor model)
-        ++ List.map viewSegmentPreview (segmentPreviews model)
-        ++ (model.world
+    let
+        geometryLayers =
+            model.world
                 |> Ecs.EntityComponents.foldFromRight
                     specs.evaluated
                     (\entityId evaluated accumulator ->
@@ -869,6 +1021,14 @@ canvasLayers model =
                                 viewEvaluationError error :: accumulator
                     )
                     []
+    in
+    List.map viewGuide (guidesFor model)
+        ++ List.map viewSegmentPreview (segmentPreviews model)
+        ++ geometryLayers
+        ++ (model
+                |> midpointPreview
+                |> Maybe.map viewMidpointPreview
+                |> Maybe.withDefault []
            )
 
 
@@ -946,6 +1106,7 @@ geometryToolbar model =
         [ toolButton model SelectTool "fa fa-mouse-pointer" "Select & move" "Select and move existing points"
         , toolButton model PointTool "fa fa-crosshairs" "Add points" "Enable or disable point construction"
         , toolButton model SegmentTool "fa fa-minus" "Add segments" "Enable or disable segment construction"
+        , toolButton model MidpointTool "fa fa-circle-o" "Midpoint" "Construct a point at the middle of a segment"
         ]
 
 
@@ -976,7 +1137,7 @@ toolButton model tool icon label tooltip =
 
 svgInteractionAttributes : Model -> List (Svg.Attribute Msg)
 svgInteractionAttributes model =
-    [ cursor (cursorFor model.activeTool model.interaction)
+    [ cursor (cursorFor model)
     , style "touch-action" "none"
     , onPointerDown
     , onPointerMove
@@ -984,18 +1145,22 @@ svgInteractionAttributes model =
     ]
 
 
-cursorFor : Maybe Tool -> Interaction -> String
-cursorFor activeTool interaction =
-    case interaction of
+cursorFor : Model -> String
+cursorFor model =
+    case model.interaction of
         Dragging _ ->
             "grabbing"
 
         _ ->
-            case activeTool of
+            case model.activeTool of
                 Just SelectTool ->
-                    case interaction of
-                        Hovering _ ->
-                            "grab"
+                    case model.interaction of
+                        Hovering geometryPart ->
+                            if isDraggable geometryPart model.world then
+                                "grab"
+
+                            else
+                                "default"
 
                         _ ->
                             "default"
@@ -1004,7 +1169,15 @@ cursorFor activeTool interaction =
                     "crosshair"
 
                 Just SegmentTool ->
-                    case interaction of
+                    case model.interaction of
+                        Hovering _ ->
+                            "pointer"
+
+                        _ ->
+                            "crosshair"
+
+                Just MidpointTool ->
+                    case model.interaction of
                         Hovering _ ->
                             "pointer"
 
@@ -1013,6 +1186,13 @@ cursorFor activeTool interaction =
 
                 Nothing ->
                     "default"
+
+
+isDraggable : GeometryPartRef -> World -> Bool
+isDraggable geometryPart world =
+    world
+        |> Ecs.onEntity geometryPart.owner
+        |> Ecs.hasComponent specs.draggable
 
 
 segmentPreviews : Model -> List ( Vec2, Vec2 )
@@ -1042,6 +1222,44 @@ viewSegmentPreview ( start, end ) =
         , opacity "0.8"
         ]
         []
+
+
+midpointPreview : Model -> Maybe Vec2
+midpointPreview model =
+    case ( model.activeTool, model.interaction ) of
+        ( Just MidpointTool, Hovering segment ) ->
+            model.world
+                |> Ecs.onEntity segment.owner
+                |> Ecs.getComponent specs.evaluated
+                |> Maybe.andThen
+                    (\evaluated ->
+                        case evaluated of
+                            Ok geometry ->
+                                midpointPosition segment geometry
+                                    |> Result.toMaybe
+
+                            Err _ ->
+                                Nothing
+                    )
+
+        _ ->
+            Nothing
+
+
+viewMidpointPreview : Vec2 -> List (Html Msg)
+viewMidpointPreview point =
+    [ Svg.circle
+        [ cx (String.fromFloat (Vec2.getX point))
+        , cy (String.fromFloat (Vec2.getY point))
+        , r "6"
+        , fill "none"
+        , stroke "#f5a623"
+        , strokeWidth "2"
+        , strokeDasharray "3 2"
+        , opacity "0.9"
+        ]
+        []
+    ]
 
 
 viewGuide : Guide -> Html Msg
@@ -1158,13 +1376,29 @@ viewGeometry model entityId geometry =
                 []
 
         GSegment start end ->
+            let
+                geometryPart =
+                    { owner = entityId, kind = SegmentBody }
+            in
             Svg.line
                 [ x1 (String.fromFloat (Vec2.getX start))
                 , y1 (String.fromFloat (Vec2.getY start))
                 , x2 (String.fromFloat (Vec2.getX end))
                 , y2 (String.fromFloat (Vec2.getY end))
-                , stroke "#94a3b8"
-                , strokeWidth "2"
+                , stroke
+                    (if isHighlighted geometryPart model then
+                        "#f5a623"
+
+                     else
+                        "#94a3b8"
+                    )
+                , strokeWidth
+                    (if isHighlighted geometryPart model then
+                        "4"
+
+                     else
+                        "2"
+                    )
                 ]
                 []
 
