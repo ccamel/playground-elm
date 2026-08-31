@@ -13,7 +13,7 @@ import Lib.Page
 import Markdown
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Svg
-import Svg.Attributes exposing (cursor, cx, cy, fill, height, opacity, r, stroke, strokeDasharray, strokeWidth, viewBox, width, x1, x2, y1, y2)
+import Svg.Attributes as SvgAttr exposing (cursor, cx, cy, fill, height, opacity, r, stroke, strokeDasharray, strokeWidth, viewBox, width, x1, x2, y1, y2)
 
 
 
@@ -187,6 +187,7 @@ type alias Model =
     , activeTool : Maybe Tool
     , segmentStart : Maybe GeometryPartRef
     , segmentPreviewEnd : Maybe Vec2
+    , pointerPosition : Vec2
     }
 
 
@@ -212,6 +213,7 @@ init =
       , activeTool = Just SelectTool
       , segmentStart = Nothing
       , segmentPreviewEnd = Nothing
+      , pointerPosition = vec2 0 0
       }
     , Cmd.none
     )
@@ -240,13 +242,13 @@ update msg model =
             )
 
         PointerDown pointer ->
-            ( startInteraction pointer model, Cmd.none )
+            ( startInteraction pointer { model | pointerPosition = pointer }, Cmd.none )
 
         PointerMoved pointer ->
             ( movePointer pointer model, Cmd.none )
 
         PointerUp pointer ->
-            ( endInteraction pointer model, Cmd.none )
+            ( endInteraction pointer { model | pointerPosition = pointer }, Cmd.none )
 
 
 
@@ -351,21 +353,28 @@ movePointer : Vec2 -> Model -> Model
 movePointer pointer model =
     case model.interaction of
         Dragging drag ->
-            { model | world = dragSystem drag.geometryPart pointer model.world }
+            { model
+                | world = dragSystem drag.geometryPart pointer model.world
+                , pointerPosition = pointer
+            }
 
         _ ->
             case model.activeTool of
                 Just SelectTool ->
-                    { model | interaction = interactionAt pointer model.world }
+                    { model
+                        | interaction = interactionAt pointer model.world
+                        , pointerPosition = pointer
+                    }
 
                 Just SegmentTool ->
                     { model
                         | interaction = interactionAt pointer model.world
                         , segmentPreviewEnd = Just pointer
+                        , pointerPosition = pointer
                     }
 
                 _ ->
-                    { model | interaction = Idle }
+                    { model | interaction = Idle, pointerPosition = pointer }
 
 
 endInteraction : Vec2 -> Model -> Model
@@ -824,31 +833,109 @@ view model =
                      ]
                         ++ svgInteractionAttributes model
                     )
-                    (Svg.rect
-                        [ width "800"
-                        , height "600"
-                        , fill "#000000"
+                    [ viewGridDefinitions
+                    , viewCanvasBackground
+                    , Svg.g [ SvgAttr.id "layers" ]
+                        [ Svg.g
+                            [ SvgAttr.id "layer-canvas"
+                            , style "pointer-events" "none"
+                            ]
+                            (canvasLayers model)
+                        , Svg.g
+                            [ SvgAttr.id "layer-graphics"
+                            , style "pointer-events" "none"
+                            ]
+                            [ viewPointerPosition model.pointerPosition ]
                         ]
-                        []
-                        :: (List.map viewGuide (guidesFor model)
-                                ++ (List.map viewSegmentPreview (segmentPreviews model)
-                                        ++ (model.world
-                                                |> Ecs.EntityComponents.foldFromRight
-                                                    specs.evaluated
-                                                    (\entityId evaluated accumulator ->
-                                                        case evaluated of
-                                                            Ok geometry ->
-                                                                viewGeometry model entityId geometry :: accumulator
-
-                                                            Err error ->
-                                                                viewEvaluationError error :: accumulator
-                                                    )
-                                                    []
-                                           )
-                                   )
-                           )
-                    )
+                    ]
                 ]
+            ]
+        ]
+
+
+canvasLayers : Model -> List (Html Msg)
+canvasLayers model =
+    List.map viewGuide (guidesFor model)
+        ++ List.map viewSegmentPreview (segmentPreviews model)
+        ++ (model.world
+                |> Ecs.EntityComponents.foldFromRight
+                    specs.evaluated
+                    (\entityId evaluated accumulator ->
+                        case evaluated of
+                            Ok geometry ->
+                                viewGeometry model entityId geometry :: accumulator
+
+                            Err error ->
+                                viewEvaluationError error :: accumulator
+                    )
+                    []
+           )
+
+
+viewGridDefinitions : Html Msg
+viewGridDefinitions =
+    Svg.defs []
+        [ Svg.pattern
+            [ SvgAttr.id "euclid-small-grid"
+            , SvgAttr.patternUnits "userSpaceOnUse"
+            , width "10"
+            , height "10"
+            ]
+            [ Svg.path
+                [ SvgAttr.d "M 10 0 L 0 0 0 10"
+                , fill "none"
+                , stroke "#334155"
+                , strokeWidth "0.5"
+                , opacity "0.55"
+                ]
+                []
+            ]
+        , Svg.pattern
+            [ SvgAttr.id "euclid-grid"
+            , SvgAttr.patternUnits "userSpaceOnUse"
+            , width "100"
+            , height "100"
+            ]
+            [ Svg.rect [ width "100", height "100", fill "#0f172a" ] []
+            , Svg.rect [ width "100", height "100", fill "url(#euclid-small-grid)" ] []
+            , Svg.path
+                [ SvgAttr.d "M 100 0 L 0 0 0 100"
+                , fill "none"
+                , stroke "#64748b"
+                , strokeWidth "1"
+                , opacity "0.7"
+                ]
+                []
+            ]
+        ]
+
+
+viewCanvasBackground : Html Msg
+viewCanvasBackground =
+    Svg.rect
+        [ width "800"
+        , height "600"
+        , fill "url(#euclid-grid)"
+        ]
+        []
+
+
+viewPointerPosition : Vec2 -> Html Msg
+viewPointerPosition position =
+    Svg.g [ SvgAttr.id "coords" ]
+        [ Svg.text_
+            [ SvgAttr.x "10"
+            , SvgAttr.y "20"
+            , fill "#e2e8f0"
+            , SvgAttr.fontFamily "monospace"
+            , SvgAttr.fontSize "14"
+            ]
+            [ Svg.text <|
+                "("
+                    ++ String.fromInt (truncate (Vec2.getX position))
+                    ++ ", "
+                    ++ String.fromInt (truncate (Vec2.getY position))
+                    ++ ")"
             ]
         ]
 
@@ -889,17 +976,12 @@ toolButton model tool icon label tooltip =
 
 svgInteractionAttributes : Model -> List (Svg.Attribute Msg)
 svgInteractionAttributes model =
-    case model.activeTool of
-        Just _ ->
-            [ cursor (cursorFor model.activeTool model.interaction)
-            , style "touch-action" "none"
-            , onPointerDown
-            , onPointerMove
-            , onPointerUp
-            ]
-
-        Nothing ->
-            []
+    [ cursor (cursorFor model.activeTool model.interaction)
+    , style "touch-action" "none"
+    , onPointerDown
+    , onPointerMove
+    , onPointerUp
+    ]
 
 
 cursorFor : Maybe Tool -> Interaction -> String
