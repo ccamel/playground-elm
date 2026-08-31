@@ -1,4 +1,4 @@
-module Page.Euclid exposing (Components, Draggable, EntityId, FeatureKind, FeatureRef, Geometry, Interaction, Model, Msg, Node, PointExpr, Selectable, Singletons, World, info, init, subscriptions, update, view)
+module Page.Euclid exposing (Components, Draggable, EntityId, EvaluationError, Geometry, GeometryPartKind, GeometryPartRef, Interaction, Model, Msg, Node, PointExpr, SegmentExpr, Selectable, Singletons, Tool, World, info, init, subscriptions, update, view)
 
 import Dict exposing (Dict)
 import Ecs
@@ -46,14 +46,27 @@ type alias EntityId =
 
 type Node
     = Point PointExpr
+    | Segment SegmentExpr
 
 
 type PointExpr
     = Literal Vec2
 
 
+type SegmentExpr
+    = Between GeometryPartRef GeometryPartRef
+
+
 type Geometry
     = GPoint Vec2
+    | GSegment Vec2 Vec2
+
+
+type EvaluationError
+    = MissingGeometryOwner EntityId
+    | MissingGeometryPart GeometryPartRef
+    | ExpectedPointGeometryPart GeometryPartRef
+    | CyclicGeometryReference (List EntityId)
 
 
 type Selectable
@@ -65,7 +78,7 @@ type Draggable
 
 
 type alias Components =
-    Ecs.Components4.Components4 EntityId Node Geometry Selectable Draggable
+    Ecs.Components4.Components4 EntityId Node (Result EvaluationError Geometry) Selectable Draggable
 
 
 
@@ -83,7 +96,7 @@ type alias Singletons =
 type alias Specs =
     { all : AllComponentsSpec
     , expression : ComponentSpec Node
-    , evaluated : ComponentSpec Geometry
+    , evaluated : ComponentSpec (Result EvaluationError Geometry)
     , selectable : ComponentSpec Selectable
     , draggable : ComponentSpec Draggable
     , nextEntityId : SingletonSpec EntityId
@@ -116,21 +129,24 @@ specs =
 
 
 
--- FEATURES
+-- GEOMETRY PARTS
 
 
-type FeatureKind
+type GeometryPartKind
     = PointLocation
+    | SegmentStart
+    | SegmentEnd
+    | SegmentBody
 
 
-type alias FeatureRef =
+type alias GeometryPartRef =
     { owner : EntityId
-    , kind : FeatureKind
+    , kind : GeometryPartKind
     }
 
 
-type alias Feature =
-    { ref : FeatureRef
+type alias GeometryPart =
+    { ref : GeometryPartRef
     , position : Vec2
     }
 
@@ -144,14 +160,20 @@ type Guide
 -- INTERACTION
 
 
+type Tool
+    = SelectTool
+    | PointTool
+    | SegmentTool
+
+
 type Interaction
     = Idle
-    | Hovering FeatureRef
+    | Hovering GeometryPartRef
     | Dragging DragState
 
 
 type alias DragState =
-    { feature : FeatureRef
+    { geometryPart : GeometryPartRef
     }
 
 
@@ -162,7 +184,9 @@ type alias DragState =
 type alias Model =
     { world : World
     , interaction : Interaction
-    , pointToolActive : Bool
+    , activeTool : Maybe Tool
+    , segmentStart : Maybe GeometryPartRef
+    , segmentPreviewEnd : Maybe Vec2
     }
 
 
@@ -171,7 +195,7 @@ type alias Model =
 
 
 type Msg
-    = TogglePointTool
+    = ToggleTool Tool
     | PointerMoved Vec2
     | PointerDown Vec2
     | PointerUp Vec2
@@ -185,7 +209,9 @@ init : ( Model, Cmd Msg )
 init =
     ( { world = Ecs.emptyWorld specs.all (Ecs.Singletons1.init 0)
       , interaction = Idle
-      , pointToolActive = False
+      , activeTool = Just SelectTool
+      , segmentStart = Nothing
+      , segmentPreviewEnd = Nothing
       }
     , Cmd.none
     )
@@ -198,50 +224,126 @@ init =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        TogglePointTool ->
+        ToggleTool tool ->
             ( { model
-                | pointToolActive = not model.pointToolActive
+                | activeTool =
+                    if model.activeTool == Just tool then
+                        Nothing
+
+                    else
+                        Just tool
                 , interaction = Idle
+                , segmentStart = Nothing
+                , segmentPreviewEnd = Nothing
               }
             , Cmd.none
             )
 
         PointerDown pointer ->
-            ( startDrag pointer model, Cmd.none )
+            ( startInteraction pointer model, Cmd.none )
 
         PointerMoved pointer ->
             ( movePointer pointer model, Cmd.none )
 
         PointerUp pointer ->
-            ( { model | interaction = interactionAt pointer model.world }, Cmd.none )
+            ( endInteraction pointer model, Cmd.none )
 
 
 
 -- SYSTEMS
 
 
-startDrag : Vec2 -> Model -> Model
-startDrag pointer model =
+startInteraction : Vec2 -> Model -> Model
+startInteraction pointer model =
+    case model.activeTool of
+        Just SelectTool ->
+            startSelection pointer model
+
+        Just PointTool ->
+            startPoint pointer model
+
+        Just SegmentTool ->
+            startSegment pointer model
+
+        Nothing ->
+            model
+
+
+startSelection : Vec2 -> Model -> Model
+startSelection pointer model =
     case hitTest pointer model.world of
-        Just feature ->
+        Just geometryPart ->
             if
                 model.world
-                    |> Ecs.onEntity feature.owner
+                    |> Ecs.onEntity geometryPart.owner
                     |> Ecs.hasComponent specs.draggable
             then
-                { model | interaction = Dragging { feature = feature } }
+                { model | interaction = Dragging { geometryPart = geometryPart } }
 
             else
-                { model | interaction = Hovering feature }
+                { model | interaction = Hovering geometryPart }
+
+        Nothing ->
+            { model | interaction = Idle }
+
+
+startPoint : Vec2 -> Model -> Model
+startPoint pointer model =
+    case hitTest pointer model.world of
+        Just _ ->
+            { model | interaction = Idle }
 
         Nothing ->
             let
-                ( entityId, world ) =
+                ( _, world ) =
                     addPoint pointer model.world
             in
+            { model | world = world, interaction = Idle }
+
+
+pointAtOrCreate : Vec2 -> World -> ( GeometryPartRef, World )
+pointAtOrCreate pointer world =
+    case hitTest pointer world of
+        Just geometryPart ->
+            ( geometryPart, world )
+
+        Nothing ->
+            let
+                ( entityId, updatedWorld ) =
+                    addPoint pointer world
+            in
+            ( { owner = entityId, kind = PointLocation }, updatedWorld )
+
+
+startSegment : Vec2 -> Model -> Model
+startSegment pointer model =
+    let
+        ( geometryPart, world ) =
+            pointAtOrCreate pointer model.world
+    in
+    case model.segmentStart of
+        Just start ->
+            if start == geometryPart then
+                { model
+                    | world = world
+                    , interaction = Hovering geometryPart
+                    , segmentPreviewEnd = Just pointer
+                }
+
+            else
+                { model
+                    | world = addSegment start geometryPart world
+                    , interaction = Hovering geometryPart
+                    , segmentStart = Nothing
+                    , segmentPreviewEnd = Nothing
+                }
+
+        Nothing ->
             { model
                 | world = world
-                , interaction = Dragging { feature = { owner = entityId, kind = PointLocation } }
+                , interaction = Hovering geometryPart
+                , segmentStart = Just geometryPart
+                , segmentPreviewEnd = Just pointer
             }
 
 
@@ -249,10 +351,37 @@ movePointer : Vec2 -> Model -> Model
 movePointer pointer model =
     case model.interaction of
         Dragging drag ->
-            { model | world = dragSystem drag.feature pointer model.world }
+            { model | world = dragSystem drag.geometryPart pointer model.world }
 
         _ ->
+            case model.activeTool of
+                Just SelectTool ->
+                    { model | interaction = interactionAt pointer model.world }
+
+                Just SegmentTool ->
+                    { model
+                        | interaction = interactionAt pointer model.world
+                        , segmentPreviewEnd = Just pointer
+                    }
+
+                _ ->
+                    { model | interaction = Idle }
+
+
+endInteraction : Vec2 -> Model -> Model
+endInteraction pointer model =
+    case model.activeTool of
+        Just SelectTool ->
             { model | interaction = interactionAt pointer model.world }
+
+        Just SegmentTool ->
+            { model
+                | interaction = interactionAt pointer model.world
+                , segmentPreviewEnd = Just pointer
+            }
+
+        _ ->
+            { model | interaction = Idle }
 
 
 addPoint : Vec2 -> World -> ( EntityId, World )
@@ -272,20 +401,39 @@ addPoint position world =
     )
 
 
-rewriteNode : FeatureKind -> Vec2 -> Node -> Maybe Node
-rewriteNode PointLocation position (Point (Literal _)) =
-    Just (Point (Literal position))
+addSegment : GeometryPartRef -> GeometryPartRef -> World -> World
+addSegment start end world =
+    let
+        entityId =
+            Ecs.getSingleton specs.nextEntityId world
+    in
+    world
+        |> Ecs.insertEntity entityId
+        |> Ecs.insertComponent specs.expression (Segment (Between start end))
+        |> Ecs.insertComponent specs.selectable Selectable
+        |> Ecs.updateSingleton specs.nextEntityId (\id -> id + 1)
+        |> evaluationSystem
 
 
-dragSystem : FeatureRef -> Vec2 -> World -> World
-dragSystem feature pointer world =
+rewriteNode : GeometryPartKind -> Vec2 -> Node -> Maybe Node
+rewriteNode kind position node =
+    case ( kind, node ) of
+        ( PointLocation, Point (Literal _) ) ->
+            Just (Point (Literal position))
+
+        _ ->
+            Nothing
+
+
+dragSystem : GeometryPartRef -> Vec2 -> World -> World
+dragSystem geometryPart pointer world =
     let
         activeWorld =
-            Ecs.onEntity feature.owner world
+            Ecs.onEntity geometryPart.owner world
     in
     (case ( Ecs.hasEntity activeWorld, Ecs.hasComponent specs.draggable activeWorld, Ecs.getComponent specs.expression activeWorld ) of
         ( True, True, Just node ) ->
-            case rewriteNode feature.kind (snapPosition feature pointer world) node of
+            case rewriteNode geometryPart.kind (snapPosition geometryPart pointer world) node of
                 Just rewrittenNode ->
                     Ecs.insertComponent specs.expression rewrittenNode activeWorld
 
@@ -298,11 +446,151 @@ dragSystem feature pointer world =
         |> evaluationSystem
 
 
-evaluateNode : Node -> Geometry
-evaluateNode node =
+type alias EvaluationSnapshot =
+    Dict EntityId Node
+
+
+type alias EvaluationState =
+    { snapshot : EvaluationSnapshot
+    , resolving : List EntityId
+    , memo : Dict EntityId (Result EvaluationError Geometry)
+    }
+
+
+type alias Evaluation a =
+    ( Result EvaluationError a, EvaluationState )
+
+
+type alias Resolver =
+    { resolveGeometry : EvaluationState -> EntityId -> Evaluation Geometry
+    , resolvePointPart : GeometryPartRef -> EvaluationState -> Evaluation Vec2
+    }
+
+
+resolver : Resolver
+resolver =
+    { resolveGeometry = evaluateEntity
+    , resolvePointPart = resolvePointPart
+    }
+
+
+evaluateEntity : EvaluationState -> EntityId -> Evaluation Geometry
+evaluateEntity state entityId =
+    case Dict.get entityId state.memo of
+        Just result ->
+            ( result, state )
+
+        Nothing ->
+            if List.member entityId state.resolving then
+                ( Err (CyclicGeometryReference (cyclePath entityId state.resolving)), state )
+
+            else
+                case Dict.get entityId state.snapshot of
+                    Just node ->
+                        let
+                            evaluatingState =
+                                { state | resolving = entityId :: state.resolving }
+
+                            ( result, evaluatedState ) =
+                                evaluateNode resolver evaluatingState node
+                        in
+                        ( result
+                        , { evaluatedState
+                            | resolving = state.resolving
+                            , memo = Dict.insert entityId result evaluatedState.memo
+                          }
+                        )
+
+                    Nothing ->
+                        ( Err (MissingGeometryOwner entityId), state )
+
+
+evaluateNode : Resolver -> EvaluationState -> Node -> Evaluation Geometry
+evaluateNode activeResolver state node =
     case node of
         Point expression ->
-            GPoint (evaluatePoint expression)
+            ( Ok (GPoint (evaluatePoint expression)), state )
+
+        Segment expression ->
+            evaluateSegment activeResolver state expression
+
+
+evaluateSegment : Resolver -> EvaluationState -> SegmentExpr -> Evaluation Geometry
+evaluateSegment activeResolver state expression =
+    case expression of
+        Between startRef endRef ->
+            let
+                ( startResult, stateAfterStart ) =
+                    activeResolver.resolvePointPart startRef state
+            in
+            case startResult of
+                Ok start ->
+                    let
+                        ( endResult, stateAfterEnd ) =
+                            activeResolver.resolvePointPart endRef stateAfterStart
+                    in
+                    ( Result.map (GSegment start) endResult, stateAfterEnd )
+
+                Err error ->
+                    ( Err error, stateAfterStart )
+
+
+resolvePointPart : GeometryPartRef -> EvaluationState -> Evaluation Vec2
+resolvePointPart geometryPart state =
+    let
+        ( geometryResult, evaluatedState ) =
+            evaluateEntity state geometryPart.owner
+    in
+    ( Result.andThen (pointPosition geometryPart) geometryResult, evaluatedState )
+
+
+pointPosition : GeometryPartRef -> Geometry -> Result EvaluationError Vec2
+pointPosition geometryPart geometry =
+    case ( geometryPart.kind, geometry ) of
+        ( PointLocation, GPoint position ) ->
+            Ok position
+
+        ( SegmentStart, GSegment start _ ) ->
+            Ok start
+
+        ( SegmentEnd, GSegment _ end ) ->
+            Ok end
+
+        _ ->
+            if hasGeometryPart geometryPart.kind geometry then
+                Err (ExpectedPointGeometryPart geometryPart)
+
+            else
+                Err (MissingGeometryPart geometryPart)
+
+
+hasGeometryPart : GeometryPartKind -> Geometry -> Bool
+hasGeometryPart geometryPartKind geometry =
+    case geometry of
+        GPoint _ ->
+            geometryPartKind == PointLocation
+
+        GSegment _ _ ->
+            List.member geometryPartKind [ SegmentStart, SegmentEnd, SegmentBody ]
+
+
+cyclePath : EntityId -> List EntityId -> List EntityId
+cyclePath entityId resolving =
+    cyclePathFrom entityId (List.reverse resolving) ++ [ entityId ]
+
+
+cyclePathFrom : EntityId -> List EntityId -> List EntityId
+cyclePathFrom entityId entityIds =
+    case entityIds of
+        [] ->
+            []
+
+        current :: remaining ->
+            if current == entityId then
+                entityIds
+
+            else
+                cyclePathFrom entityId remaining
 
 
 evaluatePoint : PointExpr -> Vec2
@@ -312,9 +600,19 @@ evaluatePoint expression =
             position
 
 
-evaluateExpressions : Dict EntityId Node -> Dict EntityId Geometry
-evaluateExpressions =
-    Dict.map (\_ node -> evaluateNode node)
+evaluateExpressions : EvaluationSnapshot -> Dict EntityId (Result EvaluationError Geometry)
+evaluateExpressions expressions =
+    expressions
+        |> Dict.foldl
+            (\entityId _ state ->
+                evaluateEntity state entityId
+                    |> Tuple.second
+            )
+            { snapshot = expressions
+            , resolving = []
+            , memo = Dict.empty
+            }
+        |> .memo
 
 
 evaluationSystem : World -> World
@@ -327,8 +625,8 @@ evaluationSystem world =
         world
 
 
-featuresOf : EntityId -> Geometry -> List Feature
-featuresOf entityId geometry =
+geometryPartsOf : EntityId -> Geometry -> List GeometryPart
+geometryPartsOf entityId geometry =
     case geometry of
         GPoint position ->
             [ { ref =
@@ -339,17 +637,43 @@ featuresOf entityId geometry =
               }
             ]
 
+        GSegment start end ->
+            [ { ref =
+                    { owner = entityId
+                    , kind = SegmentStart
+                    }
+              , position = start
+              }
+            , { ref =
+                    { owner = entityId
+                    , kind = SegmentEnd
+                    }
+              , position = end
+              }
+            ]
 
-featuresIn : World -> List Feature
-featuresIn world =
+
+geometryPartsIn : World -> List GeometryPart
+geometryPartsIn world =
     Ecs.EntityComponents.foldFromRight2
         specs.selectable
         specs.evaluated
-        (\entityId _ geometry accumulator ->
-            featuresOf entityId geometry ++ accumulator
+        (\entityId _ evaluated accumulator ->
+            case evaluated of
+                Ok geometry ->
+                    geometryPartsOf entityId geometry ++ accumulator
+
+                Err _ ->
+                    accumulator
         )
         []
         world
+
+
+pointGeometryPartsIn : World -> List GeometryPart
+pointGeometryPartsIn world =
+    geometryPartsIn world
+        |> List.filter (\geometryPart -> geometryPart.ref.kind == PointLocation)
 
 
 alignmentThreshold : Float
@@ -357,25 +681,25 @@ alignmentThreshold =
     12
 
 
-isAligned : (Vec2 -> Float) -> Feature -> Feature -> Bool
-isAligned coordinate draggedFeature candidate =
-    abs (coordinate candidate.position - coordinate draggedFeature.position) <= alignmentThreshold
+isAligned : (Vec2 -> Float) -> GeometryPart -> GeometryPart -> Bool
+isAligned coordinate draggedGeometryPart candidate =
+    abs (coordinate candidate.position - coordinate draggedGeometryPart.position) <= alignmentThreshold
 
 
-nearestGuide : (Float -> Guide) -> (Vec2 -> Float) -> Feature -> List Feature -> Maybe Guide
-nearestGuide guide coordinate draggedFeature candidates =
+nearestGuide : (Float -> Guide) -> (Vec2 -> Float) -> GeometryPart -> List GeometryPart -> Maybe Guide
+nearestGuide guide coordinate draggedGeometryPart candidates =
     candidates
-        |> List.filter (isAligned coordinate draggedFeature)
-        |> List.sortBy (\candidate -> abs (coordinate candidate.position - coordinate draggedFeature.position))
+        |> List.filter (isAligned coordinate draggedGeometryPart)
+        |> List.sortBy (\candidate -> abs (coordinate candidate.position - coordinate draggedGeometryPart.position))
         |> List.head
         |> Maybe.map (\candidate -> guide (coordinate candidate.position))
 
 
-alignmentGuides : Feature -> List Feature -> List Guide
-alignmentGuides draggedFeature candidates =
+alignmentGuides : GeometryPart -> List GeometryPart -> List Guide
+alignmentGuides draggedGeometryPart candidates =
     List.filterMap identity
-        [ nearestGuide VerticalGuide Vec2.getX draggedFeature candidates
-        , nearestGuide HorizontalGuide Vec2.getY draggedFeature candidates
+        [ nearestGuide VerticalGuide Vec2.getX draggedGeometryPart candidates
+        , nearestGuide HorizontalGuide Vec2.getY draggedGeometryPart candidates
         ]
 
 
@@ -389,11 +713,11 @@ snapAlongGuide guide position =
             vec2 (Vec2.getX position) y
 
 
-snapPosition : FeatureRef -> Vec2 -> World -> Vec2
-snapPosition feature pointer world =
-    featuresIn world
-        |> List.filter (\candidate -> candidate.ref /= feature)
-        |> alignmentGuides { ref = feature, position = pointer }
+snapPosition : GeometryPartRef -> Vec2 -> World -> Vec2
+snapPosition geometryPart pointer world =
+    pointGeometryPartsIn world
+        |> List.filter (\candidate -> candidate.ref /= geometryPart)
+        |> alignmentGuides { ref = geometryPart, position = pointer }
         |> List.foldl snapAlongGuide pointer
 
 
@@ -402,17 +726,17 @@ guidesFor model =
     case model.interaction of
         Dragging drag ->
             let
-                features =
-                    featuresIn model.world
+                pointGeometryParts =
+                    pointGeometryPartsIn model.world
             in
-            features
-                |> List.filter (\feature -> feature.ref == drag.feature)
+            pointGeometryParts
+                |> List.filter (\geometryPart -> geometryPart.ref == drag.geometryPart)
                 |> List.head
                 |> Maybe.map
-                    (\draggedFeature ->
-                        features
-                            |> List.filter (\feature -> feature.ref /= draggedFeature.ref)
-                            |> alignmentGuides draggedFeature
+                    (\draggedGeometryPart ->
+                        pointGeometryParts
+                            |> List.filter (\geometryPart -> geometryPart.ref /= draggedGeometryPart.ref)
+                            |> alignmentGuides draggedGeometryPart
                     )
                 |> Maybe.withDefault []
 
@@ -420,18 +744,18 @@ guidesFor model =
             []
 
 
-hitTest : Vec2 -> World -> Maybe FeatureRef
+hitTest : Vec2 -> World -> Maybe GeometryPartRef
 hitTest pointer world =
-    featuresIn world
+    geometryPartsIn world
         |> List.filter (isWithinHitRadius pointer)
         |> List.sortBy (Vec2.distanceSquared pointer << .position)
         |> List.head
         |> Maybe.map .ref
 
 
-isWithinHitRadius : Vec2 -> Feature -> Bool
-isWithinHitRadius pointer feature =
-    Vec2.distanceSquared pointer feature.position <= 196
+isWithinHitRadius : Vec2 -> GeometryPart -> Bool
+isWithinHitRadius pointer geometryPart =
+    Vec2.distanceSquared pointer geometryPart.position <= 196
 
 
 interactionAt : Vec2 -> World -> Interaction
@@ -441,17 +765,20 @@ interactionAt pointer world =
         |> Maybe.withDefault Idle
 
 
-isHighlighted : FeatureRef -> Model -> Bool
-isHighlighted feature model =
-    case model.interaction of
-        Idle ->
-            False
+isHighlighted : GeometryPartRef -> Model -> Bool
+isHighlighted geometryPart model =
+    model.segmentStart
+        == Just geometryPart
+        || (case model.interaction of
+                Idle ->
+                    False
 
-        Hovering hovered ->
-            hovered == feature
+                Hovering hovered ->
+                    hovered == geometryPart
 
-        Dragging drag ->
-            drag.feature == feature
+                Dragging drag ->
+                    drag.geometryPart == geometryPart
+           )
 
 
 
@@ -488,7 +815,7 @@ view : Model -> Html Msg
 view model =
     div [ class "columns is-centered mt-1" ]
         [ div [ class "column is-four-fifths" ]
-            [ pointToolToolbar model
+            [ geometryToolbar model
             , div [ class "box has-text-centered" ]
                 [ Svg.svg
                     ([ width "800"
@@ -504,13 +831,20 @@ view model =
                         ]
                         []
                         :: (List.map viewGuide (guidesFor model)
-                                ++ (model.world
-                                        |> Ecs.EntityComponents.foldFromRight
-                                            specs.evaluated
-                                            (\entityId geometry accumulator ->
-                                                viewGeometry model entityId geometry :: accumulator
-                                            )
-                                            []
+                                ++ (List.map viewSegmentPreview (segmentPreviews model)
+                                        ++ (model.world
+                                                |> Ecs.EntityComponents.foldFromRight
+                                                    specs.evaluated
+                                                    (\entityId evaluated accumulator ->
+                                                        case evaluated of
+                                                            Ok geometry ->
+                                                                viewGeometry model entityId geometry :: accumulator
+
+                                                            Err error ->
+                                                                viewEvaluationError error :: accumulator
+                                                    )
+                                                    []
+                                           )
                                    )
                            )
                     )
@@ -519,58 +853,113 @@ view model =
         ]
 
 
-pointToolToolbar : Model -> Html Msg
-pointToolToolbar model =
+geometryToolbar : Model -> Html Msg
+geometryToolbar model =
     div [ class "buttons has-addons mb-4", Html.Attributes.attribute "role" "toolbar" ]
-        [ button
-            [ class <|
-                if model.pointToolActive then
-                    "button is-link is-selected"
+        [ toolButton model SelectTool "fa fa-mouse-pointer" "Select & move" "Select and move existing points"
+        , toolButton model PointTool "fa fa-crosshairs" "Add points" "Enable or disable point construction"
+        , toolButton model SegmentTool "fa fa-minus" "Add segments" "Enable or disable segment construction"
+        ]
 
-                else
-                    "button"
-            , type_ "button"
-            , title "Enable or disable points addition"
-            , Html.Attributes.attribute "aria-pressed"
-                (if model.pointToolActive then
-                    "true"
 
-                 else
-                    "false"
-                )
-            , onClick TogglePointTool
-            ]
-            [ span [ class "icon is-small" ] [ i [ class "fa fa-crosshairs" ] [] ]
-            , span [] [ text "Add points" ]
-            ]
+toolButton : Model -> Tool -> String -> String -> String -> Html Msg
+toolButton model tool icon label tooltip =
+    button
+        [ class <|
+            if model.activeTool == Just tool then
+                "button is-link is-selected"
+
+            else
+                "button"
+        , type_ "button"
+        , title tooltip
+        , Html.Attributes.attribute "aria-pressed"
+            (if model.activeTool == Just tool then
+                "true"
+
+             else
+                "false"
+            )
+        , onClick (ToggleTool tool)
+        ]
+        [ span [ class "icon is-small" ] [ i [ class icon ] [] ]
+        , span [] [ text label ]
         ]
 
 
 svgInteractionAttributes : Model -> List (Svg.Attribute Msg)
 svgInteractionAttributes model =
-    if model.pointToolActive then
-        [ cursor (cursorFor model.interaction)
-        , style "touch-action" "none"
-        , onPointerDown
-        , onPointerMove
-        , onPointerUp
-        ]
+    case model.activeTool of
+        Just _ ->
+            [ cursor (cursorFor model.activeTool model.interaction)
+            , style "touch-action" "none"
+            , onPointerDown
+            , onPointerMove
+            , onPointerUp
+            ]
 
-    else
-        []
+        Nothing ->
+            []
 
 
-cursorFor : Interaction -> String
-cursorFor interaction =
+cursorFor : Maybe Tool -> Interaction -> String
+cursorFor activeTool interaction =
     case interaction of
-        Idle ->
-            "crosshair"
-
-        Hovering _ ->
-            "grab"
-
         Dragging _ ->
             "grabbing"
+
+        _ ->
+            case activeTool of
+                Just SelectTool ->
+                    case interaction of
+                        Hovering _ ->
+                            "grab"
+
+                        _ ->
+                            "default"
+
+                Just PointTool ->
+                    "crosshair"
+
+                Just SegmentTool ->
+                    case interaction of
+                        Hovering _ ->
+                            "pointer"
+
+                        _ ->
+                            "crosshair"
+
+                Nothing ->
+                    "default"
+
+
+segmentPreviews : Model -> List ( Vec2, Vec2 )
+segmentPreviews model =
+    case ( model.segmentStart, model.segmentPreviewEnd ) of
+        ( Just startRef, Just end ) ->
+            geometryPartsIn model.world
+                |> List.filter (\geometryPart -> geometryPart.ref == startRef)
+                |> List.head
+                |> Maybe.map (\start -> [ ( start.position, end ) ])
+                |> Maybe.withDefault []
+
+        _ ->
+            []
+
+
+viewSegmentPreview : ( Vec2, Vec2 ) -> Html Msg
+viewSegmentPreview ( start, end ) =
+    Svg.line
+        [ x1 (String.fromFloat (Vec2.getX start))
+        , y1 (String.fromFloat (Vec2.getY start))
+        , x2 (String.fromFloat (Vec2.getX end))
+        , y2 (String.fromFloat (Vec2.getY end))
+        , stroke "#f5a623"
+        , strokeWidth "2"
+        , strokeDasharray "6 4"
+        , opacity "0.8"
+        ]
+        []
 
 
 viewGuide : Guide -> Html Msg
@@ -612,12 +1001,62 @@ viewGuide guide =
                 []
 
 
+viewEvaluationError : EvaluationError -> Html Msg
+viewEvaluationError error =
+    Svg.g []
+        [ Svg.title [] [ Svg.text (evaluationErrorDescription error) ] ]
+
+
+evaluationErrorDescription : EvaluationError -> String
+evaluationErrorDescription error =
+    case error of
+        MissingGeometryOwner entityId ->
+            "Missing geometry owner #" ++ String.fromInt entityId
+
+        MissingGeometryPart geometryPart ->
+            "Missing geometry part " ++ geometryPartRefDescription geometryPart
+
+        ExpectedPointGeometryPart geometryPart ->
+            "Expected point geometry part " ++ geometryPartRefDescription geometryPart
+
+        CyclicGeometryReference entityIds ->
+            "Cyclic geometry reference "
+                ++ (entityIds
+                        |> List.map String.fromInt
+                        |> String.join " -> "
+                   )
+
+
+geometryPartRefDescription : GeometryPartRef -> String
+geometryPartRefDescription geometryPart =
+    geometryPartKindName geometryPart.kind
+        ++ "(#"
+        ++ String.fromInt geometryPart.owner
+        ++ ")"
+
+
+geometryPartKindName : GeometryPartKind -> String
+geometryPartKindName geometryPartKind =
+    case geometryPartKind of
+        PointLocation ->
+            "PointLocation"
+
+        SegmentStart ->
+            "SegmentStart"
+
+        SegmentEnd ->
+            "SegmentEnd"
+
+        SegmentBody ->
+            "SegmentBody"
+
+
 viewGeometry : Model -> EntityId -> Geometry -> Html Msg
 viewGeometry model entityId geometry =
     case geometry of
         GPoint point ->
             let
-                feature =
+                geometryPart =
                     { owner = entityId, kind = PointLocation }
             in
             Svg.circle
@@ -625,13 +1064,24 @@ viewGeometry model entityId geometry =
                 , cy (String.fromFloat (Vec2.getY point))
                 , r "7"
                 , fill
-                    (if isHighlighted feature model then
+                    (if isHighlighted geometryPart model then
                         "#f5a623"
 
                      else
                         "#3273dc"
                     )
                 , stroke "#1f2933"
+                , strokeWidth "2"
+                ]
+                []
+
+        GSegment start end ->
+            Svg.line
+                [ x1 (String.fromFloat (Vec2.getX start))
+                , y1 (String.fromFloat (Vec2.getY start))
+                , x2 (String.fromFloat (Vec2.getX end))
+                , y2 (String.fromFloat (Vec2.getY end))
+                , stroke "#94a3b8"
                 , strokeWidth "2"
                 ]
                 []
