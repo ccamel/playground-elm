@@ -278,14 +278,14 @@ rewriteNode PointLocation position (Point (Literal _)) =
 
 
 dragSystem : FeatureRef -> Vec2 -> World -> World
-dragSystem feature position world =
+dragSystem feature pointer world =
     let
         activeWorld =
             Ecs.onEntity feature.owner world
     in
     (case ( Ecs.hasEntity activeWorld, Ecs.hasComponent specs.draggable activeWorld, Ecs.getComponent specs.expression activeWorld ) of
         ( True, True, Just node ) ->
-            case rewriteNode feature.kind position node of
+            case rewriteNode feature.kind (snapPosition feature pointer world) node of
                 Just rewrittenNode ->
                     Ecs.insertComponent specs.expression rewrittenNode activeWorld
 
@@ -377,6 +377,24 @@ alignmentGuides draggedFeature candidates =
         [ nearestGuide VerticalGuide Vec2.getX draggedFeature candidates
         , nearestGuide HorizontalGuide Vec2.getY draggedFeature candidates
         ]
+
+
+snapAlongGuide : Guide -> Vec2 -> Vec2
+snapAlongGuide guide position =
+    case guide of
+        VerticalGuide x ->
+            vec2 x (Vec2.getY position)
+
+        HorizontalGuide y ->
+            vec2 (Vec2.getX position) y
+
+
+snapPosition : FeatureRef -> Vec2 -> World -> Vec2
+snapPosition feature pointer world =
+    featuresIn world
+        |> List.filter (\candidate -> candidate.ref /= feature)
+        |> alignmentGuides { ref = feature, position = pointer }
+        |> List.foldl snapAlongGuide pointer
 
 
 guidesFor : Model -> List Guide
