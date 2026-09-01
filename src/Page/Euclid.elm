@@ -5,7 +5,7 @@ import Ecs
 import Ecs.Components4
 import Ecs.EntityComponents
 import Ecs.Singletons1
-import Html exposing (Html, button, div, i, span, text)
+import Html exposing (Html, button, div, i, pre, span, text)
 import Html.Attributes exposing (class, style, title, type_)
 import Html.Events exposing (on, onClick)
 import Json.Decode as Decode
@@ -1062,9 +1062,96 @@ view model =
                             ]
                         ]
                     ]
+                , worldExpressionView model.world
                 ]
             ]
         ]
+
+
+worldExpressionView : World -> Html Msg
+worldExpressionView world =
+    pre
+        [ class "has-text-left mt-4 p-3"
+        , style "font-family" "monospace"
+        , style "white-space" "pre-wrap"
+        , style "overflow-wrap" "anywhere"
+        ]
+        [ text (worldExpressionText world) ]
+
+
+worldExpressionText : World -> String
+worldExpressionText world =
+    world
+        |> Ecs.EntityComponents.foldFromRight
+            specs.expression
+            (\entityId node expressions -> ( entityId, node ) :: expressions)
+            []
+        |> List.sortBy Tuple.first
+        |> List.map worldExpressionEntryText
+        |> String.join ", "
+
+
+worldExpressionEntryText : ( EntityId, Node ) -> String
+worldExpressionEntryText ( entityId, node ) =
+    String.fromInt entityId ++ ":" ++ nodeExpressionText node
+
+
+nodeExpressionText : Node -> String
+nodeExpressionText node =
+    case node of
+        Point pointExpression ->
+            "point(" ++ pointExpressionText pointExpression ++ ")"
+
+        Segment segmentExpression ->
+            "segment(" ++ segmentExpressionText segmentExpression ++ ")"
+
+
+pointExpressionText : PointExpr -> String
+pointExpressionText expression =
+    case expression of
+        Literal position ->
+            "free(" ++ positionText position ++ ")"
+
+        Midpoint segment ->
+            "midpoint(" ++ geometryPartReferenceText segment ++ ")"
+
+
+segmentExpressionText : SegmentExpr -> String
+segmentExpressionText expression =
+    case expression of
+        Between start end ->
+            "between("
+                ++ geometryPartReferenceText start
+                ++ ", "
+                ++ geometryPartReferenceText end
+                ++ ")"
+
+
+geometryPartReferenceText : GeometryPartRef -> String
+geometryPartReferenceText geometryPart =
+    let
+        entityReference =
+            "#" ++ String.fromInt geometryPart.owner
+    in
+    case geometryPart.kind of
+        PointLocation ->
+            entityReference
+
+        SegmentStart ->
+            entityReference ++ ".start"
+
+        SegmentEnd ->
+            entityReference ++ ".end"
+
+        SegmentBody ->
+            entityReference
+
+
+positionText : Vec2 -> String
+positionText position =
+    String.fromFloat (Vec2.getX position)
+        ++ ", "
+        ++ String.fromFloat (Vec2.getY position)
 
 
 canvasLayers : Model -> List (Html Msg)
