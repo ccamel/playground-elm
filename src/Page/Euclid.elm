@@ -1006,11 +1006,39 @@ midpointHoverPosition model =
 -- EVENTS
 
 
+canvasWidth : Float
+canvasWidth =
+    800
+
+
+canvasHeight : Float
+canvasHeight =
+    600
+
+
 pointerPositionDecoder : Decode.Decoder Vec2
 pointerPositionDecoder =
-    Decode.map2 vec2
+    Decode.map4 pointerPositionInCanvas
         (Decode.field "offsetX" Decode.float)
         (Decode.field "offsetY" Decode.float)
+        (Decode.field "currentTarget" (Decode.field "clientWidth" Decode.float))
+        (Decode.field "currentTarget" (Decode.field "clientHeight" Decode.float))
+
+
+pointerPositionInCanvas : Float -> Float -> Float -> Float -> Vec2
+pointerPositionInCanvas offsetX offsetY renderedWidth renderedHeight =
+    vec2
+        (scalePointerCoordinate offsetX renderedWidth canvasWidth)
+        (scalePointerCoordinate offsetY renderedHeight canvasHeight)
+
+
+scalePointerCoordinate : Float -> Float -> Float -> Float
+scalePointerCoordinate coordinate renderedSize canvasSize =
+    if renderedSize > 0 then
+        coordinate * canvasSize / renderedSize
+
+    else
+        coordinate
 
 
 onPointerDown : Html.Attribute Msg
@@ -1039,9 +1067,16 @@ view model =
             [ geometryToolbar model
             , div [ class "box has-text-centered" ]
                 [ Svg.svg
-                    ([ width "800"
-                     , height "600"
-                     , viewBox "0 0 800 600"
+                    ([ SvgAttr.class "euclid-canvas mx-auto"
+                     , width "100%"
+                     , style "max-width" (String.fromFloat canvasWidth ++ "px")
+                     , height "100%"
+                     , viewBox
+                        ("0 0 "
+                            ++ String.fromFloat canvasWidth
+                            ++ " "
+                            ++ String.fromFloat canvasHeight
+                        )
                      ]
                         ++ svgInteractionAttributes model
                     )
@@ -1222,8 +1257,8 @@ viewGridDefinitions =
 viewCanvasBackground : Html Msg
 viewCanvasBackground =
     Svg.rect
-        [ width "800"
-        , height "600"
+        [ width (String.fromFloat canvasWidth)
+        , height (String.fromFloat canvasHeight)
         , fill "url(#euclid-grid)"
         ]
         []
@@ -1453,7 +1488,7 @@ viewGuide guide =
                 [ x1 coordinate
                 , y1 "0"
                 , x2 coordinate
-                , y2 "600"
+                , y2 (String.fromFloat canvasHeight)
                 , stroke "#94a3b8"
                 , strokeWidth "1"
                 , strokeDasharray "4 6"
@@ -1465,7 +1500,7 @@ viewGuide guide =
             Svg.line
                 [ x1 "0"
                 , y1 coordinate
-                , x2 "800"
+                , x2 (String.fromFloat canvasWidth)
                 , y2 coordinate
                 , stroke "#94a3b8"
                 , strokeWidth "1"
