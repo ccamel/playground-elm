@@ -919,10 +919,44 @@ snapAlongGuide guide position =
 
 snapPosition : GeometryPartRef -> Vec2 -> World -> Vec2
 snapPosition geometryPart pointer world =
-    pointGeometryPartsIn world
-        |> List.filter (\candidate -> candidate.ref /= geometryPart)
-        |> alignmentGuides { ref = geometryPart, position = pointer }
-        |> List.foldl snapAlongGuide pointer
+    case snapToSegment geometryPart pointer world of
+        Just position ->
+            position
+
+        Nothing ->
+            pointGeometryPartsIn world
+                |> List.filter (\candidate -> candidate.ref /= geometryPart)
+                |> alignmentGuides { ref = geometryPart, position = pointer }
+                |> List.foldl snapAlongGuide pointer
+
+
+snapToSegment : GeometryPartRef -> Vec2 -> World -> Maybe Vec2
+snapToSegment geometryPart pointer world =
+    segmentBodiesIn world
+        |> List.filter (\segment -> not (segmentUsesPoint geometryPart segment world))
+        |> List.filter (isWithinSegmentHitRadius pointer)
+        |> List.sortBy (segmentDistanceSquared pointer)
+        |> List.head
+        |> Maybe.map (nearestPointOnSegment pointer)
+
+
+segmentUsesPoint : GeometryPartRef -> SegmentHitTarget -> World -> Bool
+segmentUsesPoint geometryPart segment world =
+    world
+        |> Ecs.onEntity segment.ref.owner
+        |> Ecs.getComponent specs.expression
+        |> Maybe.map (nodeUsesPoint geometryPart)
+        |> Maybe.withDefault False
+
+
+nodeUsesPoint : GeometryPartRef -> Node -> Bool
+nodeUsesPoint geometryPart node =
+    case node of
+        Segment (Between start end) ->
+            geometryPart == start || geometryPart == end
+
+        _ ->
+            False
 
 
 guidesFor : Model -> List Guide
@@ -976,8 +1010,8 @@ isWithinSegmentHitRadius pointer segment =
     segmentDistanceSquared pointer segment <= 196
 
 
-segmentDistanceSquared : Vec2 -> SegmentHitTarget -> Float
-segmentDistanceSquared pointer segment =
+nearestPointOnSegment : Vec2 -> SegmentHitTarget -> Vec2
+nearestPointOnSegment pointer segment =
     let
         startX =
             Vec2.getX segment.start
@@ -1002,11 +1036,13 @@ segmentDistanceSquared pointer segment =
                 clamp 0
                     1
                     (((Vec2.getX pointer - startX) * deltaX + (Vec2.getY pointer - startY) * deltaY) / lengthSquared)
-
-        nearest =
-            vec2 (startX + projection * deltaX) (startY + projection * deltaY)
     in
-    Vec2.distanceSquared pointer nearest
+    vec2 (startX + projection * deltaX) (startY + projection * deltaY)
+
+
+segmentDistanceSquared : Vec2 -> SegmentHitTarget -> Float
+segmentDistanceSquared pointer segment =
+    Vec2.distanceSquared pointer (nearestPointOnSegment pointer segment)
 
 
 midpoint : Vec2 -> Vec2 -> Vec2
