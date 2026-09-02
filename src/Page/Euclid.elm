@@ -144,6 +144,7 @@ type GeometryPartKind
     | SegmentStart
     | SegmentEnd
     | SegmentBody
+    | CircleBody
 
 
 type alias GeometryPartRef =
@@ -737,7 +738,7 @@ hasGeometryPart geometryPartKind geometry =
             List.member geometryPartKind [ SegmentStart, SegmentEnd, SegmentBody ]
 
         GCircle _ _ ->
-            False
+            geometryPartKind == CircleBody
 
 
 cyclePath : EntityId -> List EntityId -> List EntityId
@@ -836,6 +837,13 @@ type alias SegmentHitTarget =
     }
 
 
+type alias CircleHitTarget =
+    { ref : GeometryPartRef
+    , center : Vec2
+    , through : Vec2
+    }
+
+
 segmentBodiesIn : World -> List SegmentHitTarget
 segmentBodiesIn world =
     Ecs.EntityComponents.foldFromRight2
@@ -847,6 +855,27 @@ segmentBodiesIn world =
                     { ref = { owner = entityId, kind = SegmentBody }
                     , start = start
                     , end = end
+                    }
+                        :: accumulator
+
+                _ ->
+                    accumulator
+        )
+        []
+        world
+
+
+circleBodiesIn : World -> List CircleHitTarget
+circleBodiesIn world =
+    Ecs.EntityComponents.foldFromRight2
+        specs.selectable
+        specs.evaluated
+        (\entityId _ evaluated accumulator ->
+            case evaluated of
+                Ok (GCircle center through) ->
+                    { ref = { owner = entityId, kind = CircleBody }
+                    , center = center
+                    , through = through
                     }
                         :: accumulator
 
@@ -919,15 +948,39 @@ snapAlongGuide guide position =
 
 snapPosition : GeometryPartRef -> Vec2 -> World -> Vec2
 snapPosition geometryPart pointer world =
-    case snapToSegment geometryPart pointer world of
+    case snapToCircle geometryPart pointer world of
         Just position ->
             position
 
         Nothing ->
-            pointGeometryPartsIn world
-                |> List.filter (\candidate -> candidate.ref /= geometryPart)
-                |> alignmentGuides { ref = geometryPart, position = pointer }
-                |> List.foldl snapAlongGuide pointer
+            case snapToSegment geometryPart pointer world of
+                Just position ->
+                    position
+
+                Nothing ->
+                    pointGeometryPartsIn world
+                        |> List.filter (\candidate -> candidate.ref /= geometryPart)
+                        |> alignmentGuides { ref = geometryPart, position = pointer }
+                        |> List.foldl snapAlongGuide pointer
+
+
+snapToCircle : GeometryPartRef -> Vec2 -> World -> Maybe Vec2
+snapToCircle geometryPart pointer world =
+    circleBodiesIn world
+        |> List.filter (\circle -> not (circleUsesPoint geometryPart circle world))
+        |> List.filter (isWithinCircleHitRadius pointer)
+        |> List.sortBy (circleDistanceSquared pointer)
+        |> List.head
+        |> Maybe.andThen (nearestPointOnCircle pointer)
+
+
+circleUsesPoint : GeometryPartRef -> CircleHitTarget -> World -> Bool
+circleUsesPoint geometryPart circle world =
+    world
+        |> Ecs.onEntity circle.ref.owner
+        |> Ecs.getComponent specs.expression
+        |> Maybe.map (nodeUsesPoint geometryPart)
+        |> Maybe.withDefault False
 
 
 snapToSegment : GeometryPartRef -> Vec2 -> World -> Maybe Vec2
@@ -954,6 +1007,9 @@ nodeUsesPoint geometryPart node =
     case node of
         Segment (Between start end) ->
             geometryPart == start || geometryPart == end
+
+        Circle (CenterThrough center through) ->
+            geometryPart == center || geometryPart == through
 
         _ ->
             False
@@ -1043,6 +1099,58 @@ nearestPointOnSegment pointer segment =
 segmentDistanceSquared : Vec2 -> SegmentHitTarget -> Float
 segmentDistanceSquared pointer segment =
     Vec2.distanceSquared pointer (nearestPointOnSegment pointer segment)
+
+
+isWithinCircleHitRadius : Vec2 -> CircleHitTarget -> Bool
+isWithinCircleHitRadius pointer circle =
+    circleDistanceSquared pointer circle <= 196
+
+
+circleDistanceSquared : Vec2 -> CircleHitTarget -> Float
+circleDistanceSquared pointer circle =
+    let
+        distanceToCenter =
+            sqrt (Vec2.distanceSquared pointer circle.center)
+
+        radius =
+            sqrt (Vec2.distanceSquared circle.center circle.through)
+
+        difference =
+            distanceToCenter - radius
+    in
+    difference * difference
+
+
+nearestPointOnCircle : Vec2 -> CircleHitTarget -> Maybe Vec2
+nearestPointOnCircle pointer circle =
+    let
+        centerX =
+            Vec2.getX circle.center
+
+        centerY =
+            Vec2.getY circle.center
+
+        deltaX =
+            Vec2.getX pointer - centerX
+
+        deltaY =
+            Vec2.getY pointer - centerY
+
+        distanceToCenter =
+            sqrt (deltaX * deltaX + deltaY * deltaY)
+
+        radius =
+            sqrt (Vec2.distanceSquared circle.center circle.through)
+    in
+    if distanceToCenter == 0 || radius == 0 then
+        Nothing
+
+    else
+        Just
+            (vec2
+                (centerX + radius * deltaX / distanceToCenter)
+                (centerY + radius * deltaY / distanceToCenter)
+            )
 
 
 midpoint : Vec2 -> Vec2 -> Vec2
@@ -1333,6 +1441,9 @@ geometryPartReferenceText geometryPart =
             entityReference ++ ".end"
 
         SegmentBody ->
+            entityReference
+
+        CircleBody ->
             entityReference
 
 
@@ -1751,6 +1862,9 @@ geometryPartKindName geometryPartKind =
 
         SegmentBody ->
             "SegmentBody"
+
+        CircleBody ->
+            "CircleBody"
 
 
 viewGeometry : Model -> EntityId -> Geometry -> Html Msg
