@@ -1,4 +1,4 @@
-module Page.Euclid exposing (Components, Draggable, EntityId, EvaluationError, Geometry, GeometryPartKind, GeometryPartRef, Interaction, Model, Msg, Node, PointExpr, SegmentExpr, Selectable, Singletons, Tool, World, info, init, subscriptions, update, view)
+module Page.Euclid exposing (CircleExpr, Components, Draggable, EntityId, EvaluationError, Geometry, GeometryPartKind, GeometryPartRef, Interaction, Model, Msg, Node, PointExpr, SegmentExpr, Selectable, Singletons, Tool, World, info, init, subscriptions, update, view)
 
 import Dict exposing (Dict)
 import Ecs
@@ -47,6 +47,7 @@ type alias EntityId =
 type Node
     = Point PointExpr
     | Segment SegmentExpr
+    | Circle CircleExpr
 
 
 type PointExpr
@@ -58,9 +59,14 @@ type SegmentExpr
     = Between GeometryPartRef GeometryPartRef
 
 
+type CircleExpr
+    = CenterThrough GeometryPartRef GeometryPartRef
+
+
 type Geometry
     = GPoint Vec2
     | GSegment Vec2 Vec2
+    | GCircle Vec2 Vec2
 
 
 type EvaluationError
@@ -165,6 +171,7 @@ type Tool
     = SelectTool
     | PointTool
     | SegmentTool
+    | CircleTool
     | MidpointTool
 
 
@@ -189,6 +196,8 @@ type alias Model =
     , activeTool : Maybe Tool
     , segmentStart : Maybe GeometryPartRef
     , segmentPreviewEnd : Maybe Vec2
+    , circleCenter : Maybe GeometryPartRef
+    , circlePreviewThrough : Maybe Vec2
     , pointerPosition : Vec2
     }
 
@@ -215,6 +224,8 @@ init =
       , activeTool = Just SelectTool
       , segmentStart = Nothing
       , segmentPreviewEnd = Nothing
+      , circleCenter = Nothing
+      , circlePreviewThrough = Nothing
       , pointerPosition = vec2 0 0
       }
     , Cmd.none
@@ -239,6 +250,8 @@ update msg model =
                 , interaction = Idle
                 , segmentStart = Nothing
                 , segmentPreviewEnd = Nothing
+                , circleCenter = Nothing
+                , circlePreviewThrough = Nothing
               }
             , Cmd.none
             )
@@ -268,6 +281,9 @@ startInteraction pointer model =
 
         Just SegmentTool ->
             startSegment pointer model
+
+        Just CircleTool ->
+            startCircle pointer model
 
         Just MidpointTool ->
             startMidpoint pointer model
@@ -354,6 +370,38 @@ startSegment pointer model =
             }
 
 
+startCircle : Vec2 -> Model -> Model
+startCircle pointer model =
+    let
+        ( geometryPart, world ) =
+            pointAtOrCreate pointer model.world
+    in
+    case model.circleCenter of
+        Just center ->
+            if center == geometryPart then
+                { model
+                    | world = world
+                    , interaction = Hovering geometryPart
+                    , circlePreviewThrough = Just pointer
+                }
+
+            else
+                { model
+                    | world = addCircle center geometryPart world
+                    , interaction = Hovering geometryPart
+                    , circleCenter = Nothing
+                    , circlePreviewThrough = Nothing
+                }
+
+        Nothing ->
+            { model
+                | world = world
+                , interaction = Hovering geometryPart
+                , circleCenter = Just geometryPart
+                , circlePreviewThrough = Just pointer
+            }
+
+
 startMidpoint : Vec2 -> Model -> Model
 startMidpoint pointer model =
     case segmentBodyAt pointer model.world of
@@ -391,6 +439,13 @@ movePointer pointer model =
                         , pointerPosition = pointer
                     }
 
+                Just CircleTool ->
+                    { model
+                        | interaction = interactionAt pointer model.world
+                        , circlePreviewThrough = Just pointer
+                        , pointerPosition = pointer
+                    }
+
                 Just MidpointTool ->
                     { model
                         | interaction = midpointInteractionAt pointer model.world
@@ -411,6 +466,12 @@ endInteraction pointer model =
             { model
                 | interaction = interactionAt pointer model.world
                 , segmentPreviewEnd = Just pointer
+            }
+
+        Just CircleTool ->
+            { model
+                | interaction = interactionAt pointer model.world
+                , circlePreviewThrough = Just pointer
             }
 
         Just MidpointTool ->
@@ -460,6 +521,20 @@ addSegment start end world =
     world
         |> Ecs.insertEntity entityId
         |> Ecs.insertComponent specs.expression (Segment (Between start end))
+        |> Ecs.insertComponent specs.selectable Selectable
+        |> Ecs.updateSingleton specs.nextEntityId (\id -> id + 1)
+        |> evaluationSystem
+
+
+addCircle : GeometryPartRef -> GeometryPartRef -> World -> World
+addCircle center through world =
+    let
+        entityId =
+            Ecs.getSingleton specs.nextEntityId world
+    in
+    world
+        |> Ecs.insertEntity entityId
+        |> Ecs.insertComponent specs.expression (Circle (CenterThrough center through))
         |> Ecs.insertComponent specs.selectable Selectable
         |> Ecs.updateSingleton specs.nextEntityId (\id -> id + 1)
         |> evaluationSystem
@@ -565,6 +640,9 @@ evaluateNode activeResolver state node =
         Segment expression ->
             evaluateSegment activeResolver state expression
 
+        Circle expression ->
+            evaluateCircle activeResolver state expression
+
 
 evaluateSegment : Resolver -> EvaluationState -> SegmentExpr -> Evaluation Geometry
 evaluateSegment activeResolver state expression =
@@ -584,6 +662,26 @@ evaluateSegment activeResolver state expression =
 
                 Err error ->
                     ( Err error, stateAfterStart )
+
+
+evaluateCircle : Resolver -> EvaluationState -> CircleExpr -> Evaluation Geometry
+evaluateCircle activeResolver state expression =
+    case expression of
+        CenterThrough centerRef throughRef ->
+            let
+                ( centerResult, stateAfterCenter ) =
+                    activeResolver.resolvePointPart centerRef state
+            in
+            case centerResult of
+                Ok center ->
+                    let
+                        ( throughResult, stateAfterThrough ) =
+                            activeResolver.resolvePointPart throughRef stateAfterCenter
+                    in
+                    ( Result.map (GCircle center) throughResult, stateAfterThrough )
+
+                Err error ->
+                    ( Err error, stateAfterCenter )
 
 
 resolvePointPart : GeometryPartRef -> EvaluationState -> Evaluation Vec2
@@ -637,6 +735,9 @@ hasGeometryPart geometryPartKind geometry =
 
         GSegment _ _ ->
             List.member geometryPartKind [ SegmentStart, SegmentEnd, SegmentBody ]
+
+        GCircle _ _ ->
+            False
 
 
 cyclePath : EntityId -> List EntityId -> List EntityId
@@ -723,6 +824,9 @@ geometryPartsOf entityId geometry =
               , position = end
               }
             ]
+
+        GCircle _ _ ->
+            []
 
 
 type alias SegmentHitTarget =
@@ -1140,6 +1244,9 @@ nodeExpressionText node =
         Segment segmentExpression ->
             "segment(" ++ segmentExpressionText segmentExpression ++ ")"
 
+        Circle circleExpression ->
+            "circle(" ++ circleExpressionText circleExpression ++ ")"
+
 
 pointExpressionText : PointExpr -> String
 pointExpressionText expression =
@@ -1159,6 +1266,17 @@ segmentExpressionText expression =
                 ++ geometryPartReferenceText start
                 ++ ", "
                 ++ geometryPartReferenceText end
+                ++ ")"
+
+
+circleExpressionText : CircleExpr -> String
+circleExpressionText expression =
+    case expression of
+        CenterThrough center through ->
+            "center-through("
+                ++ geometryPartReferenceText center
+                ++ ", "
+                ++ geometryPartReferenceText through
                 ++ ")"
 
 
@@ -1208,6 +1326,7 @@ canvasLayers model =
     in
     List.map viewGuide (guidesFor model)
         ++ List.map viewSegmentPreview (segmentPreviews model)
+        ++ List.map viewCirclePreview (circlePreviews model)
         ++ geometryLayers
         ++ (model
                 |> midpointPreview
@@ -1315,6 +1434,7 @@ geometryToolbar model =
         [ toolButton model SelectTool "fa fa-mouse-pointer" "Select & move" "Select and move existing points"
         , toolButton model PointTool "fa fa-crosshairs" "Add points" "Enable or disable point construction"
         , toolButton model SegmentTool "fa fa-minus" "Add segments" "Enable or disable segment construction"
+        , toolButton model CircleTool "fa fa-circle-o" "Add circles" "Construct a circle from a center and a passing point"
         , toolButton model MidpointTool "fa fa-circle-o" "Midpoint" "Construct a point at the middle of a segment"
         ]
 
@@ -1385,6 +1505,14 @@ cursorFor model =
                         _ ->
                             "crosshair"
 
+                Just CircleTool ->
+                    case model.interaction of
+                        Hovering _ ->
+                            "pointer"
+
+                        _ ->
+                            "crosshair"
+
                 Just MidpointTool ->
                     case model.interaction of
                         Hovering _ ->
@@ -1425,6 +1553,35 @@ viewSegmentPreview ( start, end ) =
         , y1 (String.fromFloat (Vec2.getY start))
         , x2 (String.fromFloat (Vec2.getX end))
         , y2 (String.fromFloat (Vec2.getY end))
+        , stroke "#f5a623"
+        , strokeWidth "2"
+        , strokeDasharray "6 4"
+        , opacity "0.8"
+        ]
+        []
+
+
+circlePreviews : Model -> List ( Vec2, Vec2 )
+circlePreviews model =
+    case ( model.circleCenter, model.circlePreviewThrough ) of
+        ( Just centerRef, Just through ) ->
+            geometryPartsIn model.world
+                |> List.filter (\geometryPart -> geometryPart.ref == centerRef)
+                |> List.head
+                |> Maybe.map (\center -> [ ( center.position, through ) ])
+                |> Maybe.withDefault []
+
+        _ ->
+            []
+
+
+viewCirclePreview : ( Vec2, Vec2 ) -> Html Msg
+viewCirclePreview ( center, through ) =
+    Svg.circle
+        [ cx (String.fromFloat (Vec2.getX center))
+        , cy (String.fromFloat (Vec2.getY center))
+        , r (String.fromFloat (sqrt (Vec2.distanceSquared center through)))
+        , fill "none"
         , stroke "#f5a623"
         , strokeWidth "2"
         , strokeDasharray "6 4"
@@ -1635,6 +1792,17 @@ viewGeometry model entityId geometry =
                      else
                         "2"
                     )
+                ]
+                []
+
+        GCircle center through ->
+            Svg.circle
+                [ cx (String.fromFloat (Vec2.getX center))
+                , cy (String.fromFloat (Vec2.getY center))
+                , r (String.fromFloat (sqrt (Vec2.distanceSquared center through)))
+                , fill "none"
+                , stroke "#94a3b8"
+                , strokeWidth "2"
                 ]
                 []
 
