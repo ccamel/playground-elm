@@ -1,4 +1,4 @@
-module Page.Euclid exposing (CircleExpr, Components, Draggable, EntityId, EvaluationError, Geometry, GeometryPartKind, GeometryPartRef, Interaction, Model, Msg, Node, PointExpr, SegmentExpr, Selectable, Singletons, Tool, World, info, init, subscriptions, update, view)
+module Page.Euclid exposing (CircleExpr, Components, DragBehavior, EntityId, EvaluationError, Geometry, GeometryPartKind, GeometryPartRef, Interaction, Model, Msg, Node, PointExpr, SegmentExpr, Selectable, Singletons, Tool, World, info, init, subscriptions, update, view)
 
 import Dict exposing (Dict)
 import Ecs
@@ -82,12 +82,12 @@ type Selectable
     = Selectable
 
 
-type Draggable
-    = Draggable
+type DragBehavior
+    = RewritePoint
 
 
 type alias Components =
-    Ecs.Components4.Components4 EntityId Node (Result EvaluationError Geometry) Selectable Draggable
+    Ecs.Components4.Components4 EntityId Node (Result EvaluationError Geometry) Selectable DragBehavior
 
 
 
@@ -107,7 +107,7 @@ type alias Specs =
     , expression : ComponentSpec Node
     , evaluated : ComponentSpec (Result EvaluationError Geometry)
     , selectable : ComponentSpec Selectable
-    , draggable : ComponentSpec Draggable
+    , dragBehavior : ComponentSpec DragBehavior
     , nextEntityId : SingletonSpec EntityId
     }
 
@@ -302,7 +302,7 @@ startSelection pointer model =
             if
                 model.world
                     |> Ecs.onEntity geometryPart.owner
-                    |> Ecs.hasComponent specs.draggable
+                    |> Ecs.hasComponent specs.dragBehavior
             then
                 { model | interaction = Dragging { geometryPart = geometryPart } }
 
@@ -495,9 +495,8 @@ addPoint position world =
         |> Ecs.insertEntity entityId
         |> Ecs.insertComponent specs.expression (Point (Literal position))
         |> Ecs.insertComponent specs.selectable Selectable
-        |> Ecs.insertComponent specs.draggable Draggable
         |> Ecs.updateSingleton specs.nextEntityId (\id -> id + 1)
-        |> evaluationSystem
+        |> derivedComponentsSystem
     )
 
 
@@ -512,7 +511,7 @@ addMidpoint segment world =
         |> Ecs.insertComponent specs.expression (Point (Midpoint segment))
         |> Ecs.insertComponent specs.selectable Selectable
         |> Ecs.updateSingleton specs.nextEntityId (\id -> id + 1)
-        |> evaluationSystem
+        |> derivedComponentsSystem
 
 
 addSegment : GeometryPartRef -> GeometryPartRef -> World -> World
@@ -526,7 +525,7 @@ addSegment start end world =
         |> Ecs.insertComponent specs.expression (Segment (Between start end))
         |> Ecs.insertComponent specs.selectable Selectable
         |> Ecs.updateSingleton specs.nextEntityId (\id -> id + 1)
-        |> evaluationSystem
+        |> derivedComponentsSystem
 
 
 addCircle : GeometryPartRef -> GeometryPartRef -> World -> World
@@ -540,19 +539,14 @@ addCircle center through world =
         |> Ecs.insertComponent specs.expression (Circle (CenterThrough center through))
         |> Ecs.insertComponent specs.selectable Selectable
         |> Ecs.updateSingleton specs.nextEntityId (\id -> id + 1)
-        |> evaluationSystem
+        |> derivedComponentsSystem
 
 
-rewriteNode : GeometryPartRef -> Vec2 -> World -> Node -> Maybe Node
-rewriteNode geometryPart pointer world node =
-    case ( geometryPart.kind, node ) of
-        ( PointLocation, Point pointExpression ) ->
-            case pointExpression of
-                Midpoint _ ->
-                    Nothing
-
-                _ ->
-                    Just (rewritePoint geometryPart pointer world)
+rewriteNode : DragBehavior -> GeometryPartRef -> Vec2 -> World -> Node -> Maybe Node
+rewriteNode dragBehavior geometryPart pointer world node =
+    case ( dragBehavior, geometryPart.kind, node ) of
+        ( RewritePoint, PointLocation, Point _ ) ->
+            Just (rewritePoint geometryPart pointer world)
 
         _ ->
             Nothing
@@ -579,9 +573,9 @@ dragSystem geometryPart pointer world =
         activeWorld =
             Ecs.onEntity geometryPart.owner world
     in
-    (case ( Ecs.hasEntity activeWorld, Ecs.hasComponent specs.draggable activeWorld, Ecs.getComponent specs.expression activeWorld ) of
-        ( True, True, Just node ) ->
-            case rewriteNode geometryPart pointer world node of
+    (case ( Ecs.hasEntity activeWorld, Ecs.getComponent specs.dragBehavior activeWorld, Ecs.getComponent specs.expression activeWorld ) of
+        ( True, Just dragBehavior, Just node ) ->
+            case rewriteNode dragBehavior geometryPart pointer world node of
                 Just rewrittenNode ->
                     Ecs.insertComponent specs.expression rewrittenNode activeWorld
 
@@ -591,7 +585,7 @@ dragSystem geometryPart pointer world =
         _ ->
             world
     )
-        |> evaluationSystem
+        |> derivedComponentsSystem
 
 
 type alias EvaluationSnapshot =
@@ -867,6 +861,52 @@ evaluationSystem world =
             |> evaluateExpressions
         )
         world
+
+
+dragBehaviorFor : Node -> Maybe DragBehavior
+dragBehaviorFor node =
+    case node of
+        Point (Literal _) ->
+            Just RewritePoint
+
+        Point (OnSegment _ _) ->
+            Just RewritePoint
+
+        Point (OnCircle _ _) ->
+            Just RewritePoint
+
+        Point (Midpoint _) ->
+            Nothing
+
+        Segment _ ->
+            Nothing
+
+        Circle _ ->
+            Nothing
+
+
+dragBehaviorSystem : World -> World
+dragBehaviorSystem world =
+    Ecs.setComponents specs.dragBehavior
+        (world
+            |> Ecs.getComponents specs.expression
+            |> Dict.foldl
+                (\entityId node dragBehaviors ->
+                    case dragBehaviorFor node of
+                        Just dragBehavior ->
+                            Dict.insert entityId dragBehavior dragBehaviors
+
+                        Nothing ->
+                            dragBehaviors
+                )
+                Dict.empty
+        )
+        world
+
+
+derivedComponentsSystem : World -> World
+derivedComponentsSystem =
+    evaluationSystem >> dragBehaviorSystem
 
 
 geometryPartsOf : EntityId -> Geometry -> List GeometryPart
@@ -1754,7 +1794,7 @@ isDraggable : GeometryPartRef -> World -> Bool
 isDraggable geometryPart world =
     world
         |> Ecs.onEntity geometryPart.owner
-        |> Ecs.hasComponent specs.draggable
+        |> Ecs.hasComponent specs.dragBehavior
 
 
 segmentPreviews : Model -> List ( Vec2, Vec2 )
