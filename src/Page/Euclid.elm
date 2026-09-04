@@ -556,7 +556,11 @@ rewritePoint : GeometryPartRef -> Vec2 -> World -> Node
 rewritePoint geometryPart pointer world =
     case snapToCircle geometryPart pointer world of
         Just ( circle, position ) ->
-            Point (OnCircle circle.ref (circleAngle circle.center position))
+            let
+                snappedPosition =
+                    snapCircleToGuides geometryPart circle position world
+            in
+            Point (OnCircle circle.ref (circleAngle circle.center snappedPosition))
 
         Nothing ->
             case snapToSegment geometryPart pointer world of
@@ -1063,6 +1067,60 @@ snapToCircle geometryPart pointer world =
                 nearestPointOnCircle pointer circle
                     |> Maybe.map (\position -> ( circle, position ))
             )
+
+
+snapCircleToGuides : GeometryPartRef -> CircleHitTarget -> Vec2 -> World -> Vec2
+snapCircleToGuides geometryPart circle position world =
+    pointGeometryPartsIn world
+        |> List.filter (\candidate -> candidate.ref /= geometryPart)
+        |> alignmentGuides { ref = geometryPart, position = position }
+        |> List.concatMap (circleGuideIntersections circle)
+        |> List.sortBy (Vec2.distanceSquared position)
+        |> List.head
+        |> Maybe.withDefault position
+
+
+circleGuideIntersections : CircleHitTarget -> Guide -> List Vec2
+circleGuideIntersections circle guide =
+    let
+        centerX =
+            Vec2.getX circle.center
+
+        centerY =
+            Vec2.getY circle.center
+
+        radiusSquared =
+            Vec2.distanceSquared circle.center circle.through
+
+        intersections coordinate offset makePoint =
+            if offset < 0 then
+                []
+
+            else
+                let
+                    distance =
+                        sqrt offset
+                in
+                if distance == 0 then
+                    [ makePoint coordinate ]
+
+                else
+                    [ makePoint (coordinate - distance)
+                    , makePoint (coordinate + distance)
+                    ]
+    in
+    case guide of
+        HorizontalGuide y ->
+            intersections
+                centerX
+                (radiusSquared - (y - centerY) * (y - centerY))
+                (\x -> vec2 x y)
+
+        VerticalGuide x ->
+            intersections
+                centerY
+                (radiusSquared - (x - centerX) * (x - centerX))
+                (\y -> vec2 x y)
 
 
 circleUsesPoint : GeometryPartRef -> CircleHitTarget -> World -> Bool
