@@ -1,4 +1,4 @@
-module Page.Euclid exposing (CircleExpr, Components, DragBehavior, EntityId, EvaluationError, Geometry, GeometryPartKind, GeometryPartRef, Interaction, Model, Msg, Node, PointExpr, SegmentExpr, Selectable, Singletons, Tool, World, info, init, subscriptions, update, view)
+module Page.Euclid exposing (CircleExpr, Components, DragBehavior, EntityId, EvaluationError, Geometry, GeometryPartKind, GeometryPartRef, Interaction, Model, Msg, Node, PlacementCandidate, PointExpr, SegmentExpr, Selectable, Singletons, Tool, World, info, init, subscriptions, update, view)
 
 import Dict exposing (Dict)
 import Ecs
@@ -554,21 +554,12 @@ rewriteNode dragBehavior geometryPart pointer world node =
 
 rewritePoint : GeometryPartRef -> Vec2 -> World -> Node
 rewritePoint geometryPart pointer world =
-    case snapToCircle geometryPart pointer world of
-        Just ( circle, position ) ->
-            let
-                snappedPosition =
-                    snapCircleToGuides geometryPart circle position world
-            in
-            Point (OnCircle circle.ref (circleAngle circle.center snappedPosition))
+    case nearestPlacementCandidate geometryPart pointer world of
+        Just placement ->
+            Point (pointExpressionForPlacement placement)
 
         Nothing ->
-            case snapToSegment geometryPart pointer world of
-                Just ( segment, position ) ->
-                    Point (OnSegment segment.ref (segmentParameter position segment))
-
-                Nothing ->
-                    Point (Literal (snapToGuides geometryPart pointer world))
+            Point (Literal (snapToGuides geometryPart pointer world))
 
 
 dragSystem : GeometryPartRef -> Vec2 -> World -> World
@@ -945,6 +936,21 @@ type alias CircleHitTarget =
     }
 
 
+type PlacementCandidate
+    = SegmentPlacement
+        { support : GeometryPartRef
+        , parameter : Float
+        , position : Vec2
+        , distanceSquared : Float
+        }
+    | CirclePlacement
+        { support : GeometryPartRef
+        , angle : Float
+        , position : Vec2
+        , distanceSquared : Float
+        }
+
+
 segmentBodiesIn : World -> List SegmentHitTarget
 segmentBodiesIn world =
     Ecs.EntityComponents.foldFromRight2
@@ -1055,18 +1061,84 @@ snapToGuides geometryPart pointer world =
         |> List.foldl snapAlongGuide pointer
 
 
-snapToCircle : GeometryPartRef -> Vec2 -> World -> Maybe ( CircleHitTarget, Vec2 )
-snapToCircle geometryPart pointer world =
-    circleBodiesIn world
-        |> List.filter (\circle -> not (circleUsesPoint geometryPart circle world))
-        |> List.filter (isWithinCircleHitRadius pointer)
-        |> List.sortBy (circleDistanceSquared pointer)
+placementCandidates : GeometryPartRef -> Vec2 -> World -> List PlacementCandidate
+placementCandidates geometryPart pointer world =
+    let
+        segmentCandidates =
+            segmentBodiesIn world
+                |> List.filter (\segment -> not (segmentUsesPoint geometryPart segment world))
+                |> List.filter (isWithinSegmentHitRadius pointer)
+                |> List.map (segmentPlacementCandidate pointer)
+
+        circleCandidates =
+            circleBodiesIn world
+                |> List.filter (\circle -> not (circleUsesPoint geometryPart circle world))
+                |> List.filter (isWithinCircleHitRadius pointer)
+                |> List.filterMap (circlePlacementCandidate geometryPart pointer world)
+    in
+    (segmentCandidates ++ circleCandidates)
+        |> List.sortBy placementDistanceSquared
+
+
+nearestPlacementCandidate : GeometryPartRef -> Vec2 -> World -> Maybe PlacementCandidate
+nearestPlacementCandidate geometryPart pointer world =
+    placementCandidates geometryPart pointer world
         |> List.head
-        |> Maybe.andThen
-            (\circle ->
-                nearestPointOnCircle pointer circle
-                    |> Maybe.map (\position -> ( circle, position ))
+
+
+segmentPlacementCandidate : Vec2 -> SegmentHitTarget -> PlacementCandidate
+segmentPlacementCandidate pointer segment =
+    let
+        parameter =
+            segmentParameter pointer segment
+
+        position =
+            pointOnSegment parameter segment.start segment.end
+    in
+    SegmentPlacement
+        { support = segment.ref
+        , parameter = parameter
+        , position = position
+        , distanceSquared = Vec2.distanceSquared pointer position
+        }
+
+
+circlePlacementCandidate : GeometryPartRef -> Vec2 -> World -> CircleHitTarget -> Maybe PlacementCandidate
+circlePlacementCandidate geometryPart pointer world circle =
+    nearestPointOnCircle pointer circle
+        |> Maybe.map
+            (\position ->
+                let
+                    snappedPosition =
+                        snapCircleToGuides geometryPart circle position world
+                in
+                CirclePlacement
+                    { support = circle.ref
+                    , angle = circleAngle circle.center snappedPosition
+                    , position = snappedPosition
+                    , distanceSquared = Vec2.distanceSquared pointer position
+                    }
             )
+
+
+placementDistanceSquared : PlacementCandidate -> Float
+placementDistanceSquared placement =
+    case placement of
+        SegmentPlacement candidate ->
+            candidate.distanceSquared
+
+        CirclePlacement candidate ->
+            candidate.distanceSquared
+
+
+pointExpressionForPlacement : PlacementCandidate -> PointExpr
+pointExpressionForPlacement placement =
+    case placement of
+        SegmentPlacement candidate ->
+            OnSegment candidate.support candidate.parameter
+
+        CirclePlacement candidate ->
+            OnCircle candidate.support candidate.angle
 
 
 snapCircleToGuides : GeometryPartRef -> CircleHitTarget -> Vec2 -> World -> Vec2
@@ -1130,16 +1202,6 @@ circleUsesPoint geometryPart circle world =
         |> Ecs.getComponent specs.expression
         |> Maybe.map (nodeUsesPoint geometryPart)
         |> Maybe.withDefault False
-
-
-snapToSegment : GeometryPartRef -> Vec2 -> World -> Maybe ( SegmentHitTarget, Vec2 )
-snapToSegment geometryPart pointer world =
-    segmentBodiesIn world
-        |> List.filter (\segment -> not (segmentUsesPoint geometryPart segment world))
-        |> List.filter (isWithinSegmentHitRadius pointer)
-        |> List.sortBy (segmentDistanceSquared pointer)
-        |> List.head
-        |> Maybe.map (\segment -> ( segment, nearestPointOnSegment pointer segment ))
 
 
 segmentUsesPoint : GeometryPartRef -> SegmentHitTarget -> World -> Bool
