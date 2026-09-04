@@ -53,6 +53,8 @@ type Node
 type PointExpr
     = Literal Vec2
     | Midpoint GeometryPartRef
+    | OnSegment GeometryPartRef Vec2
+    | OnCircle GeometryPartRef Vec2
 
 
 type SegmentExpr
@@ -541,14 +543,34 @@ addCircle center through world =
         |> evaluationSystem
 
 
-rewriteNode : GeometryPartKind -> Vec2 -> Node -> Maybe Node
-rewriteNode kind position node =
-    case ( kind, node ) of
-        ( PointLocation, Point (Literal _) ) ->
-            Just (Point (Literal position))
+rewriteNode : GeometryPartRef -> Vec2 -> World -> Node -> Maybe Node
+rewriteNode geometryPart pointer world node =
+    case ( geometryPart.kind, node ) of
+        ( PointLocation, Point pointExpression ) ->
+            case pointExpression of
+                Midpoint _ ->
+                    Nothing
+
+                _ ->
+                    Just (rewritePoint geometryPart pointer world)
 
         _ ->
             Nothing
+
+
+rewritePoint : GeometryPartRef -> Vec2 -> World -> Node
+rewritePoint geometryPart pointer world =
+    case snapToCircle geometryPart pointer world of
+        Just ( circle, position ) ->
+            Point (OnCircle circle.ref position)
+
+        Nothing ->
+            case snapToSegment geometryPart pointer world of
+                Just ( segment, position ) ->
+                    Point (OnSegment segment.ref position)
+
+                Nothing ->
+                    Point (Literal (snapToGuides geometryPart pointer world))
 
 
 dragSystem : GeometryPartRef -> Vec2 -> World -> World
@@ -559,7 +581,7 @@ dragSystem geometryPart pointer world =
     in
     (case ( Ecs.hasEntity activeWorld, Ecs.hasComponent specs.draggable activeWorld, Ecs.getComponent specs.expression activeWorld ) of
         ( True, True, Just node ) ->
-            case rewriteNode geometryPart.kind (snapPosition geometryPart pointer world) node of
+            case rewriteNode geometryPart pointer world node of
                 Just rewrittenNode ->
                     Ecs.insertComponent specs.expression rewrittenNode activeWorld
 
@@ -707,11 +729,7 @@ pointPosition geometryPart geometry =
             Ok end
 
         _ ->
-            if hasGeometryPart geometryPart.kind geometry then
-                Err (ExpectedPointGeometryPart geometryPart)
-
-            else
-                Err (MissingGeometryPart geometryPart)
+            geometryPartError geometryPart geometry
 
 
 midpointPosition : GeometryPartRef -> Geometry -> Result EvaluationError Vec2
@@ -721,11 +739,49 @@ midpointPosition geometryPart geometry =
             Ok (midpoint start end)
 
         _ ->
-            if hasGeometryPart geometryPart.kind geometry then
-                Err (ExpectedPointGeometryPart geometryPart)
+            geometryPartError geometryPart geometry
 
-            else
-                Err (MissingGeometryPart geometryPart)
+
+onSegmentPosition : GeometryPartRef -> Vec2 -> Geometry -> Result EvaluationError Vec2
+onSegmentPosition geometryPart position geometry =
+    case ( geometryPart.kind, geometry ) of
+        ( SegmentBody, GSegment start end ) ->
+            Ok
+                (nearestPointOnSegment position
+                    { ref = geometryPart
+                    , start = start
+                    , end = end
+                    }
+                )
+
+        _ ->
+            geometryPartError geometryPart geometry
+
+
+onCirclePosition : GeometryPartRef -> Vec2 -> Geometry -> Result EvaluationError Vec2
+onCirclePosition geometryPart position geometry =
+    case ( geometryPart.kind, geometry ) of
+        ( CircleBody, GCircle center through ) ->
+            Ok
+                (nearestPointOnCircle position
+                    { ref = geometryPart
+                    , center = center
+                    , through = through
+                    }
+                    |> Maybe.withDefault center
+                )
+
+        _ ->
+            geometryPartError geometryPart geometry
+
+
+geometryPartError : GeometryPartRef -> Geometry -> Result EvaluationError a
+geometryPartError geometryPart geometry =
+    if hasGeometryPart geometryPart.kind geometry then
+        Err (ExpectedPointGeometryPart geometryPart)
+
+    else
+        Err (MissingGeometryPart geometryPart)
 
 
 hasGeometryPart : GeometryPartKind -> Geometry -> Bool
@@ -772,6 +828,20 @@ evaluatePoint activeResolver state expression =
                     activeResolver.resolveGeometry state segment.owner
             in
             ( Result.andThen (midpointPosition segment) segmentResult, evaluatedState )
+
+        OnSegment segment position ->
+            let
+                ( segmentResult, evaluatedState ) =
+                    activeResolver.resolveGeometry state segment.owner
+            in
+            ( Result.andThen (onSegmentPosition segment position) segmentResult, evaluatedState )
+
+        OnCircle circle position ->
+            let
+                ( circleResult, evaluatedState ) =
+                    activeResolver.resolveGeometry state circle.owner
+            in
+            ( Result.andThen (onCirclePosition circle position) circleResult, evaluatedState )
 
 
 evaluateExpressions : EvaluationSnapshot -> Dict EntityId (Result EvaluationError Geometry)
@@ -946,32 +1016,26 @@ snapAlongGuide guide position =
             vec2 (Vec2.getX position) y
 
 
-snapPosition : GeometryPartRef -> Vec2 -> World -> Vec2
-snapPosition geometryPart pointer world =
-    case snapToCircle geometryPart pointer world of
-        Just position ->
-            position
-
-        Nothing ->
-            case snapToSegment geometryPart pointer world of
-                Just position ->
-                    position
-
-                Nothing ->
-                    pointGeometryPartsIn world
-                        |> List.filter (\candidate -> candidate.ref /= geometryPart)
-                        |> alignmentGuides { ref = geometryPart, position = pointer }
-                        |> List.foldl snapAlongGuide pointer
+snapToGuides : GeometryPartRef -> Vec2 -> World -> Vec2
+snapToGuides geometryPart pointer world =
+    pointGeometryPartsIn world
+        |> List.filter (\candidate -> candidate.ref /= geometryPart)
+        |> alignmentGuides { ref = geometryPart, position = pointer }
+        |> List.foldl snapAlongGuide pointer
 
 
-snapToCircle : GeometryPartRef -> Vec2 -> World -> Maybe Vec2
+snapToCircle : GeometryPartRef -> Vec2 -> World -> Maybe ( CircleHitTarget, Vec2 )
 snapToCircle geometryPart pointer world =
     circleBodiesIn world
         |> List.filter (\circle -> not (circleUsesPoint geometryPart circle world))
         |> List.filter (isWithinCircleHitRadius pointer)
         |> List.sortBy (circleDistanceSquared pointer)
         |> List.head
-        |> Maybe.andThen (nearestPointOnCircle pointer)
+        |> Maybe.andThen
+            (\circle ->
+                nearestPointOnCircle pointer circle
+                    |> Maybe.map (\position -> ( circle, position ))
+            )
 
 
 circleUsesPoint : GeometryPartRef -> CircleHitTarget -> World -> Bool
@@ -983,14 +1047,14 @@ circleUsesPoint geometryPart circle world =
         |> Maybe.withDefault False
 
 
-snapToSegment : GeometryPartRef -> Vec2 -> World -> Maybe Vec2
+snapToSegment : GeometryPartRef -> Vec2 -> World -> Maybe ( SegmentHitTarget, Vec2 )
 snapToSegment geometryPart pointer world =
     segmentBodiesIn world
         |> List.filter (\segment -> not (segmentUsesPoint geometryPart segment world))
         |> List.filter (isWithinSegmentHitRadius pointer)
         |> List.sortBy (segmentDistanceSquared pointer)
         |> List.head
-        |> Maybe.map (nearestPointOnSegment pointer)
+        |> Maybe.map (\segment -> ( segment, nearestPointOnSegment pointer segment ))
 
 
 segmentUsesPoint : GeometryPartRef -> SegmentHitTarget -> World -> Bool
@@ -1400,6 +1464,20 @@ pointExpressionText expression =
 
         Midpoint segment ->
             "midpoint(" ++ geometryPartReferenceText segment ++ ")"
+
+        OnSegment segment position ->
+            "on-segment("
+                ++ geometryPartReferenceText segment
+                ++ ", "
+                ++ positionText position
+                ++ ")"
+
+        OnCircle circle position ->
+            "on-circle("
+                ++ geometryPartReferenceText circle
+                ++ ", "
+                ++ positionText position
+                ++ ")"
 
 
 segmentExpressionText : SegmentExpr -> String
