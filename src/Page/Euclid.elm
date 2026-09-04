@@ -53,8 +53,8 @@ type Node
 type PointExpr
     = Literal Vec2
     | Midpoint GeometryPartRef
-    | OnSegment GeometryPartRef Vec2
-    | OnCircle GeometryPartRef Vec2
+    | OnSegment GeometryPartRef Float
+    | OnCircle GeometryPartRef Float
 
 
 type SegmentExpr
@@ -556,12 +556,12 @@ rewritePoint : GeometryPartRef -> Vec2 -> World -> Node
 rewritePoint geometryPart pointer world =
     case snapToCircle geometryPart pointer world of
         Just ( circle, position ) ->
-            Point (OnCircle circle.ref position)
+            Point (OnCircle circle.ref (circleAngle circle.center position))
 
         Nothing ->
             case snapToSegment geometryPart pointer world of
                 Just ( segment, position ) ->
-                    Point (OnSegment segment.ref position)
+                    Point (OnSegment segment.ref (segmentParameter position segment))
 
                 Nothing ->
                     Point (Literal (snapToGuides geometryPart pointer world))
@@ -736,34 +736,21 @@ midpointPosition geometryPart geometry =
             geometryPartError geometryPart geometry
 
 
-onSegmentPosition : GeometryPartRef -> Vec2 -> Geometry -> Result EvaluationError Vec2
-onSegmentPosition geometryPart position geometry =
+onSegmentPosition : GeometryPartRef -> Float -> Geometry -> Result EvaluationError Vec2
+onSegmentPosition geometryPart parameter geometry =
     case ( geometryPart.kind, geometry ) of
         ( SegmentBody, GSegment start end ) ->
-            Ok
-                (nearestPointOnSegment position
-                    { ref = geometryPart
-                    , start = start
-                    , end = end
-                    }
-                )
+            Ok (pointOnSegment (clamp 0 1 parameter) start end)
 
         _ ->
             geometryPartError geometryPart geometry
 
 
-onCirclePosition : GeometryPartRef -> Vec2 -> Geometry -> Result EvaluationError Vec2
-onCirclePosition geometryPart position geometry =
+onCirclePosition : GeometryPartRef -> Float -> Geometry -> Result EvaluationError Vec2
+onCirclePosition geometryPart angle geometry =
     case ( geometryPart.kind, geometry ) of
         ( CircleBody, GCircle center through ) ->
-            Ok
-                (nearestPointOnCircle position
-                    { ref = geometryPart
-                    , center = center
-                    , through = through
-                    }
-                    |> Maybe.withDefault center
-                )
+            Ok (pointOnCircle angle center through)
 
         _ ->
             geometryPartError geometryPart geometry
@@ -823,19 +810,19 @@ evaluatePoint activeResolver state expression =
             in
             ( Result.andThen (midpointPosition segment) segmentResult, evaluatedState )
 
-        OnSegment segment position ->
+        OnSegment segment parameter ->
             let
                 ( segmentResult, evaluatedState ) =
                     activeResolver.resolveGeometry state segment.owner
             in
-            ( Result.andThen (onSegmentPosition segment position) segmentResult, evaluatedState )
+            ( Result.andThen (onSegmentPosition segment parameter) segmentResult, evaluatedState )
 
-        OnCircle circle position ->
+        OnCircle circle angle ->
             let
                 ( circleResult, evaluatedState ) =
                     activeResolver.resolveGeometry state circle.owner
             in
-            ( Result.andThen (onCirclePosition circle position) circleResult, evaluatedState )
+            ( Result.andThen (onCirclePosition circle angle) circleResult, evaluatedState )
 
 
 evaluateExpressions : EvaluationSnapshot -> Dict EntityId (Result EvaluationError Geometry)
@@ -1170,8 +1157,8 @@ isWithinSegmentHitRadius pointer segment =
     segmentDistanceSquared pointer segment <= 196
 
 
-nearestPointOnSegment : Vec2 -> SegmentHitTarget -> Vec2
-nearestPointOnSegment pointer segment =
+segmentParameter : Vec2 -> SegmentHitTarget -> Float
+segmentParameter pointer segment =
     let
         startX =
             Vec2.getX segment.start
@@ -1187,17 +1174,26 @@ nearestPointOnSegment pointer segment =
 
         lengthSquared =
             deltaX * deltaX + deltaY * deltaY
-
-        projection =
-            if lengthSquared == 0 then
-                0
-
-            else
-                clamp 0
-                    1
-                    (((Vec2.getX pointer - startX) * deltaX + (Vec2.getY pointer - startY) * deltaY) / lengthSquared)
     in
-    vec2 (startX + projection * deltaX) (startY + projection * deltaY)
+    if lengthSquared == 0 then
+        0
+
+    else
+        clamp 0
+            1
+            (((Vec2.getX pointer - startX) * deltaX + (Vec2.getY pointer - startY) * deltaY) / lengthSquared)
+
+
+nearestPointOnSegment : Vec2 -> SegmentHitTarget -> Vec2
+nearestPointOnSegment pointer segment =
+    pointOnSegment (segmentParameter pointer segment) segment.start segment.end
+
+
+pointOnSegment : Float -> Vec2 -> Vec2 -> Vec2
+pointOnSegment parameter start end =
+    vec2
+        (Vec2.getX start + parameter * (Vec2.getX end - Vec2.getX start))
+        (Vec2.getY start + parameter * (Vec2.getY end - Vec2.getY start))
 
 
 segmentDistanceSquared : Vec2 -> SegmentHitTarget -> Float
@@ -1255,6 +1251,24 @@ nearestPointOnCircle pointer circle =
                 (centerX + radius * deltaX / distanceToCenter)
                 (centerY + radius * deltaY / distanceToCenter)
             )
+
+
+circleAngle : Vec2 -> Vec2 -> Float
+circleAngle center position =
+    atan2
+        (Vec2.getY position - Vec2.getY center)
+        (Vec2.getX position - Vec2.getX center)
+
+
+pointOnCircle : Float -> Vec2 -> Vec2 -> Vec2
+pointOnCircle angle center through =
+    let
+        radius =
+            sqrt (Vec2.distanceSquared center through)
+    in
+    vec2
+        (Vec2.getX center + radius * cos angle)
+        (Vec2.getY center + radius * sin angle)
 
 
 midpoint : Vec2 -> Vec2 -> Vec2
@@ -1480,7 +1494,7 @@ worldExpressionText world =
 
 worldExpressionEntryText : ( EntityId, Node ) -> String
 worldExpressionEntryText ( entityId, node ) =
-    String.fromInt entityId ++ ":" ++ nodeExpressionText node
+    "#" ++ String.fromInt entityId ++ ":" ++ nodeExpressionText node
 
 
 nodeExpressionText : Node -> String
@@ -1505,19 +1519,24 @@ pointExpressionText expression =
         Midpoint segment ->
             "midpoint(" ++ geometryPartReferenceText segment ++ ")"
 
-        OnSegment segment position ->
+        OnSegment segment parameter ->
             "on-segment("
                 ++ geometryPartReferenceText segment
                 ++ ", "
-                ++ positionText position
+                ++ String.fromFloat parameter
                 ++ ")"
 
-        OnCircle circle position ->
+        OnCircle circle angle ->
             "on-circle("
                 ++ geometryPartReferenceText circle
                 ++ ", "
-                ++ positionText position
+                ++ angleText angle
                 ++ ")"
+
+
+angleText : Float -> String
+angleText angle =
+    String.fromFloat (toFloat (round (angle * 180 / pi * 100)) / 100) ++ "°"
 
 
 segmentExpressionText : SegmentExpr -> String
