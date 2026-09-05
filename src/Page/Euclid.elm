@@ -2039,18 +2039,29 @@ worldExpressionView world =
         , style "font-family" "monospace"
         , style "white-space" "pre-wrap"
         , style "overflow-wrap" "anywhere"
+        , style "background-color" "#111827"
+        , style "color" "#cbd5e1"
+        , style "border-radius" "0.5rem"
         ]
-        [ text (worldExpressionText world) ]
+        (worldExpressionEntries world
+            |> List.map worldExpressionEntryView
+            |> List.intersperse (syntaxToken ", ")
+        )
 
 
-worldExpressionText : World -> String
-worldExpressionText world =
+worldExpressionEntries : World -> List ( EntityId, Node )
+worldExpressionEntries world =
     world
         |> Ecs.EntityComponents.foldFromRight
             specs.expression
             (\entityId node expressions -> ( entityId, node ) :: expressions)
             []
         |> List.sortBy Tuple.first
+
+
+worldExpressionText : World -> String
+worldExpressionText world =
+    worldExpressionEntries world
         |> List.map worldExpressionEntryText
         |> String.join ", "
 
@@ -2058,6 +2069,157 @@ worldExpressionText world =
 worldExpressionEntryText : ( EntityId, Node ) -> String
 worldExpressionEntryText ( entityId, node ) =
     "#" ++ String.fromInt entityId ++ ":" ++ nodeExpressionText node
+
+
+worldExpressionEntryView : ( EntityId, Node ) -> Html Msg
+worldExpressionEntryView ( entityId, node ) =
+    span []
+        [ entityIdToken entityId
+        , syntaxToken ":"
+        , nodeExpressionView node
+        ]
+
+
+nodeExpressionView : Node -> Html Msg
+nodeExpressionView node =
+    case node of
+        Point pointExpression ->
+            typeCall "point" [ pointExpressionView pointExpression ]
+
+        Segment segmentExpression ->
+            typeCall "segment" [ segmentExpressionView segmentExpression ]
+
+        Circle circleExpression ->
+            typeCall "circle" [ circleExpressionView circleExpression ]
+
+
+pointExpressionView : PointExpr -> Html Msg
+pointExpressionView expression =
+    case expression of
+        Literal position ->
+            constructorCall "free" [ positionView position ]
+
+        Midpoint segment ->
+            constructorCall "midpoint" [ geometryPartReferenceView segment ]
+
+        OnSegment segment parameter ->
+            constructorCall "on-segment"
+                [ geometryPartReferenceView segment
+                , syntaxToken ", "
+                , numberToken (decimalText parameter)
+                ]
+
+        OnCircle circle angle ->
+            constructorCall "on-circle"
+                [ geometryPartReferenceView circle
+                , syntaxToken ", "
+                , numberToken (angleText angle)
+                ]
+
+
+segmentExpressionView : SegmentExpr -> Html Msg
+segmentExpressionView expression =
+    case expression of
+        Between start end ->
+            constructorCall "between"
+                [ geometryPartReferenceView start
+                , syntaxToken ", "
+                , geometryPartReferenceView end
+                ]
+
+
+circleExpressionView : CircleExpr -> Html Msg
+circleExpressionView expression =
+    case expression of
+        CenterThrough center through ->
+            constructorCall "center-through"
+                [ geometryPartReferenceView center
+                , syntaxToken ", "
+                , geometryPartReferenceView through
+                ]
+
+
+typeCall : String -> List (Html Msg) -> Html Msg
+typeCall name arguments =
+    expressionCall typeToken name arguments
+
+
+constructorCall : String -> List (Html Msg) -> Html Msg
+constructorCall name arguments =
+    expressionCall constructorToken name arguments
+
+
+expressionCall : (String -> Html Msg) -> String -> List (Html Msg) -> Html Msg
+expressionCall nameView name arguments =
+    span []
+        (nameView name
+            :: (syntaxToken "(" :: arguments ++ [ syntaxToken ")" ])
+        )
+
+
+positionView : Vec2 -> Html Msg
+positionView position =
+    span []
+        [ numberToken (decimalText (Vec2.getX position))
+        , syntaxToken ", "
+        , numberToken (decimalText (Vec2.getY position))
+        ]
+
+
+geometryPartReferenceView : GeometryPartRef -> Html Msg
+geometryPartReferenceView geometryPart =
+    let
+        suffix =
+            case geometryPart.kind of
+                PointLocation ->
+                    ""
+
+                SegmentStart ->
+                    ".start"
+
+                SegmentEnd ->
+                    ".end"
+
+                SegmentBody ->
+                    ""
+
+                CircleBody ->
+                    ""
+    in
+    span []
+        [ entityIdToken geometryPart.owner
+        , syntaxToken suffix
+        ]
+
+
+entityIdToken : EntityId -> Html Msg
+entityIdToken entityId =
+    coloredToken "#7dd3fc" ("#" ++ String.fromInt entityId)
+
+
+typeToken : String -> Html Msg
+typeToken =
+    coloredToken "#c084fc"
+
+
+constructorToken : String -> Html Msg
+constructorToken =
+    coloredToken "#00e566"
+
+
+numberToken : String -> Html Msg
+numberToken =
+    coloredToken "#fbbf24"
+
+
+syntaxToken : String -> Html Msg
+syntaxToken =
+    coloredToken "#94a3b8"
+
+
+coloredToken : String -> String -> Html Msg
+coloredToken color value =
+    span [ style "color" color ] [ text value ]
 
 
 nodeExpressionText : Node -> String
