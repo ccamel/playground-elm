@@ -14,6 +14,7 @@ import Markdown
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Svg
 import Svg.Attributes as SvgAttr exposing (cursor, cx, cy, fill, height, opacity, r, stroke, strokeDasharray, strokeWidth, viewBox, width, x1, x2, y1, y2)
+import Time
 
 
 
@@ -181,7 +182,35 @@ type Tool
 type Interaction
     = Idle
     | Hovering GeometryPartRef
+    | Holding AttachmentHold
+    | AttachmentNotice AttachmentNoticeState
     | Dragging DragState
+
+
+type alias AttachmentHold =
+    { geometryPart : GeometryPartRef
+    , start : Vec2
+    , elapsed : Float
+    , action : Maybe AttachmentAction
+    , committed : Bool
+    }
+
+
+type alias AttachmentNoticeState =
+    { geometryPart : GeometryPartRef
+    , outcome : AttachmentOutcome
+    , elapsed : Float
+    }
+
+
+type AttachmentOutcome
+    = Attached
+    | Detached
+
+
+type AttachmentAction
+    = Attach PlacementCandidate
+    | Detach Vec2
 
 
 type alias DragState =
@@ -214,6 +243,8 @@ type Msg
     | PointerMoved Vec2
     | PointerDown Vec2
     | PointerUp Vec2
+    | PointerCancelled
+    | AttachmentTick Time.Posix
 
 
 
@@ -268,6 +299,12 @@ update msg model =
         PointerUp pointer ->
             ( endInteraction pointer { model | pointerPosition = pointer }, Cmd.none )
 
+        PointerCancelled ->
+            ( { model | interaction = Idle }, Cmd.none )
+
+        AttachmentTick _ ->
+            ( advanceAttachmentAnimation model, Cmd.none )
+
 
 
 -- SYSTEMS
@@ -299,12 +336,10 @@ startSelection : Vec2 -> Model -> Model
 startSelection pointer model =
     case hitTest pointer model.world of
         Just geometryPart ->
-            if
-                model.world
-                    |> Ecs.onEntity geometryPart.owner
-                    |> Ecs.hasComponent specs.dragBehavior
-            then
-                { model | interaction = Dragging { geometryPart = geometryPart } }
+            if isDraggable geometryPart model.world then
+                { model
+                    | interaction = Holding (attachmentHold geometryPart pointer model.world)
+                }
 
             else
                 { model | interaction = Hovering geometryPart }
@@ -421,6 +456,31 @@ startMidpoint pointer model =
 movePointer : Vec2 -> Model -> Model
 movePointer pointer model =
     case model.interaction of
+        Holding hold ->
+            if movedBeyondDragTolerance pointer hold.start then
+                if hold.committed && attachmentOutcome hold == Detached then
+                    { model
+                        | interaction = Dragging { geometryPart = hold.geometryPart }
+                        , world = dragSystem hold.geometryPart pointer model.world
+                        , pointerPosition = pointer
+                    }
+
+                else if hold.committed then
+                    { model
+                        | interaction = interactionAt pointer model.world
+                        , pointerPosition = pointer
+                    }
+
+                else
+                    { model
+                        | interaction = Dragging { geometryPart = hold.geometryPart }
+                        , world = dragSystem hold.geometryPart pointer model.world
+                        , pointerPosition = pointer
+                    }
+
+            else
+                { model | pointerPosition = pointer }
+
         Dragging drag ->
             { model
                 | world = dragSystem drag.geometryPart pointer model.world
@@ -463,7 +523,23 @@ endInteraction : Vec2 -> Model -> Model
 endInteraction pointer model =
     case model.activeTool of
         Just SelectTool ->
-            { model | interaction = interactionAt pointer model.world }
+            case model.interaction of
+                Holding hold ->
+                    if hold.committed then
+                        { model
+                            | interaction =
+                                AttachmentNotice
+                                    { geometryPart = hold.geometryPart
+                                    , outcome = attachmentOutcome hold
+                                    , elapsed = 0
+                                    }
+                        }
+
+                    else
+                        { model | interaction = interactionAt pointer model.world }
+
+                _ ->
+                    { model | interaction = interactionAt pointer model.world }
 
         Just SegmentTool ->
             { model
@@ -545,21 +621,42 @@ addCircle center through world =
 rewriteNode : DragBehavior -> GeometryPartRef -> Vec2 -> World -> Node -> Maybe Node
 rewriteNode dragBehavior geometryPart pointer world node =
     case ( dragBehavior, geometryPart.kind, node ) of
-        ( RewritePoint, PointLocation, Point _ ) ->
-            Just (rewritePoint geometryPart pointer world)
+        ( RewritePoint, PointLocation, Point expression ) ->
+            Just (Point (rewritePoint geometryPart pointer world expression))
 
         _ ->
             Nothing
 
 
-rewritePoint : GeometryPartRef -> Vec2 -> World -> Node
-rewritePoint geometryPart pointer world =
-    case nearestPlacementCandidate geometryPart pointer world of
-        Just placement ->
-            Point (pointExpressionForPlacement placement)
+rewritePoint : GeometryPartRef -> Vec2 -> World -> PointExpr -> PointExpr
+rewritePoint geometryPart pointer world expression =
+    case expression of
+        Literal _ ->
+            Literal (freePointPosition geometryPart pointer world)
 
-        Nothing ->
-            Point (Literal (snapToGuides geometryPart pointer world))
+        OnSegment support parameter ->
+            segmentBodyFor support world
+                |> Maybe.map (\segment -> OnSegment support (segmentParameter pointer segment))
+                |> Maybe.withDefault (OnSegment support parameter)
+
+        OnCircle support angle ->
+            circleBodyFor support world
+                |> Maybe.andThen
+                    (\circle ->
+                        nearestPointOnCircle pointer circle
+                            |> Maybe.map
+                                (\position ->
+                                    let
+                                        snappedPosition =
+                                            snapCircleToGuides geometryPart circle position world
+                                    in
+                                    OnCircle support (circleAngle circle.center snappedPosition)
+                                )
+                    )
+                |> Maybe.withDefault (OnCircle support angle)
+
+        Midpoint support ->
+            Midpoint support
 
 
 dragSystem : GeometryPartRef -> Vec2 -> World -> World
@@ -1077,7 +1174,7 @@ placementCandidates geometryPart pointer world =
                 |> List.filterMap (circlePlacementCandidate geometryPart pointer world)
     in
     (segmentCandidates ++ circleCandidates)
-        |> List.sortBy placementDistanceSquared
+        |> List.sortBy placementSortKey
 
 
 nearestPlacementCandidate : GeometryPartRef -> Vec2 -> World -> Maybe PlacementCandidate
@@ -1131,6 +1228,199 @@ placementDistanceSquared placement =
             candidate.distanceSquared
 
 
+placementSupport : PlacementCandidate -> GeometryPartRef
+placementSupport placement =
+    case placement of
+        SegmentPlacement candidate ->
+            candidate.support
+
+        CirclePlacement candidate ->
+            candidate.support
+
+
+placementSortKey : PlacementCandidate -> ( Float, EntityId, Int )
+placementSortKey placement =
+    let
+        support =
+            placementSupport placement
+    in
+    ( placementDistanceSquared placement
+    , support.owner
+    , geometryPartKindOrder support.kind
+    )
+
+
+geometryPartKindOrder : GeometryPartKind -> Int
+geometryPartKindOrder kind =
+    case kind of
+        PointLocation ->
+            0
+
+        SegmentStart ->
+            1
+
+        SegmentEnd ->
+            2
+
+        SegmentBody ->
+            3
+
+        CircleBody ->
+            4
+
+
+placementPosition : PlacementCandidate -> Vec2
+placementPosition placement =
+    case placement of
+        SegmentPlacement candidate ->
+            candidate.position
+
+        CirclePlacement candidate ->
+            candidate.position
+
+
+freePointPosition : GeometryPartRef -> Vec2 -> World -> Vec2
+freePointPosition geometryPart pointer world =
+    nearestPlacementCandidate geometryPart pointer world
+        |> Maybe.map placementPosition
+        |> Maybe.withDefault (snapToGuides geometryPart pointer world)
+
+
+segmentBodyFor : GeometryPartRef -> World -> Maybe SegmentHitTarget
+segmentBodyFor support world =
+    segmentBodiesIn world
+        |> List.filter (\segment -> segment.ref == support)
+        |> List.head
+
+
+circleBodyFor : GeometryPartRef -> World -> Maybe CircleHitTarget
+circleBodyFor support world =
+    circleBodiesIn world
+        |> List.filter (\circle -> circle.ref == support)
+        |> List.head
+
+
+attachmentTickInterval : Float
+attachmentTickInterval =
+    16
+
+
+attachmentPreviewDelay : Float
+attachmentPreviewDelay =
+    500
+
+
+attachmentProgressDuration : Float
+attachmentProgressDuration =
+    500
+
+
+attachmentNoticeDuration : Float
+attachmentNoticeDuration =
+    600
+
+
+attachmentCompletionDelay : Float
+attachmentCompletionDelay =
+    attachmentPreviewDelay + attachmentProgressDuration
+
+
+dragToleranceSquared : Float
+dragToleranceSquared =
+    64
+
+
+attachmentHold : GeometryPartRef -> Vec2 -> World -> AttachmentHold
+attachmentHold geometryPart start world =
+    { geometryPart = geometryPart
+    , start = start
+    , elapsed = 0
+    , action = attachmentAction geometryPart world
+    , committed = False
+    }
+
+
+movedBeyondDragTolerance : Vec2 -> Vec2 -> Bool
+movedBeyondDragTolerance pointer start =
+    Vec2.distanceSquared pointer start > dragToleranceSquared
+
+
+attachmentCandidate : GeometryPartRef -> World -> Maybe PlacementCandidate
+attachmentCandidate geometryPart world =
+    currentPointPosition geometryPart world
+        |> Maybe.andThen
+            (\position ->
+                nearestPlacementCandidate geometryPart position world
+            )
+
+
+attachmentAction : GeometryPartRef -> World -> Maybe AttachmentAction
+attachmentAction geometryPart world =
+    currentPointExpression geometryPart world
+        |> Maybe.andThen
+            (\expression ->
+                case expression of
+                    Literal _ ->
+                        attachmentCandidate geometryPart world
+                            |> Maybe.map Attach
+
+                    OnSegment _ _ ->
+                        currentPointPosition geometryPart world
+                            |> Maybe.map Detach
+
+                    OnCircle _ _ ->
+                        currentPointPosition geometryPart world
+                            |> Maybe.map Detach
+
+                    Midpoint _ ->
+                        Nothing
+            )
+
+
+currentPointExpression : GeometryPartRef -> World -> Maybe PointExpr
+currentPointExpression geometryPart world =
+    world
+        |> Ecs.onEntity geometryPart.owner
+        |> Ecs.getComponent specs.expression
+        |> Maybe.andThen
+            (\node ->
+                case node of
+                    Point expression ->
+                        Just expression
+
+                    _ ->
+                        Nothing
+            )
+
+
+isAttachedPoint : GeometryPartRef -> World -> Bool
+isAttachedPoint geometryPart world =
+    currentPointExpression geometryPart world
+        |> Maybe.map isAttachedPointExpression
+        |> Maybe.withDefault False
+
+
+isAttachedPointExpression : PointExpr -> Bool
+isAttachedPointExpression expression =
+    case expression of
+        OnSegment _ _ ->
+            True
+
+        OnCircle _ _ ->
+            True
+
+        _ ->
+            False
+
+
+currentPointPosition : GeometryPartRef -> World -> Maybe Vec2
+currentPointPosition geometryPart world =
+    geometryPartsIn world
+        |> List.filter (\candidate -> candidate.ref == geometryPart)
+        |> List.head
+        |> Maybe.map .position
+
+
 pointExpressionForPlacement : PlacementCandidate -> PointExpr
 pointExpressionForPlacement placement =
     case placement of
@@ -1139,6 +1429,136 @@ pointExpressionForPlacement placement =
 
         CirclePlacement candidate ->
             OnCircle candidate.support candidate.angle
+
+
+pointExpressionForAttachmentAction : AttachmentAction -> PointExpr
+pointExpressionForAttachmentAction action =
+    case action of
+        Attach placement ->
+            pointExpressionForPlacement placement
+
+        Detach position ->
+            Literal position
+
+
+validAttachmentAction : AttachmentAction -> GeometryPartRef -> World -> Maybe AttachmentAction
+validAttachmentAction action geometryPart world =
+    case ( action, attachmentAction geometryPart world ) of
+        ( Attach expected, Just (Attach current) ) ->
+            if placementSupport expected == placementSupport current then
+                Just (Attach current)
+
+            else
+                Nothing
+
+        ( Detach _, Just (Detach position) ) ->
+            Just (Detach position)
+
+        _ ->
+            Nothing
+
+
+setPointExpression : GeometryPartRef -> PointExpr -> World -> World
+setPointExpression geometryPart expression world =
+    world
+        |> Ecs.onEntity geometryPart.owner
+        |> Ecs.insertComponent specs.expression (Point expression)
+        |> derivedComponentsSystem
+
+
+commitAttachmentAction : GeometryPartRef -> AttachmentAction -> World -> World
+commitAttachmentAction geometryPart action world =
+    setPointExpression geometryPart (pointExpressionForAttachmentAction action) world
+
+
+attachmentOutcome : AttachmentHold -> AttachmentOutcome
+attachmentOutcome hold =
+    case hold.action of
+        Just (Attach _) ->
+            Attached
+
+        Just (Detach _) ->
+            Detached
+
+        Nothing ->
+            Attached
+
+
+attachmentPreviewVisible : AttachmentHold -> Bool
+attachmentPreviewVisible hold =
+    case hold.action of
+        Just _ ->
+            hold.committed || hold.elapsed >= attachmentPreviewDelay
+
+        Nothing ->
+            False
+
+
+advanceAttachmentAnimation : Model -> Model
+advanceAttachmentAnimation model =
+    case model.interaction of
+        Holding hold ->
+            advanceAttachmentHold hold model
+
+        AttachmentNotice notice ->
+            advanceAttachmentNotice notice model
+
+        _ ->
+            model
+
+
+advanceAttachmentHold : AttachmentHold -> Model -> Model
+advanceAttachmentHold hold model =
+    if hold.committed then
+        model
+
+    else
+        let
+            action =
+                hold.action
+                    |> Maybe.andThen
+                        (\currentAction ->
+                            validAttachmentAction currentAction hold.geometryPart model.world
+                        )
+
+            advancedHold =
+                { hold
+                    | elapsed =
+                        min attachmentCompletionDelay
+                            (hold.elapsed + attachmentTickInterval)
+                    , action = action
+                }
+        in
+        if advancedHold.elapsed == attachmentCompletionDelay then
+            case action of
+                Just currentAction ->
+                    { model
+                        | interaction = Holding { advancedHold | committed = True }
+                        , world = commitAttachmentAction hold.geometryPart currentAction model.world
+                    }
+
+                Nothing ->
+                    { model | interaction = Holding advancedHold }
+
+        else
+            { model | interaction = Holding advancedHold }
+
+
+advanceAttachmentNotice : AttachmentNoticeState -> Model -> Model
+advanceAttachmentNotice notice model =
+    let
+        elapsed =
+            notice.elapsed + attachmentTickInterval
+    in
+    if elapsed >= attachmentNoticeDuration then
+        { model | interaction = Hovering notice.geometryPart }
+
+    else
+        { model
+            | interaction =
+                AttachmentNotice
+                    { notice | elapsed = elapsed }
+        }
 
 
 snapCircleToGuides : GeometryPartRef -> CircleHitTarget -> Vec2 -> World -> Vec2
@@ -1423,6 +1843,24 @@ isHighlighted geometryPart model =
                 Hovering hovered ->
                     hovered == geometryPart
 
+                Holding hold ->
+                    if attachmentPreviewVisible hold then
+                        geometryPart
+                            == hold.geometryPart
+                            || (case hold.action of
+                                    Just (Attach candidate) ->
+                                        geometryPart == placementSupport candidate
+
+                                    _ ->
+                                        False
+                               )
+
+                    else
+                        False
+
+                AttachmentNotice notice ->
+                    geometryPart == notice.geometryPart
+
                 Dragging drag ->
                     drag.geometryPart == geometryPart
            )
@@ -1540,6 +1978,11 @@ onPointerMove =
 onPointerUp : Html.Attribute Msg
 onPointerUp =
     on "pointerup" (Decode.map PointerUp pointerPositionDecoder)
+
+
+onPointerCancel : Html.Attribute Msg
+onPointerCancel =
+    on "pointercancel" (Decode.succeed PointerCancelled)
 
 
 
@@ -1732,11 +2175,196 @@ canvasLayers model =
         ++ List.map viewSegmentPreview (segmentPreviews model)
         ++ List.map viewCirclePreview (circlePreviews model)
         ++ geometryLayers
+        ++ attachmentPreview model
         ++ (model
                 |> midpointPreview
                 |> Maybe.map viewMidpointPreview
                 |> Maybe.withDefault []
            )
+
+
+attachmentPreview : Model -> List (Html Msg)
+attachmentPreview model =
+    case model.interaction of
+        Holding hold ->
+            if attachmentPreviewVisible hold then
+                currentPointPosition hold.geometryPart model.world
+                    |> Maybe.map (\position -> [ viewAttachmentPreview position hold ])
+                    |> Maybe.withDefault []
+
+            else
+                []
+
+        AttachmentNotice notice ->
+            currentPointPosition notice.geometryPart model.world
+                |> Maybe.map (\position -> [ viewAttachmentNotice position notice ])
+                |> Maybe.withDefault []
+
+        _ ->
+            []
+
+
+attachmentProgress : AttachmentHold -> Float
+attachmentProgress hold =
+    if hold.committed then
+        1
+
+    else
+        clamp 0
+            1
+            ((hold.elapsed - attachmentPreviewDelay) / attachmentProgressDuration)
+
+
+animationFadeIn : Float -> Float
+animationFadeIn progress =
+    clamp 0 1 (progress / 0.18)
+
+
+viewAttachmentPreview : Vec2 -> AttachmentHold -> Html Msg
+viewAttachmentPreview position hold =
+    let
+        radius =
+            13
+
+        circumference =
+            2 * pi * radius
+
+        progress =
+            attachmentProgress hold
+
+        progressLength =
+            circumference * progress
+
+        color =
+            if hold.committed then
+                "#48c78e"
+
+            else
+                "#f5a623"
+    in
+    Svg.g [ opacity (String.fromFloat (animationFadeIn progress)) ]
+        ([ Svg.circle
+            [ cx (String.fromFloat (Vec2.getX position))
+            , cy (String.fromFloat (Vec2.getY position))
+            , r (String.fromFloat radius)
+            , fill "none"
+            , stroke color
+            , strokeWidth "2"
+            , strokeDasharray
+                (String.fromFloat progressLength
+                    ++ " "
+                    ++ String.fromFloat (circumference - progressLength)
+                )
+            ]
+            []
+         , Svg.text_
+            [ SvgAttr.x (String.fromFloat (Vec2.getX position + 16))
+            , SvgAttr.y (String.fromFloat (Vec2.getY position - 12))
+            , fill color
+            , SvgAttr.fontFamily "monospace"
+            , SvgAttr.fontSize "12"
+            ]
+            [ Svg.text
+                (if hold.committed then
+                    attachmentOutcomeLabel (attachmentOutcome hold)
+
+                 else
+                    attachmentActionLabel hold.action
+                )
+            ]
+         ]
+            ++ attachmentLinkPreview position progress color hold.action
+        )
+
+
+attachmentActionLabel : Maybe AttachmentAction -> String
+attachmentActionLabel action =
+    case action of
+        Just (Attach _) ->
+            "Attaching"
+
+        Just (Detach _) ->
+            "Detaching"
+
+        Nothing ->
+            ""
+
+
+viewAttachmentNotice : Vec2 -> AttachmentNoticeState -> Html Msg
+viewAttachmentNotice position notice =
+    let
+        opacity_ =
+            animationFadeIn (notice.elapsed / 100)
+                * clamp 0 1 (1 - notice.elapsed / attachmentNoticeDuration)
+    in
+    Svg.g [ opacity (String.fromFloat opacity_) ]
+        [ Svg.circle
+            [ cx (String.fromFloat (Vec2.getX position))
+            , cy (String.fromFloat (Vec2.getY position))
+            , r "13"
+            , fill "none"
+            , stroke "#48c78e"
+            , strokeWidth "2"
+            ]
+            []
+        , Svg.text_
+            [ SvgAttr.x (String.fromFloat (Vec2.getX position + 16))
+            , SvgAttr.y (String.fromFloat (Vec2.getY position - 12))
+            , fill "#48c78e"
+            , SvgAttr.fontFamily "monospace"
+            , SvgAttr.fontSize "12"
+            ]
+            [ Svg.text (attachmentOutcomeLabel notice.outcome) ]
+        ]
+
+
+attachmentOutcomeLabel : AttachmentOutcome -> String
+attachmentOutcomeLabel outcome =
+    case outcome of
+        Attached ->
+            "Attached"
+
+        Detached ->
+            "Detached"
+
+
+attachmentLinkPreview : Vec2 -> Float -> String -> Maybe AttachmentAction -> List (Html Msg)
+attachmentLinkPreview position progress color action =
+    case action of
+        Just (Attach _) ->
+            [ Svg.g [ opacity (String.fromFloat progress) ]
+                [ Svg.circle
+                    [ cx (String.fromFloat (Vec2.getX position - 4))
+                    , cy (String.fromFloat (Vec2.getY position))
+                    , r "3"
+                    , fill "none"
+                    , stroke color
+                    , strokeWidth "1.5"
+                    ]
+                    []
+                , Svg.circle
+                    [ cx (String.fromFloat (Vec2.getX position + 4))
+                    , cy (String.fromFloat (Vec2.getY position))
+                    , r "3"
+                    , fill "none"
+                    , stroke color
+                    , strokeWidth "1.5"
+                    ]
+                    []
+                , Svg.line
+                    [ x1 (String.fromFloat (Vec2.getX position - 1))
+                    , y1 (String.fromFloat (Vec2.getY position))
+                    , x2 (String.fromFloat (Vec2.getX position + 1))
+                    , y2 (String.fromFloat (Vec2.getY position))
+                    , stroke color
+                    , strokeWidth "1.5"
+                    ]
+                    []
+                ]
+            ]
+
+        _ ->
+            []
 
 
 viewGridDefinitions : Html Msg
@@ -1875,6 +2503,7 @@ svgInteractionAttributes model =
     , onPointerDown
     , onPointerMove
     , onPointerUp
+    , onPointerCancel
     ]
 
 
@@ -1883,6 +2512,9 @@ cursorFor model =
     case model.interaction of
         Dragging _ ->
             "grabbing"
+
+        Holding _ ->
+            "grab"
 
         _ ->
             case model.activeTool of
@@ -2141,7 +2773,10 @@ viewGeometry model entityId geometry =
                     , cy (String.fromFloat (Vec2.getY point))
                     , r "7"
                     , fill
-                        (if isHighlighted geometryPart model then
+                        (if isAttachedPoint geometryPart model.world then
+                            "#48c78e"
+
+                         else if isHighlighted geometryPart model then
                             "#f5a623"
 
                          else
@@ -2203,13 +2838,29 @@ viewGeometry model entityId geometry =
                 []
 
         GCircle center through ->
+            let
+                geometryPart =
+                    { owner = entityId, kind = CircleBody }
+            in
             Svg.circle
                 [ cx (String.fromFloat (Vec2.getX center))
                 , cy (String.fromFloat (Vec2.getY center))
                 , r (String.fromFloat (sqrt (Vec2.distanceSquared center through)))
                 , fill "none"
-                , stroke "#94a3b8"
-                , strokeWidth "2"
+                , stroke
+                    (if isHighlighted geometryPart model then
+                        "#f5a623"
+
+                     else
+                        "#94a3b8"
+                    )
+                , strokeWidth
+                    (if isHighlighted geometryPart model then
+                        "4"
+
+                     else
+                        "2"
+                    )
                 ]
                 []
 
@@ -2219,5 +2870,18 @@ viewGeometry model entityId geometry =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.none
+subscriptions model =
+    case model.interaction of
+        Holding hold ->
+            case hold.action of
+                Just _ ->
+                    Time.every attachmentTickInterval AttachmentTick
+
+                Nothing ->
+                    Sub.none
+
+        AttachmentNotice _ ->
+            Time.every attachmentTickInterval AttachmentTick
+
+        _ ->
+            Sub.none
