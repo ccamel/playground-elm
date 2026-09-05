@@ -2086,7 +2086,7 @@ pointExpressionText expression =
             "on-segment("
                 ++ geometryPartReferenceText segment
                 ++ ", "
-                ++ String.fromFloat parameter
+                ++ decimalText parameter
                 ++ ")"
 
         OnCircle circle angle ->
@@ -2099,7 +2099,22 @@ pointExpressionText expression =
 
 angleText : Float -> String
 angleText angle =
-    String.fromFloat (toFloat (round (angle * 180 / pi * 100)) / 100) ++ "°"
+    decimalText (angle * 180 / pi) ++ "°"
+
+
+decimalText : Float -> String
+decimalText value =
+    let
+        rounded =
+            toFloat (round (value * 100)) / 100
+    in
+    String.fromFloat
+        (if rounded == 0 then
+            0
+
+         else
+            rounded
+        )
 
 
 segmentExpressionText : SegmentExpr -> String
@@ -2149,9 +2164,9 @@ geometryPartReferenceText geometryPart =
 
 positionText : Vec2 -> String
 positionText position =
-    String.fromFloat (Vec2.getX position)
+    decimalText (Vec2.getX position)
         ++ ", "
-        ++ String.fromFloat (Vec2.getY position)
+        ++ decimalText (Vec2.getY position)
 
 
 canvasLayers : Model -> List (Html Msg)
