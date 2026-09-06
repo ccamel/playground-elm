@@ -27,7 +27,7 @@ info =
     , hash = "euclid"
     , date = "2026-08-30"
     , description = Markdown.toHtml [] """
-An experimental 2D vector playground for geometric construction, manipulation, and composable geometric expressions.
+An experimental, GeoGebra-inspired 2D construction playground: place, attach, and compose live geometric expressions.
        """
     , srcRel = "Page/Euclid.elm"
     }
