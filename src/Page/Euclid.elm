@@ -6,7 +6,7 @@ import Ecs.Components4
 import Ecs.EntityComponents
 import Ecs.Singletons1
 import Html exposing (Html, button, div, i, pre, span, text)
-import Html.Attributes exposing (class, style, title, type_)
+import Html.Attributes exposing (class, disabled, style, title, type_)
 import Html.Events exposing (on, onClick)
 import Json.Decode as Decode
 import Lib.Page
@@ -190,6 +190,7 @@ type Interaction
 type alias AttachmentHold =
     { geometryPart : GeometryPartRef
     , start : Vec2
+    , initialWorld : World
     , elapsed : Float
     , action : Maybe AttachmentAction
     , committed : Bool
@@ -215,6 +216,7 @@ type AttachmentAction
 
 type alias DragState =
     { geometryPart : GeometryPartRef
+    , initialWorld : World
     }
 
 
@@ -224,6 +226,7 @@ type alias DragState =
 
 type alias Model =
     { world : World
+    , undoHistory : List World
     , interaction : Interaction
     , activeTool : Maybe Tool
     , segmentStart : Maybe GeometryPartRef
@@ -240,11 +243,12 @@ type alias Model =
 
 type Msg
     = ToggleTool Tool
+    | Undo
     | PointerMoved Vec2
     | PointerDown Vec2
     | PointerUp Vec2
     | PointerCancelled
-    | AttachmentTick Time.Posix
+    | AttachmentTick
 
 
 
@@ -254,6 +258,7 @@ type Msg
 init : ( Model, Cmd Msg )
 init =
     ( { world = Ecs.emptyWorld specs.all (Ecs.Singletons1.init 0)
+      , undoHistory = []
       , interaction = Idle
       , activeTool = Just SelectTool
       , segmentStart = Nothing
@@ -290,20 +295,88 @@ update msg model =
             , Cmd.none
             )
 
+        Undo ->
+            ( undo model, Cmd.none )
+
         PointerDown pointer ->
-            ( startInteraction pointer { model | pointerPosition = pointer }, Cmd.none )
+            ( model
+                |> (\current -> startInteraction pointer { current | pointerPosition = pointer })
+                |> checkpointConstruction model.world
+            , Cmd.none
+            )
 
         PointerMoved pointer ->
             ( movePointer pointer model, Cmd.none )
 
         PointerUp pointer ->
-            ( endInteraction pointer { model | pointerPosition = pointer }, Cmd.none )
+            ( model
+                |> (\current -> endInteraction pointer { current | pointerPosition = pointer })
+                |> checkpointCompletedGesture model
+            , Cmd.none
+            )
 
         PointerCancelled ->
-            ( { model | interaction = Idle }, Cmd.none )
+            ( cancelPointerGesture model, Cmd.none )
 
-        AttachmentTick _ ->
+        AttachmentTick ->
             ( advanceAttachmentAnimation model, Cmd.none )
+
+
+recordUndoSnapshot : World -> Model -> Model
+recordUndoSnapshot previousWorld model =
+    { model | undoHistory = previousWorld :: model.undoHistory }
+
+
+checkpointConstruction : World -> Model -> Model
+checkpointConstruction previousWorld model =
+    if
+        Ecs.getSingleton specs.nextEntityId previousWorld
+            /= Ecs.getSingleton specs.nextEntityId model.world
+    then
+        recordUndoSnapshot previousWorld model
+
+    else
+        model
+
+
+checkpointCompletedGesture : Model -> Model -> Model
+checkpointCompletedGesture previousModel model =
+    case previousModel.interaction of
+        Dragging drag ->
+            recordUndoSnapshot drag.initialWorld model
+
+        Holding hold ->
+            if hold.committed then
+                recordUndoSnapshot hold.initialWorld model
+
+            else
+                model
+
+        _ ->
+            model
+
+
+cancelPointerGesture : Model -> Model
+cancelPointerGesture model =
+    checkpointCompletedGesture model { model | interaction = Idle }
+
+
+undo : Model -> Model
+undo model =
+    case model.undoHistory of
+        previousWorld :: remainingHistory ->
+            { model
+                | world = derivedComponentsSystem previousWorld
+                , undoHistory = remainingHistory
+                , interaction = Idle
+                , segmentStart = Nothing
+                , segmentPreviewEnd = Nothing
+                , circleCenter = Nothing
+                , circlePreviewThrough = Nothing
+            }
+
+        [] ->
+            model
 
 
 
@@ -460,20 +533,29 @@ movePointer pointer model =
             if movedBeyondDragTolerance pointer hold.start then
                 if hold.committed && attachmentOutcome hold == Detached then
                     { model
-                        | interaction = Dragging { geometryPart = hold.geometryPart }
+                        | interaction =
+                            Dragging
+                                { geometryPart = hold.geometryPart
+                                , initialWorld = hold.initialWorld
+                                }
                         , world = dragSystem hold.geometryPart pointer model.world
                         , pointerPosition = pointer
                     }
 
                 else if hold.committed then
-                    { model
-                        | interaction = interactionAt pointer model.world
-                        , pointerPosition = pointer
-                    }
+                    recordUndoSnapshot hold.initialWorld
+                        { model
+                            | interaction = interactionAt pointer model.world
+                            , pointerPosition = pointer
+                        }
 
                 else
                     { model
-                        | interaction = Dragging { geometryPart = hold.geometryPart }
+                        | interaction =
+                            Dragging
+                                { geometryPart = hold.geometryPart
+                                , initialWorld = hold.initialWorld
+                                }
                         , world = dragSystem hold.geometryPart pointer model.world
                         , pointerPosition = pointer
                     }
@@ -1334,6 +1416,7 @@ attachmentHold : GeometryPartRef -> Vec2 -> World -> AttachmentHold
 attachmentHold geometryPart start world =
     { geometryPart = geometryPart
     , start = start
+    , initialWorld = world
     , elapsed = 0
     , action = attachmentAction geometryPart world
     , committed = False
@@ -2059,18 +2142,6 @@ worldExpressionEntries world =
         |> List.sortBy Tuple.first
 
 
-worldExpressionText : World -> String
-worldExpressionText world =
-    worldExpressionEntries world
-        |> List.map worldExpressionEntryText
-        |> String.join ", "
-
-
-worldExpressionEntryText : ( EntityId, Node ) -> String
-worldExpressionEntryText ( entityId, node ) =
-    "#" ++ String.fromInt entityId ++ ":" ++ nodeExpressionText node
-
-
 worldExpressionEntryView : ( EntityId, Node ) -> Html Msg
 worldExpressionEntryView ( entityId, node ) =
     span []
@@ -2222,43 +2293,6 @@ coloredToken color value =
     span [ style "color" color ] [ text value ]
 
 
-nodeExpressionText : Node -> String
-nodeExpressionText node =
-    case node of
-        Point pointExpression ->
-            "point(" ++ pointExpressionText pointExpression ++ ")"
-
-        Segment segmentExpression ->
-            "segment(" ++ segmentExpressionText segmentExpression ++ ")"
-
-        Circle circleExpression ->
-            "circle(" ++ circleExpressionText circleExpression ++ ")"
-
-
-pointExpressionText : PointExpr -> String
-pointExpressionText expression =
-    case expression of
-        Literal position ->
-            "free(" ++ positionText position ++ ")"
-
-        Midpoint segment ->
-            "midpoint(" ++ geometryPartReferenceText segment ++ ")"
-
-        OnSegment segment parameter ->
-            "on-segment("
-                ++ geometryPartReferenceText segment
-                ++ ", "
-                ++ decimalText parameter
-                ++ ")"
-
-        OnCircle circle angle ->
-            "on-circle("
-                ++ geometryPartReferenceText circle
-                ++ ", "
-                ++ angleText angle
-                ++ ")"
-
-
 angleText : Float -> String
 angleText angle =
     decimalText (angle * 180 / pi) ++ "°"
@@ -2277,58 +2311,6 @@ decimalText value =
          else
             rounded
         )
-
-
-segmentExpressionText : SegmentExpr -> String
-segmentExpressionText expression =
-    case expression of
-        Between start end ->
-            "between("
-                ++ geometryPartReferenceText start
-                ++ ", "
-                ++ geometryPartReferenceText end
-                ++ ")"
-
-
-circleExpressionText : CircleExpr -> String
-circleExpressionText expression =
-    case expression of
-        CenterThrough center through ->
-            "center-through("
-                ++ geometryPartReferenceText center
-                ++ ", "
-                ++ geometryPartReferenceText through
-                ++ ")"
-
-
-geometryPartReferenceText : GeometryPartRef -> String
-geometryPartReferenceText geometryPart =
-    let
-        entityReference =
-            "#" ++ String.fromInt geometryPart.owner
-    in
-    case geometryPart.kind of
-        PointLocation ->
-            entityReference
-
-        SegmentStart ->
-            entityReference ++ ".start"
-
-        SegmentEnd ->
-            entityReference ++ ".end"
-
-        SegmentBody ->
-            entityReference
-
-        CircleBody ->
-            entityReference
-
-
-positionText : Vec2 -> String
-positionText position =
-    decimalText (Vec2.getX position)
-        ++ ", "
-        ++ decimalText (Vec2.getY position)
 
 
 canvasLayers : Model -> List (Html Msg)
@@ -2645,6 +2627,7 @@ geometryToolbar model =
         , toolButton model SegmentTool "fa fa-minus" "Add segments" "Enable or disable segment construction"
         , toolButton model CircleTool "fa fa-circle-o" "Add circles" "Construct a circle from a center and a passing point"
         , toolButton model MidpointTool "fa fa-circle-o" "Midpoint" "Construct a point at the middle of a segment"
+        , undoButton model
         ]
 
 
@@ -2670,6 +2653,20 @@ toolButton model tool icon label tooltip =
         ]
         [ span [ class "icon is-small" ] [ i [ class icon ] [] ]
         , span [] [ text label ]
+        ]
+
+
+undoButton : Model -> Html Msg
+undoButton model =
+    button
+        [ class "button is-light"
+        , type_ "button"
+        , title "Undo the last completed construction or manipulation"
+        , disabled (List.isEmpty model.undoHistory)
+        , onClick Undo
+        ]
+        [ span [ class "icon is-small" ] [ i [ class "fa fa-undo" ] [] ]
+        , span [] [ text "Undo" ]
         ]
 
 
@@ -3052,13 +3049,13 @@ subscriptions model =
         Holding hold ->
             case hold.action of
                 Just _ ->
-                    Time.every attachmentTickInterval AttachmentTick
+                    Time.every attachmentTickInterval (\_ -> AttachmentTick)
 
                 Nothing ->
                     Sub.none
 
         AttachmentNotice _ ->
-            Time.every attachmentTickInterval AttachmentTick
+            Time.every attachmentTickInterval (\_ -> AttachmentTick)
 
         _ ->
             Sub.none
