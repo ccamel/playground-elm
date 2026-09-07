@@ -418,7 +418,7 @@ pageSpec target =
                     "maze"
 
                 Physics ->
-                    "physics"
+                    "physics-engine"
 
                 Term ->
                     "term"
