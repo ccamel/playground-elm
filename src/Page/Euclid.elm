@@ -233,6 +233,7 @@ type alias DragState =
 type alias Model =
     { world : World
     , undoHistory : List World
+    , redoHistory : List World
     , interaction : Interaction
     , activeTool : Maybe Tool
     , segmentStart : Maybe GeometryPartRef
@@ -251,6 +252,7 @@ type alias Model =
 type Msg
     = ToggleTool Tool
     | Undo
+    | Redo
     | PointerMoved Vec2
     | PointerDown Vec2
     | PointerUp Vec2
@@ -266,6 +268,7 @@ init : ( Model, Cmd Msg )
 init =
     ( { world = Ecs.emptyWorld specs.all (Ecs.Singletons1.init 0)
       , undoHistory = []
+      , redoHistory = []
       , interaction = Idle
       , activeTool = Just SelectTool
       , segmentStart = Nothing
@@ -307,6 +310,9 @@ update msg model =
         Undo ->
             ( undo model, Cmd.none )
 
+        Redo ->
+            ( redo model, Cmd.none )
+
         PointerDown pointer ->
             ( model
                 |> (\current -> startInteraction pointer { current | pointerPosition = pointer })
@@ -333,7 +339,10 @@ update msg model =
 
 recordUndoSnapshot : World -> Model -> Model
 recordUndoSnapshot previousWorld model =
-    { model | undoHistory = previousWorld :: model.undoHistory }
+    { model
+        | undoHistory = previousWorld :: model.undoHistory
+        , redoHistory = []
+    }
 
 
 checkpointConstruction : World -> Model -> Model
@@ -370,6 +379,18 @@ cancelPointerGesture model =
     checkpointCompletedGesture model { model | interaction = Idle }
 
 
+clearTransientInteraction : Model -> Model
+clearTransientInteraction model =
+    { model
+        | interaction = Idle
+        , segmentStart = Nothing
+        , segmentPreviewEnd = Nothing
+        , circleCenter = Nothing
+        , circlePreviewThrough = Nothing
+        , intersectionStart = Nothing
+    }
+
+
 undo : Model -> Model
 undo model =
     case model.undoHistory of
@@ -377,13 +398,24 @@ undo model =
             { model
                 | world = derivedComponentsSystem previousWorld
                 , undoHistory = remainingHistory
-                , interaction = Idle
-                , segmentStart = Nothing
-                , segmentPreviewEnd = Nothing
-                , circleCenter = Nothing
-                , circlePreviewThrough = Nothing
-                , intersectionStart = Nothing
+                , redoHistory = model.world :: model.redoHistory
             }
+                |> clearTransientInteraction
+
+        [] ->
+            model
+
+
+redo : Model -> Model
+redo model =
+    case model.redoHistory of
+        nextWorld :: remainingHistory ->
+            { model
+                | world = derivedComponentsSystem nextWorld
+                , undoHistory = model.world :: model.undoHistory
+                , redoHistory = remainingHistory
+            }
+                |> clearTransientInteraction
 
         [] ->
             model
@@ -2873,6 +2905,7 @@ geometryToolbar model =
         , toolButton model MidpointTool "fa fa-circle-o" "Midpoint" "Construct a point at the middle of a segment"
         , toolButton model IntersectionTool "fa fa-times" "Intersection" "Construct a point where two segments intersect"
         , undoButton model
+        , redoButton model
         ]
 
 
@@ -2912,6 +2945,20 @@ undoButton model =
         ]
         [ span [ class "icon is-small" ] [ i [ class "fa fa-undo" ] [] ]
         , span [] [ text "Undo" ]
+        ]
+
+
+redoButton : Model -> Html Msg
+redoButton model =
+    button
+        [ class "button is-light"
+        , type_ "button"
+        , title "Redo the last undone construction or manipulation"
+        , disabled (List.isEmpty model.redoHistory)
+        , onClick Redo
+        ]
+        [ span [ class "icon is-small" ] [ i [ class "fa fa-repeat" ] [] ]
+        , span [] [ text "Redo" ]
         ]
 
 
