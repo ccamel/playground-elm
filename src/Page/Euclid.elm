@@ -54,6 +54,7 @@ type Node
 type PointExpr
     = Literal Vec2
     | Midpoint GeometryPartRef
+    | Intersection GeometryPartRef GeometryPartRef
     | OnSegment GeometryPartRef Float
     | OnCircle GeometryPartRef Float
 
@@ -76,6 +77,10 @@ type EvaluationError
     = MissingGeometryOwner EntityId
     | MissingGeometryPart GeometryPartRef
     | ExpectedPointGeometryPart GeometryPartRef
+    | ExpectedSegmentGeometryPart GeometryPartRef
+    | ParallelSegments GeometryPartRef GeometryPartRef
+    | CoincidentSegments GeometryPartRef GeometryPartRef
+    | IntersectionOutsideSegments GeometryPartRef GeometryPartRef
     | CyclicGeometryReference (List EntityId)
 
 
@@ -177,6 +182,7 @@ type Tool
     | SegmentTool
     | CircleTool
     | MidpointTool
+    | IntersectionTool
 
 
 type Interaction
@@ -233,6 +239,7 @@ type alias Model =
     , segmentPreviewEnd : Maybe Vec2
     , circleCenter : Maybe GeometryPartRef
     , circlePreviewThrough : Maybe Vec2
+    , intersectionStart : Maybe GeometryPartRef
     , pointerPosition : Vec2
     }
 
@@ -265,6 +272,7 @@ init =
       , segmentPreviewEnd = Nothing
       , circleCenter = Nothing
       , circlePreviewThrough = Nothing
+      , intersectionStart = Nothing
       , pointerPosition = vec2 0 0
       }
     , Cmd.none
@@ -291,6 +299,7 @@ update msg model =
                 , segmentPreviewEnd = Nothing
                 , circleCenter = Nothing
                 , circlePreviewThrough = Nothing
+                , intersectionStart = Nothing
               }
             , Cmd.none
             )
@@ -373,6 +382,7 @@ undo model =
                 , segmentPreviewEnd = Nothing
                 , circleCenter = Nothing
                 , circlePreviewThrough = Nothing
+                , intersectionStart = Nothing
             }
 
         [] ->
@@ -400,6 +410,9 @@ startInteraction pointer model =
 
         Just MidpointTool ->
             startMidpoint pointer model
+
+        Just IntersectionTool ->
+            startIntersection pointer model
 
         Nothing ->
             model
@@ -526,6 +539,32 @@ startMidpoint pointer model =
             { model | interaction = Idle }
 
 
+startIntersection : Vec2 -> Model -> Model
+startIntersection pointer model =
+    case segmentBodyAt pointer model.world of
+        Just segment ->
+            case model.intersectionStart of
+                Just first ->
+                    if first == segment then
+                        { model | interaction = Hovering segment }
+
+                    else
+                        { model
+                            | world = addIntersection first segment model.world
+                            , interaction = Hovering segment
+                            , intersectionStart = Nothing
+                        }
+
+                Nothing ->
+                    { model
+                        | interaction = Hovering segment
+                        , intersectionStart = Just segment
+                    }
+
+        Nothing ->
+            { model | interaction = Idle }
+
+
 movePointer : Vec2 -> Model -> Model
 movePointer pointer model =
     case model.interaction of
@@ -597,6 +636,12 @@ movePointer pointer model =
                         , pointerPosition = pointer
                     }
 
+                Just IntersectionTool ->
+                    { model
+                        | interaction = intersectionInteractionAt pointer model.world
+                        , pointerPosition = pointer
+                    }
+
                 _ ->
                     { model | interaction = Idle, pointerPosition = pointer }
 
@@ -638,6 +683,9 @@ endInteraction pointer model =
         Just MidpointTool ->
             { model | interaction = midpointInteractionAt pointer model.world }
 
+        Just IntersectionTool ->
+            { model | interaction = intersectionInteractionAt pointer model.world }
+
         _ ->
             { model | interaction = Idle }
 
@@ -667,6 +715,20 @@ addMidpoint segment world =
     world
         |> Ecs.insertEntity entityId
         |> Ecs.insertComponent specs.expression (Point (Midpoint segment))
+        |> Ecs.insertComponent specs.selectable Selectable
+        |> Ecs.updateSingleton specs.nextEntityId (\id -> id + 1)
+        |> derivedComponentsSystem
+
+
+addIntersection : GeometryPartRef -> GeometryPartRef -> World -> World
+addIntersection first second world =
+    let
+        entityId =
+            Ecs.getSingleton specs.nextEntityId world
+    in
+    world
+        |> Ecs.insertEntity entityId
+        |> Ecs.insertComponent specs.expression (Point (Intersection first second))
         |> Ecs.insertComponent specs.selectable Selectable
         |> Ecs.updateSingleton specs.nextEntityId (\id -> id + 1)
         |> derivedComponentsSystem
@@ -739,6 +801,9 @@ rewritePoint geometryPart pointer world expression =
 
         Midpoint support ->
             Midpoint support
+
+        Intersection first second ->
+            Intersection first second
 
 
 dragSystem : GeometryPartRef -> Vec2 -> World -> World
@@ -910,6 +975,90 @@ midpointPosition geometryPart geometry =
             geometryPartError geometryPart geometry
 
 
+segmentIntersectionTarget : GeometryPartRef -> Geometry -> Result EvaluationError SegmentHitTarget
+segmentIntersectionTarget geometryPart geometry =
+    case ( geometryPart.kind, geometry ) of
+        ( SegmentBody, GSegment start end ) ->
+            Ok { ref = geometryPart, start = start, end = end }
+
+        _ ->
+            if hasGeometryPart geometryPart.kind geometry then
+                Err (ExpectedSegmentGeometryPart geometryPart)
+
+            else
+                Err (MissingGeometryPart geometryPart)
+
+
+intersectionTolerance : Float
+intersectionTolerance =
+    0.000001
+
+
+isWithinSegmentParameter : Float -> Bool
+isWithinSegmentParameter parameter =
+    parameter >= -intersectionTolerance && parameter <= 1 + intersectionTolerance
+
+
+crossProduct : Float -> Float -> Float -> Float -> Float
+crossProduct firstX firstY secondX secondY =
+    firstX * secondY - firstY * secondX
+
+
+segmentIntersection : SegmentHitTarget -> SegmentHitTarget -> Result EvaluationError Vec2
+segmentIntersection first second =
+    let
+        firstDeltaX =
+            Vec2.getX first.end - Vec2.getX first.start
+
+        firstDeltaY =
+            Vec2.getY first.end - Vec2.getY first.start
+
+        secondDeltaX =
+            Vec2.getX second.end - Vec2.getX second.start
+
+        secondDeltaY =
+            Vec2.getY second.end - Vec2.getY second.start
+
+        offsetX =
+            Vec2.getX second.start - Vec2.getX first.start
+
+        offsetY =
+            Vec2.getY second.start - Vec2.getY first.start
+
+        denominator =
+            crossProduct firstDeltaX firstDeltaY secondDeltaX secondDeltaY
+    in
+    if abs denominator <= intersectionTolerance then
+        let
+            colinearity =
+                crossProduct offsetX offsetY firstDeltaX firstDeltaY
+        in
+        if abs colinearity <= intersectionTolerance then
+            Err (CoincidentSegments first.ref second.ref)
+
+        else
+            Err (ParallelSegments first.ref second.ref)
+
+    else
+        let
+            firstParameter =
+                crossProduct offsetX offsetY secondDeltaX secondDeltaY / denominator
+
+            secondParameter =
+                crossProduct offsetX offsetY firstDeltaX firstDeltaY / denominator
+        in
+        if isWithinSegmentParameter firstParameter && isWithinSegmentParameter secondParameter then
+            Ok
+                (pointOnSegment
+                    (clamp 0 1 firstParameter)
+                    first.start
+                    first.end
+                )
+
+        else
+            Err (IntersectionOutsideSegments first.ref second.ref)
+
+
 onSegmentPosition : GeometryPartRef -> Float -> Geometry -> Result EvaluationError Vec2
 onSegmentPosition geometryPart parameter geometry =
     case ( geometryPart.kind, geometry ) of
@@ -971,6 +1120,29 @@ cyclePathFrom entityId entityIds =
                 cyclePathFrom entityId remaining
 
 
+evaluateIntersection : Resolver -> EvaluationState -> GeometryPartRef -> GeometryPartRef -> Evaluation Vec2
+evaluateIntersection activeResolver state first second =
+    let
+        ( firstResult, stateAfterFirst ) =
+            activeResolver.resolveGeometry state first.owner
+    in
+    case firstResult of
+        Ok firstGeometry ->
+            let
+                ( secondResult, stateAfterSecond ) =
+                    activeResolver.resolveGeometry stateAfterFirst second.owner
+            in
+            ( Result.map2 Tuple.pair
+                (segmentIntersectionTarget first firstGeometry)
+                (Result.andThen (segmentIntersectionTarget second) secondResult)
+                |> Result.andThen (\( firstSegment, secondSegment ) -> segmentIntersection firstSegment secondSegment)
+            , stateAfterSecond
+            )
+
+        Err error ->
+            ( Err error, stateAfterFirst )
+
+
 evaluatePoint : Resolver -> EvaluationState -> PointExpr -> Evaluation Vec2
 evaluatePoint activeResolver state expression =
     case expression of
@@ -983,6 +1155,9 @@ evaluatePoint activeResolver state expression =
                     activeResolver.resolveGeometry state segment.owner
             in
             ( Result.andThen (midpointPosition segment) segmentResult, evaluatedState )
+
+        Intersection first second ->
+            evaluateIntersection activeResolver state first second
 
         OnSegment segment parameter ->
             let
@@ -1037,6 +1212,9 @@ dragBehaviorFor node =
             Just RewritePoint
 
         Point (Midpoint _) ->
+            Nothing
+
+        Point (Intersection _ _) ->
             Nothing
 
         Segment _ ->
@@ -1456,6 +1634,9 @@ attachmentAction geometryPart world =
                             |> Maybe.map Detach
 
                     Midpoint _ ->
+                        Nothing
+
+                    Intersection _ _ ->
                         Nothing
             )
 
@@ -1908,6 +2089,13 @@ midpointInteractionAt pointer world =
         |> Maybe.withDefault Idle
 
 
+intersectionInteractionAt : Vec2 -> World -> Interaction
+intersectionInteractionAt pointer world =
+    segmentBodyAt pointer world
+        |> Maybe.map Hovering
+        |> Maybe.withDefault Idle
+
+
 interactionAt : Vec2 -> World -> Interaction
 interactionAt pointer world =
     hitTest pointer world
@@ -1918,6 +2106,8 @@ interactionAt pointer world =
 isHighlighted : GeometryPartRef -> Model -> Bool
 isHighlighted geometryPart model =
     model.segmentStart
+        == Just geometryPart
+        || model.intersectionStart
         == Just geometryPart
         || (case model.interaction of
                 Idle ->
@@ -1951,12 +2141,12 @@ isHighlighted geometryPart model =
 
 isDependencyHighlighted : GeometryPartRef -> Model -> Bool
 isDependencyHighlighted geometryPart model =
-    case ( geometryPart.kind, model.interaction ) of
-        ( SegmentBody, Hovering hovered ) ->
+    case model.interaction of
+        Hovering hovered ->
             model.world
                 |> Ecs.onEntity hovered.owner
                 |> Ecs.getComponent specs.expression
-                |> Maybe.map (isMidpointOf geometryPart)
+                |> Maybe.map (isDependentOn geometryPart)
                 |> Maybe.withDefault False
 
         _ ->
@@ -1972,11 +2162,14 @@ isMidpointPoint entityId world =
         |> Maybe.withDefault False
 
 
-isMidpointOf : GeometryPartRef -> Node -> Bool
-isMidpointOf segment node =
+isDependentOn : GeometryPartRef -> Node -> Bool
+isDependentOn geometryPart node =
     case node of
         Point (Midpoint source) ->
-            source == segment
+            source == geometryPart
+
+        Point (Intersection first second) ->
+            geometryPart == first || geometryPart == second
 
         _ ->
             False
@@ -1992,11 +2185,30 @@ isMidpointOfPointExpression node =
             False
 
 
-midpointHoverPosition : Model -> Maybe Vec2
-midpointHoverPosition model =
+isIntersectionPoint : EntityId -> World -> Bool
+isIntersectionPoint entityId world =
+    world
+        |> Ecs.onEntity entityId
+        |> Ecs.getComponent specs.expression
+        |> Maybe.map isIntersectionPointExpression
+        |> Maybe.withDefault False
+
+
+isIntersectionPointExpression : Node -> Bool
+isIntersectionPointExpression node =
+    case node of
+        Point (Intersection _ _) ->
+            True
+
+        _ ->
+            False
+
+
+hoveredPointPosition : (EntityId -> World -> Bool) -> Model -> Maybe Vec2
+hoveredPointPosition predicate model =
     case model.interaction of
         Hovering geometryPart ->
-            if isMidpointPoint geometryPart.owner model.world then
+            if predicate geometryPart.owner model.world then
                 geometryPartsIn model.world
                     |> List.filter (\geometryPart_ -> geometryPart_.ref == geometryPart)
                     |> List.head
@@ -2007,6 +2219,16 @@ midpointHoverPosition model =
 
         _ ->
             Nothing
+
+
+midpointHoverPosition : Model -> Maybe Vec2
+midpointHoverPosition =
+    hoveredPointPosition isMidpointPoint
+
+
+intersectionHoverPosition : Model -> Maybe Vec2
+intersectionHoverPosition =
+    hoveredPointPosition isIntersectionPoint
 
 
 
@@ -2106,6 +2328,7 @@ view model =
                             ]
                             [ viewPointerPosition model.pointerPosition
                             , viewMidpointHoverLabel model
+                            , viewIntersectionHoverLabel model
                             ]
                         ]
                     ]
@@ -2172,6 +2395,13 @@ pointExpressionView expression =
 
         Midpoint segment ->
             constructorCall "midpoint" [ geometryPartReferenceView segment ]
+
+        Intersection first second ->
+            constructorCall "intersection"
+                [ geometryPartReferenceView first
+                , syntaxToken ", "
+                , geometryPartReferenceView second
+                ]
 
         OnSegment segment parameter ->
             constructorCall "on-segment"
@@ -2338,6 +2568,11 @@ canvasLayers model =
         ++ (model
                 |> midpointPreview
                 |> Maybe.map viewMidpointPreview
+                |> Maybe.withDefault []
+           )
+        ++ (model
+                |> intersectionPreview
+                |> Maybe.map viewIntersectionPreview
                 |> Maybe.withDefault []
            )
 
@@ -2596,27 +2831,36 @@ viewPointerPosition position =
 
 viewMidpointHoverLabel : Model -> Html Msg
 viewMidpointHoverLabel model =
-    case midpointHoverPosition model of
-        Just position ->
-            Svg.text_
-                [ SvgAttr.x (String.fromFloat (Vec2.getX position + 12))
-                , SvgAttr.y
-                    (String.fromFloat
-                        (if Vec2.getY position < 26 then
-                            Vec2.getY position + 22
+    midpointHoverPosition model
+        |> Maybe.map (viewConstructedPointHoverLabel "Midpoint of segment")
+        |> Maybe.withDefault (Svg.g [] [])
 
-                         else
-                            Vec2.getY position - 12
-                        )
-                    )
-                , fill "#f5a623"
-                , SvgAttr.fontFamily "monospace"
-                , SvgAttr.fontSize "12"
-                ]
-                [ Svg.text "Midpoint of segment" ]
 
-        Nothing ->
-            Svg.g [] []
+viewIntersectionHoverLabel : Model -> Html Msg
+viewIntersectionHoverLabel model =
+    intersectionHoverPosition model
+        |> Maybe.map (viewConstructedPointHoverLabel "Intersection of segments")
+        |> Maybe.withDefault (Svg.g [] [])
+
+
+viewConstructedPointHoverLabel : String -> Vec2 -> Html Msg
+viewConstructedPointHoverLabel label position =
+    Svg.text_
+        [ SvgAttr.x (String.fromFloat (Vec2.getX position + 12))
+        , SvgAttr.y
+            (String.fromFloat
+                (if Vec2.getY position < 26 then
+                    Vec2.getY position + 22
+
+                 else
+                    Vec2.getY position - 12
+                )
+            )
+        , fill "#f5a623"
+        , SvgAttr.fontFamily "monospace"
+        , SvgAttr.fontSize "12"
+        ]
+        [ Svg.text label ]
 
 
 geometryToolbar : Model -> Html Msg
@@ -2627,6 +2871,7 @@ geometryToolbar model =
         , toolButton model SegmentTool "fa fa-minus" "Add segments" "Enable or disable segment construction"
         , toolButton model CircleTool "fa fa-circle-o" "Add circles" "Construct a circle from a center and a passing point"
         , toolButton model MidpointTool "fa fa-circle-o" "Midpoint" "Construct a point at the middle of a segment"
+        , toolButton model IntersectionTool "fa fa-times" "Intersection" "Construct a point where two segments intersect"
         , undoButton model
         ]
 
@@ -2724,6 +2969,14 @@ cursorFor model =
                             "crosshair"
 
                 Just MidpointTool ->
+                    case model.interaction of
+                        Hovering _ ->
+                            "pointer"
+
+                        _ ->
+                            "crosshair"
+
+                Just IntersectionTool ->
                     case model.interaction of
                         Hovering _ ->
                             "pointer"
@@ -2838,6 +3091,57 @@ viewMidpointPreview point =
     ]
 
 
+intersectionPreview : Model -> Maybe Vec2
+intersectionPreview model =
+    case ( model.activeTool, model.intersectionStart, model.interaction ) of
+        ( Just IntersectionTool, Just first, Hovering second ) ->
+            if first == second then
+                Nothing
+
+            else
+                Maybe.map2 segmentIntersection
+                    (segmentBodyFor first model.world)
+                    (segmentBodyFor second model.world)
+                    |> Maybe.andThen Result.toMaybe
+
+        _ ->
+            Nothing
+
+
+viewIntersectionPreview : Vec2 -> List (Html Msg)
+viewIntersectionPreview point =
+    [ Svg.circle
+        [ cx (String.fromFloat (Vec2.getX point))
+        , cy (String.fromFloat (Vec2.getY point))
+        , r "7"
+        , fill "none"
+        , stroke "#f5a623"
+        , strokeWidth "2"
+        , strokeDasharray "3 2"
+        , opacity "0.9"
+        ]
+        []
+    , Svg.line
+        [ x1 (String.fromFloat (Vec2.getX point - 3))
+        , y1 (String.fromFloat (Vec2.getY point))
+        , x2 (String.fromFloat (Vec2.getX point + 3))
+        , y2 (String.fromFloat (Vec2.getY point))
+        , stroke "#f5a623"
+        , strokeWidth "1.5"
+        ]
+        []
+    , Svg.line
+        [ x1 (String.fromFloat (Vec2.getX point))
+        , y1 (String.fromFloat (Vec2.getY point - 3))
+        , x2 (String.fromFloat (Vec2.getX point))
+        , y2 (String.fromFloat (Vec2.getY point + 3))
+        , stroke "#f5a623"
+        , strokeWidth "1.5"
+        ]
+        []
+    ]
+
+
 viewGuide : Guide -> Html Msg
 viewGuide guide =
     let
@@ -2895,12 +3199,29 @@ evaluationErrorDescription error =
         ExpectedPointGeometryPart geometryPart ->
             "Expected point geometry part " ++ geometryPartRefDescription geometryPart
 
+        ExpectedSegmentGeometryPart geometryPart ->
+            "Expected segment geometry part " ++ geometryPartRefDescription geometryPart
+
+        ParallelSegments first second ->
+            "Parallel segments " ++ geometryPartPairDescription first second
+
+        CoincidentSegments first second ->
+            "Coincident segments " ++ geometryPartPairDescription first second
+
+        IntersectionOutsideSegments first second ->
+            "Intersection lies outside segments " ++ geometryPartPairDescription first second
+
         CyclicGeometryReference entityIds ->
             "Cyclic geometry reference "
                 ++ (entityIds
                         |> List.map String.fromInt
                         |> String.join " -> "
                    )
+
+
+geometryPartPairDescription : GeometryPartRef -> GeometryPartRef -> String
+geometryPartPairDescription first second =
+    geometryPartRefDescription first ++ " and " ++ geometryPartRefDescription second
 
 
 geometryPartRefDescription : GeometryPartRef -> String
@@ -2930,6 +3251,47 @@ geometryPartKindName geometryPartKind =
             "CircleBody"
 
 
+pointConstructionDetails : Bool -> Bool -> Vec2 -> List (Html Msg)
+pointConstructionDetails isMidpoint isIntersection point =
+    if isMidpoint then
+        [ Svg.title [] [ Svg.text "Midpoint of segment" ]
+        , Svg.circle
+            [ cx (String.fromFloat (Vec2.getX point))
+            , cy (String.fromFloat (Vec2.getY point))
+            , r "2"
+            , fill "#e2e8f0"
+            , stroke "#1f2933"
+            , strokeWidth "1"
+            ]
+            []
+        ]
+
+    else if isIntersection then
+        [ Svg.title [] [ Svg.text "Intersection of segments" ]
+        , Svg.line
+            [ x1 (String.fromFloat (Vec2.getX point - 3))
+            , y1 (String.fromFloat (Vec2.getY point))
+            , x2 (String.fromFloat (Vec2.getX point + 3))
+            , y2 (String.fromFloat (Vec2.getY point))
+            , stroke "#f5a623"
+            , strokeWidth "1.5"
+            ]
+            []
+        , Svg.line
+            [ x1 (String.fromFloat (Vec2.getX point))
+            , y1 (String.fromFloat (Vec2.getY point - 3))
+            , x2 (String.fromFloat (Vec2.getX point))
+            , y2 (String.fromFloat (Vec2.getY point + 3))
+            , stroke "#f5a623"
+            , strokeWidth "1.5"
+            ]
+            []
+        ]
+
+    else
+        []
+
+
 viewGeometry : Model -> EntityId -> Geometry -> Html Msg
 viewGeometry model entityId geometry =
     case geometry of
@@ -2940,6 +3302,9 @@ viewGeometry model entityId geometry =
 
                 isMidpoint =
                     isMidpointPoint entityId model.world
+
+                isIntersection =
+                    isIntersectionPoint entityId model.world
             in
             Svg.g []
                 (Svg.circle
@@ -2960,22 +3325,7 @@ viewGeometry model entityId geometry =
                     , strokeWidth "2"
                     ]
                     []
-                    :: (if isMidpoint then
-                            [ Svg.title [] [ Svg.text "Midpoint of segment" ]
-                            , Svg.circle
-                                [ cx (String.fromFloat (Vec2.getX point))
-                                , cy (String.fromFloat (Vec2.getY point))
-                                , r "2"
-                                , fill "#e2e8f0"
-                                , stroke "#1f2933"
-                                , strokeWidth "1"
-                                ]
-                                []
-                            ]
-
-                        else
-                            []
-                       )
+                    :: pointConstructionDetails isMidpoint isIntersection point
                 )
 
         GSegment start end ->
