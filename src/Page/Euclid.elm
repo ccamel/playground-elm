@@ -56,6 +56,7 @@ type PointExpr
     = Literal Vec2
     | Midpoint GeometryPartRef
     | SegmentIntersection GeometryPartRef GeometryPartRef
+    | SegmentLineIntersection GeometryPartRef GeometryPartRef
     | LineIntersection GeometryPartRef GeometryPartRef
     | CircleIntersection GeometryPartRef GeometryPartRef CircleIntersectionBranch
     | OnSegment GeometryPartRef Float
@@ -98,6 +99,9 @@ type EvaluationError
     | IntersectionOutsideSegments GeometryPartRef GeometryPartRef
     | ParallelLines GeometryPartRef GeometryPartRef
     | CoincidentLines GeometryPartRef GeometryPartRef
+    | ParallelSegmentAndLine GeometryPartRef GeometryPartRef
+    | CoincidentSegmentAndLine GeometryPartRef GeometryPartRef
+    | IntersectionOutsideSegment GeometryPartRef GeometryPartRef
     | DisjointCircles GeometryPartRef GeometryPartRef
     | ContainedCircle GeometryPartRef GeometryPartRef
     | ConcentricCircles GeometryPartRef GeometryPartRef
@@ -845,6 +849,12 @@ intersectionExpression first second pointer world =
         ( SegmentBody, SegmentBody ) ->
             Just (SegmentIntersection first second)
 
+        ( SegmentBody, LineBody ) ->
+            Just (SegmentLineIntersection first second)
+
+        ( LineBody, SegmentBody ) ->
+            Just (SegmentLineIntersection second first)
+
         ( LineBody, LineBody ) ->
             Just (LineIntersection first second)
 
@@ -958,6 +968,9 @@ rewritePoint geometryPart pointer world expression =
 
         SegmentIntersection first second ->
             SegmentIntersection first second
+
+        SegmentLineIntersection segment line ->
+            SegmentLineIntersection segment line
 
         CircleIntersection first second branch ->
             CircleIntersection first second branch
@@ -1233,6 +1246,53 @@ lineIntersection first second =
             )
 
 
+segmentLineIntersection : SegmentHitTarget -> LineHitTarget -> Result EvaluationError Vec2
+segmentLineIntersection segment line =
+    let
+        segmentDeltaX =
+            Vec2.getX segment.end - Vec2.getX segment.start
+
+        segmentDeltaY =
+            Vec2.getY segment.end - Vec2.getY segment.start
+
+        lineDeltaX =
+            Vec2.getX line.end - Vec2.getX line.start
+
+        lineDeltaY =
+            Vec2.getY line.end - Vec2.getY line.start
+
+        offsetX =
+            Vec2.getX line.start - Vec2.getX segment.start
+
+        offsetY =
+            Vec2.getY line.start - Vec2.getY segment.start
+
+        denominator =
+            crossProduct segmentDeltaX segmentDeltaY lineDeltaX lineDeltaY
+    in
+    if abs denominator <= intersectionTolerance then
+        let
+            colinearity =
+                crossProduct offsetX offsetY segmentDeltaX segmentDeltaY
+        in
+        if abs colinearity <= intersectionTolerance then
+            Err (CoincidentSegmentAndLine segment.ref line.ref)
+
+        else
+            Err (ParallelSegmentAndLine segment.ref line.ref)
+
+    else
+        let
+            intersectionParameter =
+                crossProduct offsetX offsetY lineDeltaX lineDeltaY / denominator
+        in
+        if isWithinSegmentParameter intersectionParameter then
+            Ok (pointOnSegment (clamp 0 1 intersectionParameter) segment.start segment.end)
+
+        else
+            Err (IntersectionOutsideSegment segment.ref line.ref)
+
+
 circleIntersectionTarget : GeometryPartRef -> Geometry -> Result EvaluationError CircleHitTarget
 circleIntersectionTarget geometryPart geometry =
     case ( geometryPart.kind, geometry ) of
@@ -1488,6 +1548,29 @@ evaluateSegmentIntersection activeResolver state first second =
             ( Err error, stateAfterFirst )
 
 
+evaluateSegmentLineIntersection : Resolver -> EvaluationState -> GeometryPartRef -> GeometryPartRef -> Evaluation Vec2
+evaluateSegmentLineIntersection activeResolver state segment line =
+    let
+        ( segmentResult, stateAfterSegment ) =
+            activeResolver.resolveGeometry state segment.owner
+    in
+    case segmentResult of
+        Ok segmentGeometry ->
+            let
+                ( lineResult, stateAfterLine ) =
+                    activeResolver.resolveGeometry stateAfterSegment line.owner
+            in
+            ( Result.map2 Tuple.pair
+                (segmentIntersectionTarget segment segmentGeometry)
+                (Result.andThen (lineIntersectionTarget line) lineResult)
+                |> Result.andThen (\( currentSegment, currentLine ) -> segmentLineIntersection currentSegment currentLine)
+            , stateAfterLine
+            )
+
+        Err error ->
+            ( Err error, stateAfterSegment )
+
+
 evaluateLineIntersection : Resolver -> EvaluationState -> GeometryPartRef -> GeometryPartRef -> Evaluation Vec2
 evaluateLineIntersection activeResolver state first second =
     let
@@ -1549,6 +1632,9 @@ evaluatePoint activeResolver state expression =
 
         SegmentIntersection first second ->
             evaluateSegmentIntersection activeResolver state first second
+
+        SegmentLineIntersection segment line ->
+            evaluateSegmentLineIntersection activeResolver state segment line
 
         LineIntersection first second ->
             evaluateLineIntersection activeResolver state first second
@@ -1612,6 +1698,9 @@ dragBehaviorFor node =
             Nothing
 
         Point (SegmentIntersection _ _) ->
+            Nothing
+
+        Point (SegmentLineIntersection _ _) ->
             Nothing
 
         Point (CircleIntersection _ _ _) ->
@@ -2149,6 +2238,9 @@ attachmentAction geometryPart world =
                         Nothing
 
                     SegmentIntersection _ _ ->
+                        Nothing
+
+                    SegmentLineIntersection _ _ ->
                         Nothing
 
                     CircleIntersection _ _ _ ->
@@ -2730,6 +2822,9 @@ isDependentOn geometryPart node =
         Point (SegmentIntersection first second) ->
             geometryPart == first || geometryPart == second
 
+        Point (SegmentLineIntersection segment line) ->
+            geometryPart == segment || geometryPart == line
+
         Point (CircleIntersection first second _) ->
             geometryPart == first || geometryPart == second
 
@@ -2763,6 +2858,9 @@ isIntersectionPointExpression : Node -> Bool
 isIntersectionPointExpression node =
     case node of
         Point (SegmentIntersection _ _) ->
+            True
+
+        Point (SegmentLineIntersection _ _) ->
             True
 
         Point (CircleIntersection _ _ _) ->
@@ -2986,6 +3084,13 @@ pointExpressionView expression =
                 [ geometryPartReferenceView first
                 , syntaxToken ", "
                 , geometryPartReferenceView second
+                ]
+
+        SegmentLineIntersection segment line ->
+            constructorCall "segment-line-intersection"
+                [ geometryPartReferenceView segment
+                , syntaxToken ", "
+                , geometryPartReferenceView line
                 ]
 
         LineIntersection first second ->
@@ -3857,6 +3962,22 @@ intersectionPreview model =
                             |> Maybe.map (\point -> [ ( point, True ) ])
                             |> Maybe.withDefault []
 
+                    ( SegmentBody, LineBody ) ->
+                        Maybe.map2 segmentLineIntersection
+                            (segmentBodyFor first model.world)
+                            (lineBodyFor second model.world)
+                            |> Maybe.andThen Result.toMaybe
+                            |> Maybe.map (\point -> [ ( point, True ) ])
+                            |> Maybe.withDefault []
+
+                    ( LineBody, SegmentBody ) ->
+                        Maybe.map2 segmentLineIntersection
+                            (segmentBodyFor second model.world)
+                            (lineBodyFor first model.world)
+                            |> Maybe.andThen Result.toMaybe
+                            |> Maybe.map (\point -> [ ( point, True ) ])
+                            |> Maybe.withDefault []
+
                     ( LineBody, LineBody ) ->
                         Maybe.map2 lineIntersection
                             (lineBodyFor first model.world)
@@ -4023,6 +4144,15 @@ evaluationErrorDescription error =
 
         CoincidentLines first second ->
             "Coincident lines " ++ geometryPartPairDescription first second
+
+        ParallelSegmentAndLine segment line ->
+            "Parallel segment and line " ++ geometryPartPairDescription segment line
+
+        CoincidentSegmentAndLine segment line ->
+            "Coincident segment and line " ++ geometryPartPairDescription segment line
+
+        IntersectionOutsideSegment segment line ->
+            "Line meets outside segment " ++ geometryPartPairDescription segment line
 
         ParallelSegments first second ->
             "Parallel segments " ++ geometryPartPairDescription first second
