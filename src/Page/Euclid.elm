@@ -59,6 +59,7 @@ type PointExpr
     | SegmentLineIntersection GeometryPartRef GeometryPartRef
     | SegmentCircleIntersection GeometryPartRef GeometryPartRef CircleIntersectionBranch
     | LineIntersection GeometryPartRef GeometryPartRef
+    | LineCircleIntersection GeometryPartRef GeometryPartRef CircleIntersectionBranch
     | CircleIntersection GeometryPartRef GeometryPartRef CircleIntersectionBranch
     | OnSegment GeometryPartRef Float
     | OnCircle GeometryPartRef Float
@@ -108,6 +109,7 @@ type EvaluationError
     | ConcentricCircles GeometryPartRef GeometryPartRef
     | CoincidentCircles GeometryPartRef GeometryPartRef
     | SegmentDoesNotMeetCircle GeometryPartRef GeometryPartRef
+    | LineDoesNotMeetCircle GeometryPartRef GeometryPartRef
     | CyclicGeometryReference (List EntityId)
 
 
@@ -876,6 +878,22 @@ intersectionExpression first second pointer world =
         ( LineBody, LineBody ) ->
             Just (LineIntersection first second)
 
+        ( LineBody, CircleBody ) ->
+            Just
+                (LineCircleIntersection
+                    first
+                    second
+                    (lineCircleIntersectionBranchAt pointer first second world)
+                )
+
+        ( CircleBody, LineBody ) ->
+            Just
+                (LineCircleIntersection
+                    second
+                    first
+                    (lineCircleIntersectionBranchAt pointer second first world)
+                )
+
         ( CircleBody, CircleBody ) ->
             Just
                 (CircleIntersection
@@ -995,6 +1013,9 @@ rewritePoint geometryPart pointer world expression =
 
         LineIntersection first second ->
             LineIntersection first second
+
+        LineCircleIntersection line circle branch ->
+            LineCircleIntersection line circle branch
 
         CircleIntersection first second branch ->
             CircleIntersection first second branch
@@ -1574,6 +1595,90 @@ segmentCircleIntersectionPoint branch segment circle =
             Err error
 
 
+lineCircleIntersectionPoints : LineHitTarget -> CircleHitTarget -> Result EvaluationError (List Vec2)
+lineCircleIntersectionPoints line circle =
+    let
+        deltaX =
+            Vec2.getX line.end - Vec2.getX line.start
+
+        deltaY =
+            Vec2.getY line.end - Vec2.getY line.start
+
+        squaredLineLength =
+            deltaX * deltaX + deltaY * deltaY
+    in
+    if squaredLineLength <= intersectionTolerance then
+        Err (LineDoesNotMeetCircle line.ref circle.ref)
+
+    else
+        let
+            offsetX =
+                Vec2.getX line.start - Vec2.getX circle.center
+
+            offsetY =
+                Vec2.getY line.start - Vec2.getY circle.center
+
+            radiusSquared =
+                Vec2.distanceSquared circle.center circle.through
+
+            linearCoefficient =
+                2 * (offsetX * deltaX + offsetY * deltaY)
+
+            constant =
+                offsetX * offsetX + offsetY * offsetY - radiusSquared
+
+            discriminant =
+                linearCoefficient * linearCoefficient - 4 * squaredLineLength * constant
+        in
+        if discriminant < -intersectionTolerance then
+            Err (LineDoesNotMeetCircle line.ref circle.ref)
+
+        else
+            let
+                discriminantRoot =
+                    sqrt (max 0 discriminant)
+
+                firstParameter =
+                    (-linearCoefficient - discriminantRoot) / (2 * squaredLineLength)
+
+                parameters =
+                    if discriminantRoot <= intersectionTolerance then
+                        [ firstParameter ]
+
+                    else
+                        [ firstParameter
+                        , (-linearCoefficient + discriminantRoot) / (2 * squaredLineLength)
+                        ]
+            in
+            Ok
+                (parameters
+                    |> List.map
+                        (\parameter ->
+                            vec2
+                                (Vec2.getX line.start + parameter * deltaX)
+                                (Vec2.getY line.start + parameter * deltaY)
+                        )
+                )
+
+
+lineCircleIntersectionPoint : CircleIntersectionBranch -> LineHitTarget -> CircleHitTarget -> Result EvaluationError Vec2
+lineCircleIntersectionPoint branch line circle =
+    case lineCircleIntersectionPoints line circle of
+        Ok (firstPoint :: remainingPoints) ->
+            case branch of
+                FirstCircleIntersection ->
+                    Ok firstPoint
+
+                SecondCircleIntersection ->
+                    Ok (Maybe.withDefault firstPoint (List.head remainingPoints))
+
+        Ok [] ->
+            Err (LineDoesNotMeetCircle line.ref circle.ref)
+
+        Err error ->
+            Err error
+
+
 onSegmentPosition : GeometryPartRef -> Float -> Geometry -> Result EvaluationError Vec2
 onSegmentPosition geometryPart parameter geometry =
     case ( geometryPart.kind, geometry ) of
@@ -1730,6 +1835,29 @@ evaluateLineIntersection activeResolver state first second =
             ( Err error, stateAfterFirst )
 
 
+evaluateLineCircleIntersection : Resolver -> EvaluationState -> GeometryPartRef -> GeometryPartRef -> CircleIntersectionBranch -> Evaluation Vec2
+evaluateLineCircleIntersection activeResolver state line circle branch =
+    let
+        ( lineResult, stateAfterLine ) =
+            activeResolver.resolveGeometry state line.owner
+    in
+    case lineResult of
+        Ok lineGeometry ->
+            let
+                ( circleResult, stateAfterCircle ) =
+                    activeResolver.resolveGeometry stateAfterLine circle.owner
+            in
+            ( Result.map2 Tuple.pair
+                (lineIntersectionTarget line lineGeometry)
+                (Result.andThen (circleIntersectionTarget circle) circleResult)
+                |> Result.andThen (\( currentLine, currentCircle ) -> lineCircleIntersectionPoint branch currentLine currentCircle)
+            , stateAfterCircle
+            )
+
+        Err error ->
+            ( Err error, stateAfterLine )
+
+
 evaluateCircleIntersection : Resolver -> EvaluationState -> GeometryPartRef -> GeometryPartRef -> CircleIntersectionBranch -> Evaluation Vec2
 evaluateCircleIntersection activeResolver state first second branch =
     let
@@ -1777,6 +1905,9 @@ evaluatePoint activeResolver state expression =
 
         LineIntersection first second ->
             evaluateLineIntersection activeResolver state first second
+
+        LineCircleIntersection line circle branch ->
+            evaluateLineCircleIntersection activeResolver state line circle branch
 
         CircleIntersection first second branch ->
             evaluateCircleIntersection activeResolver state first second branch
@@ -1849,6 +1980,9 @@ dragBehaviorFor node =
             Nothing
 
         Point (LineIntersection _ _) ->
+            Nothing
+
+        Point (LineCircleIntersection _ _ _) ->
             Nothing
 
         Segment _ ->
@@ -2274,6 +2408,24 @@ segmentCircleIntersectionBranchAt pointer segment circle world =
             FirstCircleIntersection
 
 
+lineCircleIntersectionBranchAt : Vec2 -> GeometryPartRef -> GeometryPartRef -> World -> CircleIntersectionBranch
+lineCircleIntersectionBranchAt pointer line circle world =
+    case
+        Maybe.map2 lineCircleIntersectionPoints
+            (lineBodyFor line world)
+            (circleBodyFor circle world)
+    of
+        Just (Ok (firstPoint :: secondPoint :: _)) ->
+            if Vec2.distanceSquared pointer secondPoint < Vec2.distanceSquared pointer firstPoint then
+                SecondCircleIntersection
+
+            else
+                FirstCircleIntersection
+
+        _ ->
+            FirstCircleIntersection
+
+
 intersectionSupportAt : Vec2 -> World -> Maybe GeometryPartRef
 intersectionSupportAt pointer world =
     let
@@ -2407,6 +2559,9 @@ attachmentAction geometryPart world =
                         Nothing
 
                     CircleIntersection _ _ _ ->
+                        Nothing
+
+                    LineCircleIntersection _ _ _ ->
                         Nothing
 
                     LineIntersection _ _ ->
@@ -2994,6 +3149,9 @@ isDependentOn geometryPart node =
         Point (LineIntersection first second) ->
             geometryPart == first || geometryPart == second
 
+        Point (LineCircleIntersection line circle _) ->
+            geometryPart == line || geometryPart == circle
+
         Point (CircleIntersection first second _) ->
             geometryPart == first || geometryPart == second
 
@@ -3033,6 +3191,9 @@ isIntersectionPointExpression node =
             True
 
         Point (LineIntersection _ _) ->
+            True
+
+        Point (LineCircleIntersection _ _ _) ->
             True
 
         Point (CircleIntersection _ _ _) ->
@@ -3276,6 +3437,15 @@ pointExpressionView expression =
                 [ geometryPartReferenceView first
                 , syntaxToken ", "
                 , geometryPartReferenceView second
+                ]
+
+        LineCircleIntersection line circle branch ->
+            constructorCall "line-circle-intersection"
+                [ geometryPartReferenceView line
+                , syntaxToken ", "
+                , geometryPartReferenceView circle
+                , syntaxToken ", "
+                , circleIntersectionBranchView branch
                 ]
 
         CircleIntersection first second branch ->
@@ -4188,6 +4358,38 @@ intersectionPreview model =
                                 )
                             |> Maybe.withDefault []
 
+                    ( LineBody, CircleBody ) ->
+                        Maybe.map2 lineCircleIntersectionPoints
+                            (lineBodyFor first model.world)
+                            (circleBodyFor second model.world)
+                            |> Maybe.andThen Result.toMaybe
+                            |> Maybe.map
+                                (circleIntersectionPreviewPoints
+                                    (lineCircleIntersectionBranchAt
+                                        model.pointerPosition
+                                        first
+                                        second
+                                        model.world
+                                    )
+                                )
+                            |> Maybe.withDefault []
+
+                    ( CircleBody, LineBody ) ->
+                        Maybe.map2 lineCircleIntersectionPoints
+                            (lineBodyFor second model.world)
+                            (circleBodyFor first model.world)
+                            |> Maybe.andThen Result.toMaybe
+                            |> Maybe.map
+                                (circleIntersectionPreviewPoints
+                                    (lineCircleIntersectionBranchAt
+                                        model.pointerPosition
+                                        second
+                                        first
+                                        model.world
+                                    )
+                                )
+                            |> Maybe.withDefault []
+
                     ( LineBody, LineBody ) ->
                         Maybe.map2 lineIntersection
                             (lineBodyFor first model.world)
@@ -4366,6 +4568,9 @@ evaluationErrorDescription error =
 
         SegmentDoesNotMeetCircle segment circle ->
             "Segment does not meet circle " ++ geometryPartPairDescription segment circle
+
+        LineDoesNotMeetCircle line circle ->
+            "Line does not meet circle " ++ geometryPartPairDescription line circle
 
         ParallelSegments first second ->
             "Parallel segments " ++ geometryPartPairDescription first second
