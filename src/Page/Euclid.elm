@@ -1,4 +1,4 @@
-module Page.Euclid exposing (CircleExpr, Components, DragBehavior, EntityId, EvaluationError, Geometry, GeometryPartKind, GeometryPartRef, Interaction, Model, Msg, Node, PlacementCandidate, PointExpr, SegmentExpr, Selectable, Singletons, Tool, World, info, init, subscriptions, update, view)
+module Page.Euclid exposing (CircleExpr, CircleIntersectionBranch, Components, DragBehavior, EntityId, EvaluationError, Geometry, GeometryPartKind, GeometryPartRef, Interaction, LineExpr, Model, Msg, Node, PlacementCandidate, PointExpr, SegmentExpr, Selectable, Singletons, Tool, World, info, init, subscriptions, update, view)
 
 import Dict exposing (Dict)
 import Ecs
@@ -48,18 +48,34 @@ type alias EntityId =
 type Node
     = Point PointExpr
     | Segment SegmentExpr
+    | Line LineExpr
     | Circle CircleExpr
 
 
 type PointExpr
     = Literal Vec2
     | Midpoint GeometryPartRef
+    | SegmentIntersection GeometryPartRef GeometryPartRef
+    | SegmentLineIntersection GeometryPartRef GeometryPartRef
+    | SegmentCircleIntersection GeometryPartRef GeometryPartRef CircleIntersectionBranch
+    | LineIntersection GeometryPartRef GeometryPartRef
+    | LineCircleIntersection GeometryPartRef GeometryPartRef CircleIntersectionBranch
+    | CircleIntersection GeometryPartRef GeometryPartRef CircleIntersectionBranch
     | OnSegment GeometryPartRef Float
     | OnCircle GeometryPartRef Float
 
 
+type CircleIntersectionBranch
+    = FirstCircleIntersection
+    | SecondCircleIntersection
+
+
 type SegmentExpr
     = Between GeometryPartRef GeometryPartRef
+
+
+type LineExpr
+    = Through GeometryPartRef GeometryPartRef
 
 
 type CircleExpr
@@ -69,6 +85,7 @@ type CircleExpr
 type Geometry
     = GPoint Vec2
     | GSegment Vec2 Vec2
+    | GLine Vec2 Vec2
     | GCircle Vec2 Vec2
 
 
@@ -76,6 +93,24 @@ type EvaluationError
     = MissingGeometryOwner EntityId
     | MissingGeometryPart GeometryPartRef
     | ExpectedPointGeometryPart GeometryPartRef
+    | ExpectedSegmentGeometryPart GeometryPartRef
+    | ExpectedLineGeometryPart GeometryPartRef
+    | ExpectedCircleGeometryPart GeometryPartRef
+    | ParallelSegments GeometryPartRef GeometryPartRef
+    | CoincidentSegments GeometryPartRef GeometryPartRef
+    | IntersectionOutsideSegments GeometryPartRef GeometryPartRef
+    | ParallelLines GeometryPartRef GeometryPartRef
+    | CoincidentLines GeometryPartRef GeometryPartRef
+    | ParallelSegmentAndLine GeometryPartRef GeometryPartRef
+    | CoincidentSegmentAndLine GeometryPartRef GeometryPartRef
+    | IntersectionOutsideSegment GeometryPartRef GeometryPartRef
+    | DisjointCircles GeometryPartRef GeometryPartRef
+    | ContainedCircle GeometryPartRef GeometryPartRef
+    | ConcentricCircles GeometryPartRef GeometryPartRef
+    | CoincidentCircles GeometryPartRef GeometryPartRef
+    | SelectedIntersectionOutsideSegment GeometryPartRef GeometryPartRef
+    | SegmentDoesNotMeetCircle GeometryPartRef GeometryPartRef
+    | LineDoesNotMeetCircle GeometryPartRef GeometryPartRef
     | CyclicGeometryReference (List EntityId)
 
 
@@ -147,6 +182,7 @@ type GeometryPartKind
     | SegmentStart
     | SegmentEnd
     | SegmentBody
+    | LineBody
     | CircleBody
 
 
@@ -175,8 +211,10 @@ type Tool
     = SelectTool
     | PointTool
     | SegmentTool
+    | LineTool
     | CircleTool
     | MidpointTool
+    | IntersectionTool
 
 
 type Interaction
@@ -227,12 +265,16 @@ type alias DragState =
 type alias Model =
     { world : World
     , undoHistory : List World
+    , redoHistory : List World
     , interaction : Interaction
     , activeTool : Maybe Tool
     , segmentStart : Maybe GeometryPartRef
     , segmentPreviewEnd : Maybe Vec2
+    , lineStart : Maybe GeometryPartRef
+    , linePreviewEnd : Maybe Vec2
     , circleCenter : Maybe GeometryPartRef
     , circlePreviewThrough : Maybe Vec2
+    , intersectionStart : Maybe GeometryPartRef
     , pointerPosition : Vec2
     }
 
@@ -244,6 +286,7 @@ type alias Model =
 type Msg
     = ToggleTool Tool
     | Undo
+    | Redo
     | PointerMoved Vec2
     | PointerDown Vec2
     | PointerUp Vec2
@@ -259,12 +302,16 @@ init : ( Model, Cmd Msg )
 init =
     ( { world = Ecs.emptyWorld specs.all (Ecs.Singletons1.init 0)
       , undoHistory = []
+      , redoHistory = []
       , interaction = Idle
       , activeTool = Just SelectTool
       , segmentStart = Nothing
       , segmentPreviewEnd = Nothing
+      , lineStart = Nothing
+      , linePreviewEnd = Nothing
       , circleCenter = Nothing
       , circlePreviewThrough = Nothing
+      , intersectionStart = Nothing
       , pointerPosition = vec2 0 0
       }
     , Cmd.none
@@ -289,14 +336,20 @@ update msg model =
                 , interaction = Idle
                 , segmentStart = Nothing
                 , segmentPreviewEnd = Nothing
+                , lineStart = Nothing
+                , linePreviewEnd = Nothing
                 , circleCenter = Nothing
                 , circlePreviewThrough = Nothing
+                , intersectionStart = Nothing
               }
             , Cmd.none
             )
 
         Undo ->
             ( undo model, Cmd.none )
+
+        Redo ->
+            ( redo model, Cmd.none )
 
         PointerDown pointer ->
             ( model
@@ -324,7 +377,10 @@ update msg model =
 
 recordUndoSnapshot : World -> Model -> Model
 recordUndoSnapshot previousWorld model =
-    { model | undoHistory = previousWorld :: model.undoHistory }
+    { model
+        | undoHistory = previousWorld :: model.undoHistory
+        , redoHistory = []
+    }
 
 
 checkpointConstruction : World -> Model -> Model
@@ -361,6 +417,20 @@ cancelPointerGesture model =
     checkpointCompletedGesture model { model | interaction = Idle }
 
 
+clearTransientInteraction : Model -> Model
+clearTransientInteraction model =
+    { model
+        | interaction = Idle
+        , segmentStart = Nothing
+        , segmentPreviewEnd = Nothing
+        , lineStart = Nothing
+        , linePreviewEnd = Nothing
+        , circleCenter = Nothing
+        , circlePreviewThrough = Nothing
+        , intersectionStart = Nothing
+    }
+
+
 undo : Model -> Model
 undo model =
     case model.undoHistory of
@@ -368,12 +438,24 @@ undo model =
             { model
                 | world = derivedComponentsSystem previousWorld
                 , undoHistory = remainingHistory
-                , interaction = Idle
-                , segmentStart = Nothing
-                , segmentPreviewEnd = Nothing
-                , circleCenter = Nothing
-                , circlePreviewThrough = Nothing
+                , redoHistory = model.world :: model.redoHistory
             }
+                |> clearTransientInteraction
+
+        [] ->
+            model
+
+
+redo : Model -> Model
+redo model =
+    case model.redoHistory of
+        nextWorld :: remainingHistory ->
+            { model
+                | world = derivedComponentsSystem nextWorld
+                , undoHistory = model.world :: model.undoHistory
+                , redoHistory = remainingHistory
+            }
+                |> clearTransientInteraction
 
         [] ->
             model
@@ -395,11 +477,17 @@ startInteraction pointer model =
         Just SegmentTool ->
             startSegment pointer model
 
+        Just LineTool ->
+            startLine pointer model
+
         Just CircleTool ->
             startCircle pointer model
 
         Just MidpointTool ->
             startMidpoint pointer model
+
+        Just IntersectionTool ->
+            startIntersection pointer model
 
         Nothing ->
             model
@@ -481,6 +569,38 @@ startSegment pointer model =
             }
 
 
+startLine : Vec2 -> Model -> Model
+startLine pointer model =
+    let
+        ( geometryPart, world ) =
+            pointAtOrCreate pointer model.world
+    in
+    case model.lineStart of
+        Just start ->
+            if start == geometryPart then
+                { model
+                    | world = world
+                    , interaction = Hovering geometryPart
+                    , linePreviewEnd = Just pointer
+                }
+
+            else
+                { model
+                    | world = addLine start geometryPart world
+                    , interaction = Hovering geometryPart
+                    , lineStart = Nothing
+                    , linePreviewEnd = Nothing
+                }
+
+        Nothing ->
+            { model
+                | world = world
+                , interaction = Hovering geometryPart
+                , lineStart = Just geometryPart
+                , linePreviewEnd = Just pointer
+            }
+
+
 startCircle : Vec2 -> Model -> Model
 startCircle pointer model =
     let
@@ -521,6 +641,40 @@ startMidpoint pointer model =
                 | world = addMidpoint segment model.world
                 , interaction = Hovering segment
             }
+
+        Nothing ->
+            { model | interaction = Idle }
+
+
+startIntersection : Vec2 -> Model -> Model
+startIntersection pointer model =
+    case intersectionSupportAt pointer model.world of
+        Just support ->
+            case model.intersectionStart of
+                Just first ->
+                    if first == support then
+                        { model | interaction = Hovering support }
+
+                    else
+                        case intersectionExpression first support pointer model.world of
+                            Just expression ->
+                                { model
+                                    | world = addIntersection expression model.world
+                                    , interaction = Hovering support
+                                    , intersectionStart = Nothing
+                                }
+
+                            Nothing ->
+                                { model
+                                    | interaction = Hovering support
+                                    , intersectionStart = Just support
+                                }
+
+                Nothing ->
+                    { model
+                        | interaction = Hovering support
+                        , intersectionStart = Just support
+                    }
 
         Nothing ->
             { model | interaction = Idle }
@@ -584,6 +738,13 @@ movePointer pointer model =
                         , pointerPosition = pointer
                     }
 
+                Just LineTool ->
+                    { model
+                        | interaction = interactionAt pointer model.world
+                        , linePreviewEnd = Just pointer
+                        , pointerPosition = pointer
+                    }
+
                 Just CircleTool ->
                     { model
                         | interaction = interactionAt pointer model.world
@@ -594,6 +755,12 @@ movePointer pointer model =
                 Just MidpointTool ->
                     { model
                         | interaction = midpointInteractionAt pointer model.world
+                        , pointerPosition = pointer
+                    }
+
+                Just IntersectionTool ->
+                    { model
+                        | interaction = intersectionInteractionAt pointer model.world
                         , pointerPosition = pointer
                     }
 
@@ -629,6 +796,12 @@ endInteraction pointer model =
                 , segmentPreviewEnd = Just pointer
             }
 
+        Just LineTool ->
+            { model
+                | interaction = interactionAt pointer model.world
+                , linePreviewEnd = Just pointer
+            }
+
         Just CircleTool ->
             { model
                 | interaction = interactionAt pointer model.world
@@ -637,6 +810,9 @@ endInteraction pointer model =
 
         Just MidpointTool ->
             { model | interaction = midpointInteractionAt pointer model.world }
+
+        Just IntersectionTool ->
+            { model | interaction = intersectionInteractionAt pointer model.world }
 
         _ ->
             { model | interaction = Idle }
@@ -672,6 +848,79 @@ addMidpoint segment world =
         |> derivedComponentsSystem
 
 
+intersectionExpression : GeometryPartRef -> GeometryPartRef -> Vec2 -> World -> Maybe PointExpr
+intersectionExpression first second pointer world =
+    case ( first.kind, second.kind ) of
+        ( SegmentBody, SegmentBody ) ->
+            Just (SegmentIntersection first second)
+
+        ( SegmentBody, LineBody ) ->
+            Just (SegmentLineIntersection first second)
+
+        ( SegmentBody, CircleBody ) ->
+            Just
+                (SegmentCircleIntersection
+                    first
+                    second
+                    (segmentCircleIntersectionBranchAt pointer first second world)
+                )
+
+        ( CircleBody, SegmentBody ) ->
+            Just
+                (SegmentCircleIntersection
+                    second
+                    first
+                    (segmentCircleIntersectionBranchAt pointer second first world)
+                )
+
+        ( LineBody, SegmentBody ) ->
+            Just (SegmentLineIntersection second first)
+
+        ( LineBody, LineBody ) ->
+            Just (LineIntersection first second)
+
+        ( LineBody, CircleBody ) ->
+            Just
+                (LineCircleIntersection
+                    first
+                    second
+                    (lineCircleIntersectionBranchAt pointer first second world)
+                )
+
+        ( CircleBody, LineBody ) ->
+            Just
+                (LineCircleIntersection
+                    second
+                    first
+                    (lineCircleIntersectionBranchAt pointer second first world)
+                )
+
+        ( CircleBody, CircleBody ) ->
+            Just
+                (CircleIntersection
+                    first
+                    second
+                    (circleIntersectionBranchAt pointer first second world)
+                )
+
+        _ ->
+            Nothing
+
+
+addIntersection : PointExpr -> World -> World
+addIntersection expression world =
+    let
+        entityId =
+            Ecs.getSingleton specs.nextEntityId world
+    in
+    world
+        |> Ecs.insertEntity entityId
+        |> Ecs.insertComponent specs.expression (Point expression)
+        |> Ecs.insertComponent specs.selectable Selectable
+        |> Ecs.updateSingleton specs.nextEntityId (\id -> id + 1)
+        |> derivedComponentsSystem
+
+
 addSegment : GeometryPartRef -> GeometryPartRef -> World -> World
 addSegment start end world =
     let
@@ -681,6 +930,20 @@ addSegment start end world =
     world
         |> Ecs.insertEntity entityId
         |> Ecs.insertComponent specs.expression (Segment (Between start end))
+        |> Ecs.insertComponent specs.selectable Selectable
+        |> Ecs.updateSingleton specs.nextEntityId (\id -> id + 1)
+        |> derivedComponentsSystem
+
+
+addLine : GeometryPartRef -> GeometryPartRef -> World -> World
+addLine start end world =
+    let
+        entityId =
+            Ecs.getSingleton specs.nextEntityId world
+    in
+    world
+        |> Ecs.insertEntity entityId
+        |> Ecs.insertComponent specs.expression (Line (Through start end))
         |> Ecs.insertComponent specs.selectable Selectable
         |> Ecs.updateSingleton specs.nextEntityId (\id -> id + 1)
         |> derivedComponentsSystem
@@ -739,6 +1002,24 @@ rewritePoint geometryPart pointer world expression =
 
         Midpoint support ->
             Midpoint support
+
+        SegmentIntersection first second ->
+            SegmentIntersection first second
+
+        SegmentLineIntersection segment line ->
+            SegmentLineIntersection segment line
+
+        SegmentCircleIntersection segment circle branch ->
+            SegmentCircleIntersection segment circle branch
+
+        LineIntersection first second ->
+            LineIntersection first second
+
+        LineCircleIntersection line circle branch ->
+            LineCircleIntersection line circle branch
+
+        CircleIntersection first second branch ->
+            CircleIntersection first second branch
 
 
 dragSystem : GeometryPartRef -> Vec2 -> World -> World
@@ -831,6 +1112,9 @@ evaluateNode activeResolver state node =
         Segment expression ->
             evaluateSegment activeResolver state expression
 
+        Line expression ->
+            evaluateLine activeResolver state expression
+
         Circle expression ->
             evaluateCircle activeResolver state expression
 
@@ -850,6 +1134,26 @@ evaluateSegment activeResolver state expression =
                             activeResolver.resolvePointPart endRef stateAfterStart
                     in
                     ( Result.map (GSegment start) endResult, stateAfterEnd )
+
+                Err error ->
+                    ( Err error, stateAfterStart )
+
+
+evaluateLine : Resolver -> EvaluationState -> LineExpr -> Evaluation Geometry
+evaluateLine activeResolver state expression =
+    case expression of
+        Through startRef endRef ->
+            let
+                ( startResult, stateAfterStart ) =
+                    activeResolver.resolvePointPart startRef state
+            in
+            case startResult of
+                Ok start ->
+                    let
+                        ( endResult, stateAfterEnd ) =
+                            activeResolver.resolvePointPart endRef stateAfterStart
+                    in
+                    ( Result.map (GLine start) endResult, stateAfterEnd )
 
                 Err error ->
                     ( Err error, stateAfterStart )
@@ -910,6 +1214,496 @@ midpointPosition geometryPart geometry =
             geometryPartError geometryPart geometry
 
 
+segmentIntersectionTarget : GeometryPartRef -> Geometry -> Result EvaluationError SegmentHitTarget
+segmentIntersectionTarget geometryPart geometry =
+    case ( geometryPart.kind, geometry ) of
+        ( SegmentBody, GSegment start end ) ->
+            Ok { ref = geometryPart, start = start, end = end }
+
+        _ ->
+            if hasGeometryPart geometryPart.kind geometry then
+                Err (ExpectedSegmentGeometryPart geometryPart)
+
+            else
+                Err (MissingGeometryPart geometryPart)
+
+
+lineIntersectionTarget : GeometryPartRef -> Geometry -> Result EvaluationError LineHitTarget
+lineIntersectionTarget geometryPart geometry =
+    case ( geometryPart.kind, geometry ) of
+        ( LineBody, GLine start end ) ->
+            Ok { ref = geometryPart, start = start, end = end }
+
+        _ ->
+            if hasGeometryPart geometryPart.kind geometry then
+                Err (ExpectedLineGeometryPart geometryPart)
+
+            else
+                Err (MissingGeometryPart geometryPart)
+
+
+lineIntersection : LineHitTarget -> LineHitTarget -> Result EvaluationError Vec2
+lineIntersection first second =
+    let
+        firstDeltaX =
+            Vec2.getX first.end - Vec2.getX first.start
+
+        firstDeltaY =
+            Vec2.getY first.end - Vec2.getY first.start
+
+        secondDeltaX =
+            Vec2.getX second.end - Vec2.getX second.start
+
+        secondDeltaY =
+            Vec2.getY second.end - Vec2.getY second.start
+
+        offsetX =
+            Vec2.getX second.start - Vec2.getX first.start
+
+        offsetY =
+            Vec2.getY second.start - Vec2.getY first.start
+
+        denominator =
+            crossProduct firstDeltaX firstDeltaY secondDeltaX secondDeltaY
+    in
+    if abs denominator <= intersectionTolerance then
+        let
+            colinearity =
+                crossProduct offsetX offsetY firstDeltaX firstDeltaY
+        in
+        if abs colinearity <= intersectionTolerance then
+            Err (CoincidentLines first.ref second.ref)
+
+        else
+            Err (ParallelLines first.ref second.ref)
+
+    else
+        let
+            parameter =
+                crossProduct offsetX offsetY secondDeltaX secondDeltaY / denominator
+        in
+        Ok
+            (vec2
+                (Vec2.getX first.start + parameter * firstDeltaX)
+                (Vec2.getY first.start + parameter * firstDeltaY)
+            )
+
+
+segmentLineIntersection : SegmentHitTarget -> LineHitTarget -> Result EvaluationError Vec2
+segmentLineIntersection segment line =
+    let
+        segmentDeltaX =
+            Vec2.getX segment.end - Vec2.getX segment.start
+
+        segmentDeltaY =
+            Vec2.getY segment.end - Vec2.getY segment.start
+
+        lineDeltaX =
+            Vec2.getX line.end - Vec2.getX line.start
+
+        lineDeltaY =
+            Vec2.getY line.end - Vec2.getY line.start
+
+        offsetX =
+            Vec2.getX line.start - Vec2.getX segment.start
+
+        offsetY =
+            Vec2.getY line.start - Vec2.getY segment.start
+
+        denominator =
+            crossProduct segmentDeltaX segmentDeltaY lineDeltaX lineDeltaY
+    in
+    if abs denominator <= intersectionTolerance then
+        let
+            colinearity =
+                crossProduct offsetX offsetY segmentDeltaX segmentDeltaY
+        in
+        if abs colinearity <= intersectionTolerance then
+            Err (CoincidentSegmentAndLine segment.ref line.ref)
+
+        else
+            Err (ParallelSegmentAndLine segment.ref line.ref)
+
+    else
+        let
+            intersectionParameter =
+                crossProduct offsetX offsetY lineDeltaX lineDeltaY / denominator
+        in
+        if isWithinSegmentParameter intersectionParameter then
+            Ok (pointOnSegment (clamp 0 1 intersectionParameter) segment.start segment.end)
+
+        else
+            Err (IntersectionOutsideSegment segment.ref line.ref)
+
+
+circleIntersectionTarget : GeometryPartRef -> Geometry -> Result EvaluationError CircleHitTarget
+circleIntersectionTarget geometryPart geometry =
+    case ( geometryPart.kind, geometry ) of
+        ( CircleBody, GCircle center through ) ->
+            Ok { ref = geometryPart, center = center, through = through }
+
+        _ ->
+            if hasGeometryPart geometryPart.kind geometry then
+                Err (ExpectedCircleGeometryPart geometryPart)
+
+            else
+                Err (MissingGeometryPart geometryPart)
+
+
+intersectionTolerance : Float
+intersectionTolerance =
+    0.000001
+
+
+isWithinSegmentParameter : Float -> Bool
+isWithinSegmentParameter parameter =
+    parameter >= -intersectionTolerance && parameter <= 1 + intersectionTolerance
+
+
+crossProduct : Float -> Float -> Float -> Float -> Float
+crossProduct firstX firstY secondX secondY =
+    firstX * secondY - firstY * secondX
+
+
+segmentIntersection : SegmentHitTarget -> SegmentHitTarget -> Result EvaluationError Vec2
+segmentIntersection first second =
+    let
+        firstDeltaX =
+            Vec2.getX first.end - Vec2.getX first.start
+
+        firstDeltaY =
+            Vec2.getY first.end - Vec2.getY first.start
+
+        secondDeltaX =
+            Vec2.getX second.end - Vec2.getX second.start
+
+        secondDeltaY =
+            Vec2.getY second.end - Vec2.getY second.start
+
+        offsetX =
+            Vec2.getX second.start - Vec2.getX first.start
+
+        offsetY =
+            Vec2.getY second.start - Vec2.getY first.start
+
+        denominator =
+            crossProduct firstDeltaX firstDeltaY secondDeltaX secondDeltaY
+    in
+    if abs denominator <= intersectionTolerance then
+        let
+            colinearity =
+                crossProduct offsetX offsetY firstDeltaX firstDeltaY
+        in
+        if abs colinearity <= intersectionTolerance then
+            Err (CoincidentSegments first.ref second.ref)
+
+        else
+            Err (ParallelSegments first.ref second.ref)
+
+    else
+        let
+            firstParameter =
+                crossProduct offsetX offsetY secondDeltaX secondDeltaY / denominator
+
+            secondParameter =
+                crossProduct offsetX offsetY firstDeltaX firstDeltaY / denominator
+        in
+        if isWithinSegmentParameter firstParameter && isWithinSegmentParameter secondParameter then
+            Ok
+                (pointOnSegment
+                    (clamp 0 1 firstParameter)
+                    first.start
+                    first.end
+                )
+
+        else
+            Err (IntersectionOutsideSegments first.ref second.ref)
+
+
+circleIntersectionPoints : CircleHitTarget -> CircleHitTarget -> Result EvaluationError (List Vec2)
+circleIntersectionPoints first second =
+    let
+        firstRadius =
+            sqrt (Vec2.distanceSquared first.center first.through)
+
+        secondRadius =
+            sqrt (Vec2.distanceSquared second.center second.through)
+
+        deltaX =
+            Vec2.getX second.center - Vec2.getX first.center
+
+        deltaY =
+            Vec2.getY second.center - Vec2.getY first.center
+
+        centerDistance =
+            sqrt (deltaX * deltaX + deltaY * deltaY)
+
+        radiusDifference =
+            abs (firstRadius - secondRadius)
+    in
+    if centerDistance <= intersectionTolerance then
+        if radiusDifference <= intersectionTolerance then
+            Err (CoincidentCircles first.ref second.ref)
+
+        else
+            Err (ConcentricCircles first.ref second.ref)
+
+    else if centerDistance > firstRadius + secondRadius + intersectionTolerance then
+        Err (DisjointCircles first.ref second.ref)
+
+    else if centerDistance < radiusDifference - intersectionTolerance then
+        Err (ContainedCircle first.ref second.ref)
+
+    else
+        let
+            distanceToChord =
+                (firstRadius * firstRadius - secondRadius * secondRadius + centerDistance * centerDistance)
+                    / (2 * centerDistance)
+
+            chordHeight =
+                sqrt (max 0 (firstRadius * firstRadius - distanceToChord * distanceToChord))
+
+            chordCenter =
+                vec2
+                    (Vec2.getX first.center + distanceToChord * deltaX / centerDistance)
+                    (Vec2.getY first.center + distanceToChord * deltaY / centerDistance)
+        in
+        if chordHeight <= intersectionTolerance then
+            Ok [ chordCenter ]
+
+        else
+            let
+                firstPoint =
+                    vec2
+                        (Vec2.getX chordCenter - chordHeight * deltaY / centerDistance)
+                        (Vec2.getY chordCenter + chordHeight * deltaX / centerDistance)
+
+                secondPoint =
+                    vec2
+                        (Vec2.getX chordCenter + chordHeight * deltaY / centerDistance)
+                        (Vec2.getY chordCenter - chordHeight * deltaX / centerDistance)
+            in
+            Ok [ firstPoint, secondPoint ]
+
+
+circleIntersectionPoint : CircleIntersectionBranch -> CircleHitTarget -> CircleHitTarget -> Result EvaluationError Vec2
+circleIntersectionPoint branch first second =
+    case circleIntersectionPoints first second of
+        Ok (firstPoint :: remainingPoints) ->
+            case branch of
+                FirstCircleIntersection ->
+                    Ok firstPoint
+
+                SecondCircleIntersection ->
+                    Ok (Maybe.withDefault firstPoint (List.head remainingPoints))
+
+        Ok [] ->
+            Err (DisjointCircles first.ref second.ref)
+
+        Err error ->
+            Err error
+
+
+type alias SegmentCircleIntersectionRoot =
+    { branch : CircleIntersectionBranch
+    , parameter : Float
+    , position : Vec2
+    }
+
+
+segmentCircleIntersectionRoots : SegmentHitTarget -> CircleHitTarget -> Result EvaluationError (List SegmentCircleIntersectionRoot)
+segmentCircleIntersectionRoots segment circle =
+    let
+        deltaX =
+            Vec2.getX segment.end - Vec2.getX segment.start
+
+        deltaY =
+            Vec2.getY segment.end - Vec2.getY segment.start
+
+        radiusSquared =
+            Vec2.distanceSquared circle.center circle.through
+
+        squaredSegmentLength =
+            deltaX * deltaX + deltaY * deltaY
+
+        root branch parameter =
+            { branch = branch
+            , parameter = parameter
+            , position = pointOnSegment parameter segment.start segment.end
+            }
+    in
+    if squaredSegmentLength <= intersectionTolerance then
+        if abs (Vec2.distanceSquared segment.start circle.center - radiusSquared) <= intersectionTolerance then
+            Ok [ root FirstCircleIntersection 0 ]
+
+        else
+            Err (SegmentDoesNotMeetCircle segment.ref circle.ref)
+
+    else
+        let
+            offsetX =
+                Vec2.getX segment.start - Vec2.getX circle.center
+
+            offsetY =
+                Vec2.getY segment.start - Vec2.getY circle.center
+
+            linearCoefficient =
+                2 * (offsetX * deltaX + offsetY * deltaY)
+
+            constant =
+                offsetX * offsetX + offsetY * offsetY - radiusSquared
+
+            discriminant =
+                linearCoefficient * linearCoefficient - 4 * squaredSegmentLength * constant
+        in
+        if discriminant < -intersectionTolerance then
+            Err (SegmentDoesNotMeetCircle segment.ref circle.ref)
+
+        else
+            let
+                discriminantRoot =
+                    sqrt (max 0 discriminant)
+
+                firstParameter =
+                    (-linearCoefficient - discriminantRoot) / (2 * squaredSegmentLength)
+            in
+            if discriminantRoot <= intersectionTolerance then
+                Ok [ root FirstCircleIntersection firstParameter ]
+
+            else
+                Ok
+                    [ root FirstCircleIntersection firstParameter
+                    , root
+                        SecondCircleIntersection
+                        ((-linearCoefficient + discriminantRoot) / (2 * squaredSegmentLength))
+                    ]
+
+
+segmentCircleIntersectionCandidates : SegmentHitTarget -> CircleHitTarget -> Result EvaluationError (List SegmentCircleIntersectionRoot)
+segmentCircleIntersectionCandidates segment circle =
+    case segmentCircleIntersectionRoots segment circle of
+        Ok roots ->
+            case List.filter (.parameter >> isWithinSegmentParameter) roots of
+                [] ->
+                    Err (SegmentDoesNotMeetCircle segment.ref circle.ref)
+
+                candidates ->
+                    Ok candidates
+
+        Err error ->
+            Err error
+
+
+segmentCircleIntersectionPoint : CircleIntersectionBranch -> SegmentHitTarget -> CircleHitTarget -> Result EvaluationError Vec2
+segmentCircleIntersectionPoint branch segment circle =
+    case segmentCircleIntersectionRoots segment circle of
+        Ok (firstRoot :: remainingRoots) ->
+            let
+                root =
+                    case branch of
+                        FirstCircleIntersection ->
+                            firstRoot
+
+                        SecondCircleIntersection ->
+                            Maybe.withDefault firstRoot (List.head remainingRoots)
+            in
+            if isWithinSegmentParameter root.parameter then
+                Ok root.position
+
+            else
+                Err (SelectedIntersectionOutsideSegment segment.ref circle.ref)
+
+        Ok [] ->
+            Err (SegmentDoesNotMeetCircle segment.ref circle.ref)
+
+        Err error ->
+            Err error
+
+
+lineCircleIntersectionPoints : LineHitTarget -> CircleHitTarget -> Result EvaluationError (List Vec2)
+lineCircleIntersectionPoints line circle =
+    let
+        deltaX =
+            Vec2.getX line.end - Vec2.getX line.start
+
+        deltaY =
+            Vec2.getY line.end - Vec2.getY line.start
+
+        squaredLineLength =
+            deltaX * deltaX + deltaY * deltaY
+    in
+    if squaredLineLength <= intersectionTolerance then
+        Err (LineDoesNotMeetCircle line.ref circle.ref)
+
+    else
+        let
+            offsetX =
+                Vec2.getX line.start - Vec2.getX circle.center
+
+            offsetY =
+                Vec2.getY line.start - Vec2.getY circle.center
+
+            radiusSquared =
+                Vec2.distanceSquared circle.center circle.through
+
+            linearCoefficient =
+                2 * (offsetX * deltaX + offsetY * deltaY)
+
+            constant =
+                offsetX * offsetX + offsetY * offsetY - radiusSquared
+
+            discriminant =
+                linearCoefficient * linearCoefficient - 4 * squaredLineLength * constant
+        in
+        if discriminant < -intersectionTolerance then
+            Err (LineDoesNotMeetCircle line.ref circle.ref)
+
+        else
+            let
+                discriminantRoot =
+                    sqrt (max 0 discriminant)
+
+                firstParameter =
+                    (-linearCoefficient - discriminantRoot) / (2 * squaredLineLength)
+
+                parameters =
+                    if discriminantRoot <= intersectionTolerance then
+                        [ firstParameter ]
+
+                    else
+                        [ firstParameter
+                        , (-linearCoefficient + discriminantRoot) / (2 * squaredLineLength)
+                        ]
+            in
+            Ok
+                (parameters
+                    |> List.map
+                        (\parameter ->
+                            vec2
+                                (Vec2.getX line.start + parameter * deltaX)
+                                (Vec2.getY line.start + parameter * deltaY)
+                        )
+                )
+
+
+lineCircleIntersectionPoint : CircleIntersectionBranch -> LineHitTarget -> CircleHitTarget -> Result EvaluationError Vec2
+lineCircleIntersectionPoint branch line circle =
+    case lineCircleIntersectionPoints line circle of
+        Ok (firstPoint :: remainingPoints) ->
+            case branch of
+                FirstCircleIntersection ->
+                    Ok firstPoint
+
+                SecondCircleIntersection ->
+                    Ok (Maybe.withDefault firstPoint (List.head remainingPoints))
+
+        Ok [] ->
+            Err (LineDoesNotMeetCircle line.ref circle.ref)
+
+        Err error ->
+            Err error
+
+
 onSegmentPosition : GeometryPartRef -> Float -> Geometry -> Result EvaluationError Vec2
 onSegmentPosition geometryPart parameter geometry =
     case ( geometryPart.kind, geometry ) of
@@ -948,6 +1742,9 @@ hasGeometryPart geometryPartKind geometry =
         GSegment _ _ ->
             List.member geometryPartKind [ SegmentStart, SegmentEnd, SegmentBody ]
 
+        GLine _ _ ->
+            geometryPartKind == LineBody
+
         GCircle _ _ ->
             geometryPartKind == CircleBody
 
@@ -971,6 +1768,144 @@ cyclePathFrom entityId entityIds =
                 cyclePathFrom entityId remaining
 
 
+evaluateSegmentIntersection : Resolver -> EvaluationState -> GeometryPartRef -> GeometryPartRef -> Evaluation Vec2
+evaluateSegmentIntersection activeResolver state first second =
+    let
+        ( firstResult, stateAfterFirst ) =
+            activeResolver.resolveGeometry state first.owner
+    in
+    case firstResult of
+        Ok firstGeometry ->
+            let
+                ( secondResult, stateAfterSecond ) =
+                    activeResolver.resolveGeometry stateAfterFirst second.owner
+            in
+            ( Result.map2 Tuple.pair
+                (segmentIntersectionTarget first firstGeometry)
+                (Result.andThen (segmentIntersectionTarget second) secondResult)
+                |> Result.andThen (\( firstSegment, secondSegment ) -> segmentIntersection firstSegment secondSegment)
+            , stateAfterSecond
+            )
+
+        Err error ->
+            ( Err error, stateAfterFirst )
+
+
+evaluateSegmentLineIntersection : Resolver -> EvaluationState -> GeometryPartRef -> GeometryPartRef -> Evaluation Vec2
+evaluateSegmentLineIntersection activeResolver state segment line =
+    let
+        ( segmentResult, stateAfterSegment ) =
+            activeResolver.resolveGeometry state segment.owner
+    in
+    case segmentResult of
+        Ok segmentGeometry ->
+            let
+                ( lineResult, stateAfterLine ) =
+                    activeResolver.resolveGeometry stateAfterSegment line.owner
+            in
+            ( Result.map2 Tuple.pair
+                (segmentIntersectionTarget segment segmentGeometry)
+                (Result.andThen (lineIntersectionTarget line) lineResult)
+                |> Result.andThen (\( currentSegment, currentLine ) -> segmentLineIntersection currentSegment currentLine)
+            , stateAfterLine
+            )
+
+        Err error ->
+            ( Err error, stateAfterSegment )
+
+
+evaluateSegmentCircleIntersection : Resolver -> EvaluationState -> GeometryPartRef -> GeometryPartRef -> CircleIntersectionBranch -> Evaluation Vec2
+evaluateSegmentCircleIntersection activeResolver state segment circle branch =
+    let
+        ( segmentResult, stateAfterSegment ) =
+            activeResolver.resolveGeometry state segment.owner
+    in
+    case segmentResult of
+        Ok segmentGeometry ->
+            let
+                ( circleResult, stateAfterCircle ) =
+                    activeResolver.resolveGeometry stateAfterSegment circle.owner
+            in
+            ( Result.map2 Tuple.pair
+                (segmentIntersectionTarget segment segmentGeometry)
+                (Result.andThen (circleIntersectionTarget circle) circleResult)
+                |> Result.andThen (\( currentSegment, currentCircle ) -> segmentCircleIntersectionPoint branch currentSegment currentCircle)
+            , stateAfterCircle
+            )
+
+        Err error ->
+            ( Err error, stateAfterSegment )
+
+
+evaluateLineIntersection : Resolver -> EvaluationState -> GeometryPartRef -> GeometryPartRef -> Evaluation Vec2
+evaluateLineIntersection activeResolver state first second =
+    let
+        ( firstResult, stateAfterFirst ) =
+            activeResolver.resolveGeometry state first.owner
+    in
+    case firstResult of
+        Ok firstGeometry ->
+            let
+                ( secondResult, stateAfterSecond ) =
+                    activeResolver.resolveGeometry stateAfterFirst second.owner
+            in
+            ( Result.map2 Tuple.pair
+                (lineIntersectionTarget first firstGeometry)
+                (Result.andThen (lineIntersectionTarget second) secondResult)
+                |> Result.andThen (\( firstLine, secondLine ) -> lineIntersection firstLine secondLine)
+            , stateAfterSecond
+            )
+
+        Err error ->
+            ( Err error, stateAfterFirst )
+
+
+evaluateLineCircleIntersection : Resolver -> EvaluationState -> GeometryPartRef -> GeometryPartRef -> CircleIntersectionBranch -> Evaluation Vec2
+evaluateLineCircleIntersection activeResolver state line circle branch =
+    let
+        ( lineResult, stateAfterLine ) =
+            activeResolver.resolveGeometry state line.owner
+    in
+    case lineResult of
+        Ok lineGeometry ->
+            let
+                ( circleResult, stateAfterCircle ) =
+                    activeResolver.resolveGeometry stateAfterLine circle.owner
+            in
+            ( Result.map2 Tuple.pair
+                (lineIntersectionTarget line lineGeometry)
+                (Result.andThen (circleIntersectionTarget circle) circleResult)
+                |> Result.andThen (\( currentLine, currentCircle ) -> lineCircleIntersectionPoint branch currentLine currentCircle)
+            , stateAfterCircle
+            )
+
+        Err error ->
+            ( Err error, stateAfterLine )
+
+
+evaluateCircleIntersection : Resolver -> EvaluationState -> GeometryPartRef -> GeometryPartRef -> CircleIntersectionBranch -> Evaluation Vec2
+evaluateCircleIntersection activeResolver state first second branch =
+    let
+        ( firstResult, stateAfterFirst ) =
+            activeResolver.resolveGeometry state first.owner
+    in
+    case firstResult of
+        Ok firstGeometry ->
+            let
+                ( secondResult, stateAfterSecond ) =
+                    activeResolver.resolveGeometry stateAfterFirst second.owner
+            in
+            ( Result.map2 Tuple.pair
+                (circleIntersectionTarget first firstGeometry)
+                (Result.andThen (circleIntersectionTarget second) secondResult)
+                |> Result.andThen (\( firstCircle, secondCircle ) -> circleIntersectionPoint branch firstCircle secondCircle)
+            , stateAfterSecond
+            )
+
+        Err error ->
+            ( Err error, stateAfterFirst )
+
+
 evaluatePoint : Resolver -> EvaluationState -> PointExpr -> Evaluation Vec2
 evaluatePoint activeResolver state expression =
     case expression of
@@ -983,6 +1918,24 @@ evaluatePoint activeResolver state expression =
                     activeResolver.resolveGeometry state segment.owner
             in
             ( Result.andThen (midpointPosition segment) segmentResult, evaluatedState )
+
+        SegmentIntersection first second ->
+            evaluateSegmentIntersection activeResolver state first second
+
+        SegmentLineIntersection segment line ->
+            evaluateSegmentLineIntersection activeResolver state segment line
+
+        SegmentCircleIntersection segment circle branch ->
+            evaluateSegmentCircleIntersection activeResolver state segment circle branch
+
+        LineIntersection first second ->
+            evaluateLineIntersection activeResolver state first second
+
+        LineCircleIntersection line circle branch ->
+            evaluateLineCircleIntersection activeResolver state line circle branch
+
+        CircleIntersection first second branch ->
+            evaluateCircleIntersection activeResolver state first second branch
 
         OnSegment segment parameter ->
             let
@@ -1039,7 +1992,28 @@ dragBehaviorFor node =
         Point (Midpoint _) ->
             Nothing
 
+        Point (SegmentIntersection _ _) ->
+            Nothing
+
+        Point (SegmentLineIntersection _ _) ->
+            Nothing
+
+        Point (SegmentCircleIntersection _ _ _) ->
+            Nothing
+
+        Point (CircleIntersection _ _ _) ->
+            Nothing
+
+        Point (LineIntersection _ _) ->
+            Nothing
+
+        Point (LineCircleIntersection _ _ _) ->
+            Nothing
+
         Segment _ ->
+            Nothing
+
+        Line _ ->
             Nothing
 
         Circle _ ->
@@ -1097,11 +2071,21 @@ geometryPartsOf entityId geometry =
               }
             ]
 
+        GLine _ _ ->
+            []
+
         GCircle _ _ ->
             []
 
 
 type alias SegmentHitTarget =
+    { ref : GeometryPartRef
+    , start : Vec2
+    , end : Vec2
+    }
+
+
+type alias LineHitTarget =
     { ref : GeometryPartRef
     , start : Vec2
     , end : Vec2
@@ -1139,6 +2123,27 @@ segmentBodiesIn world =
             case evaluated of
                 Ok (GSegment start end) ->
                     { ref = { owner = entityId, kind = SegmentBody }
+                    , start = start
+                    , end = end
+                    }
+                        :: accumulator
+
+                _ ->
+                    accumulator
+        )
+        []
+        world
+
+
+lineBodiesIn : World -> List LineHitTarget
+lineBodiesIn world =
+    Ecs.EntityComponents.foldFromRight2
+        specs.selectable
+        specs.evaluated
+        (\entityId _ evaluated accumulator ->
+            case evaluated of
+                Ok (GLine start end) ->
+                    { ref = { owner = entityId, kind = LineBody }
                     , start = start
                     , end = end
                     }
@@ -1347,8 +2352,11 @@ geometryPartKindOrder kind =
         SegmentBody ->
             3
 
-        CircleBody ->
+        LineBody ->
             4
+
+        CircleBody ->
+            5
 
 
 placementPosition : PlacementCandidate -> Vec2
@@ -1375,11 +2383,116 @@ segmentBodyFor support world =
         |> List.head
 
 
+lineBodyFor : GeometryPartRef -> World -> Maybe LineHitTarget
+lineBodyFor support world =
+    lineBodiesIn world
+        |> List.filter (\line -> line.ref == support)
+        |> List.head
+
+
 circleBodyFor : GeometryPartRef -> World -> Maybe CircleHitTarget
 circleBodyFor support world =
     circleBodiesIn world
         |> List.filter (\circle -> circle.ref == support)
         |> List.head
+
+
+circleIntersectionBranchAt : Vec2 -> GeometryPartRef -> GeometryPartRef -> World -> CircleIntersectionBranch
+circleIntersectionBranchAt pointer first second world =
+    case
+        Maybe.map2 circleIntersectionPoints
+            (circleBodyFor first world)
+            (circleBodyFor second world)
+    of
+        Just (Ok (firstPoint :: secondPoint :: _)) ->
+            if Vec2.distanceSquared pointer secondPoint < Vec2.distanceSquared pointer firstPoint then
+                SecondCircleIntersection
+
+            else
+                FirstCircleIntersection
+
+        _ ->
+            FirstCircleIntersection
+
+
+segmentCircleIntersectionBranchAt : Vec2 -> GeometryPartRef -> GeometryPartRef -> World -> CircleIntersectionBranch
+segmentCircleIntersectionBranchAt pointer segment circle world =
+    Maybe.map2 segmentCircleIntersectionCandidates
+        (segmentBodyFor segment world)
+        (circleBodyFor circle world)
+        |> Maybe.andThen Result.toMaybe
+        |> Maybe.map
+            (List.sortBy (Vec2.distanceSquared pointer << .position)
+                >> List.head
+                >> Maybe.map .branch
+            )
+        |> Maybe.andThen identity
+        |> Maybe.withDefault FirstCircleIntersection
+
+
+lineCircleIntersectionBranchAt : Vec2 -> GeometryPartRef -> GeometryPartRef -> World -> CircleIntersectionBranch
+lineCircleIntersectionBranchAt pointer line circle world =
+    case
+        Maybe.map2 lineCircleIntersectionPoints
+            (lineBodyFor line world)
+            (circleBodyFor circle world)
+    of
+        Just (Ok (firstPoint :: secondPoint :: _)) ->
+            if Vec2.distanceSquared pointer secondPoint < Vec2.distanceSquared pointer firstPoint then
+                SecondCircleIntersection
+
+            else
+                FirstCircleIntersection
+
+        _ ->
+            FirstCircleIntersection
+
+
+intersectionSupportAt : Vec2 -> World -> Maybe GeometryPartRef
+intersectionSupportAt pointer world =
+    let
+        segmentCandidates =
+            segmentBodiesIn world
+                |> List.filter (isWithinSegmentHitRadius pointer)
+                |> List.map
+                    (\segment ->
+                        { ref = segment.ref
+                        , distanceSquared = segmentDistanceSquared pointer segment
+                        }
+                    )
+
+        lineCandidates =
+            lineBodiesIn world
+                |> List.filter (isWithinLineHitRadius pointer)
+                |> List.map
+                    (\line ->
+                        { ref = line.ref
+                        , distanceSquared = lineDistanceSquared pointer line
+                        }
+                    )
+
+        circleCandidates =
+            circleBodiesIn world
+                |> List.filter (isWithinCircleHitRadius pointer)
+                |> List.map
+                    (\circle ->
+                        { ref = circle.ref
+                        , distanceSquared = circleDistanceSquared pointer circle
+                        }
+                    )
+    in
+    segmentCandidates
+        ++ lineCandidates
+        ++ circleCandidates
+        |> List.sortBy
+            (\candidate ->
+                ( candidate.distanceSquared
+                , candidate.ref.owner
+                , geometryPartKindOrder candidate.ref.kind
+                )
+            )
+        |> List.head
+        |> Maybe.map .ref
 
 
 attachmentTickInterval : Float
@@ -1456,6 +2569,24 @@ attachmentAction geometryPart world =
                             |> Maybe.map Detach
 
                     Midpoint _ ->
+                        Nothing
+
+                    SegmentIntersection _ _ ->
+                        Nothing
+
+                    SegmentLineIntersection _ _ ->
+                        Nothing
+
+                    SegmentCircleIntersection _ _ _ ->
+                        Nothing
+
+                    CircleIntersection _ _ _ ->
+                        Nothing
+
+                    LineCircleIntersection _ _ _ ->
+                        Nothing
+
+                    LineIntersection _ _ ->
                         Nothing
             )
 
@@ -1722,6 +2853,9 @@ nodeUsesPoint geometryPart node =
         Segment (Between start end) ->
             geometryPart == start || geometryPart == end
 
+        Line (Through start end) ->
+            geometryPart == start || geometryPart == end
+
         Circle (CenterThrough center through) ->
             geometryPart == center || geometryPart == through
 
@@ -1824,6 +2958,44 @@ segmentDistanceSquared pointer segment =
     Vec2.distanceSquared pointer (nearestPointOnSegment pointer segment)
 
 
+isWithinLineHitRadius : Vec2 -> LineHitTarget -> Bool
+isWithinLineHitRadius pointer line =
+    lineDistanceSquared pointer line <= 196
+
+
+lineDistanceSquared : Vec2 -> LineHitTarget -> Float
+lineDistanceSquared pointer line =
+    let
+        startX =
+            Vec2.getX line.start
+
+        startY =
+            Vec2.getY line.start
+
+        deltaX =
+            Vec2.getX line.end - startX
+
+        deltaY =
+            Vec2.getY line.end - startY
+
+        lengthSquared =
+            deltaX * deltaX + deltaY * deltaY
+    in
+    if lengthSquared == 0 then
+        Vec2.distanceSquared pointer line.start
+
+    else
+        let
+            parameter =
+                ((Vec2.getX pointer - startX) * deltaX + (Vec2.getY pointer - startY) * deltaY) / lengthSquared
+        in
+        Vec2.distanceSquared pointer
+            (vec2
+                (startX + parameter * deltaX)
+                (startY + parameter * deltaY)
+            )
+
+
 isWithinCircleHitRadius : Vec2 -> CircleHitTarget -> Bool
 isWithinCircleHitRadius pointer circle =
     circleDistanceSquared pointer circle <= 196
@@ -1908,6 +3080,13 @@ midpointInteractionAt pointer world =
         |> Maybe.withDefault Idle
 
 
+intersectionInteractionAt : Vec2 -> World -> Interaction
+intersectionInteractionAt pointer world =
+    intersectionSupportAt pointer world
+        |> Maybe.map Hovering
+        |> Maybe.withDefault Idle
+
+
 interactionAt : Vec2 -> World -> Interaction
 interactionAt pointer world =
     hitTest pointer world
@@ -1918,6 +3097,8 @@ interactionAt pointer world =
 isHighlighted : GeometryPartRef -> Model -> Bool
 isHighlighted geometryPart model =
     model.segmentStart
+        == Just geometryPart
+        || model.intersectionStart
         == Just geometryPart
         || (case model.interaction of
                 Idle ->
@@ -1951,12 +3132,12 @@ isHighlighted geometryPart model =
 
 isDependencyHighlighted : GeometryPartRef -> Model -> Bool
 isDependencyHighlighted geometryPart model =
-    case ( geometryPart.kind, model.interaction ) of
-        ( SegmentBody, Hovering hovered ) ->
+    case model.interaction of
+        Hovering hovered ->
             model.world
                 |> Ecs.onEntity hovered.owner
                 |> Ecs.getComponent specs.expression
-                |> Maybe.map (isMidpointOf geometryPart)
+                |> Maybe.map (isDependentOn geometryPart)
                 |> Maybe.withDefault False
 
         _ ->
@@ -1972,11 +3153,29 @@ isMidpointPoint entityId world =
         |> Maybe.withDefault False
 
 
-isMidpointOf : GeometryPartRef -> Node -> Bool
-isMidpointOf segment node =
+isDependentOn : GeometryPartRef -> Node -> Bool
+isDependentOn geometryPart node =
     case node of
         Point (Midpoint source) ->
-            source == segment
+            source == geometryPart
+
+        Point (SegmentIntersection first second) ->
+            geometryPart == first || geometryPart == second
+
+        Point (SegmentLineIntersection segment line) ->
+            geometryPart == segment || geometryPart == line
+
+        Point (SegmentCircleIntersection segment circle _) ->
+            geometryPart == segment || geometryPart == circle
+
+        Point (LineIntersection first second) ->
+            geometryPart == first || geometryPart == second
+
+        Point (LineCircleIntersection line circle _) ->
+            geometryPart == line || geometryPart == circle
+
+        Point (CircleIntersection first second _) ->
+            geometryPart == first || geometryPart == second
 
         _ ->
             False
@@ -1992,11 +3191,45 @@ isMidpointOfPointExpression node =
             False
 
 
-midpointHoverPosition : Model -> Maybe Vec2
-midpointHoverPosition model =
+isIntersectionPoint : EntityId -> World -> Bool
+isIntersectionPoint entityId world =
+    world
+        |> Ecs.onEntity entityId
+        |> Ecs.getComponent specs.expression
+        |> Maybe.map isIntersectionPointExpression
+        |> Maybe.withDefault False
+
+
+isIntersectionPointExpression : Node -> Bool
+isIntersectionPointExpression node =
+    case node of
+        Point (SegmentIntersection _ _) ->
+            True
+
+        Point (SegmentLineIntersection _ _) ->
+            True
+
+        Point (SegmentCircleIntersection _ _ _) ->
+            True
+
+        Point (LineIntersection _ _) ->
+            True
+
+        Point (LineCircleIntersection _ _ _) ->
+            True
+
+        Point (CircleIntersection _ _ _) ->
+            True
+
+        _ ->
+            False
+
+
+hoveredPointPosition : (EntityId -> World -> Bool) -> Model -> Maybe Vec2
+hoveredPointPosition predicate model =
     case model.interaction of
         Hovering geometryPart ->
-            if isMidpointPoint geometryPart.owner model.world then
+            if predicate geometryPart.owner model.world then
                 geometryPartsIn model.world
                     |> List.filter (\geometryPart_ -> geometryPart_.ref == geometryPart)
                     |> List.head
@@ -2007,6 +3240,16 @@ midpointHoverPosition model =
 
         _ ->
             Nothing
+
+
+midpointHoverPosition : Model -> Maybe Vec2
+midpointHoverPosition =
+    hoveredPointPosition isMidpointPoint
+
+
+intersectionHoverPosition : Model -> Maybe Vec2
+intersectionHoverPosition =
+    hoveredPointPosition isIntersectionPoint
 
 
 
@@ -2106,6 +3349,7 @@ view model =
                             ]
                             [ viewPointerPosition model.pointerPosition
                             , viewMidpointHoverLabel model
+                            , viewIntersectionHoverLabel model
                             ]
                         ]
                     ]
@@ -2130,6 +3374,17 @@ worldExpressionView world =
             |> List.map worldExpressionEntryView
             |> List.intersperse (syntaxToken ", ")
         )
+
+
+circleIntersectionBranchView : CircleIntersectionBranch -> Html Msg
+circleIntersectionBranchView branch =
+    constructorToken <|
+        case branch of
+            FirstCircleIntersection ->
+                "first"
+
+            SecondCircleIntersection ->
+                "second"
 
 
 worldExpressionEntries : World -> List ( EntityId, Node )
@@ -2160,6 +3415,9 @@ nodeExpressionView node =
         Segment segmentExpression ->
             typeCall "segment" [ segmentExpressionView segmentExpression ]
 
+        Line lineExpression ->
+            typeCall "line" [ lineExpressionView lineExpression ]
+
         Circle circleExpression ->
             typeCall "circle" [ circleExpressionView circleExpression ]
 
@@ -2172,6 +3430,54 @@ pointExpressionView expression =
 
         Midpoint segment ->
             constructorCall "midpoint" [ geometryPartReferenceView segment ]
+
+        SegmentIntersection first second ->
+            constructorCall "segment-intersection"
+                [ geometryPartReferenceView first
+                , syntaxToken ", "
+                , geometryPartReferenceView second
+                ]
+
+        SegmentLineIntersection segment line ->
+            constructorCall "segment-line-intersection"
+                [ geometryPartReferenceView segment
+                , syntaxToken ", "
+                , geometryPartReferenceView line
+                ]
+
+        SegmentCircleIntersection segment circle branch ->
+            constructorCall "segment-circle-intersection"
+                [ geometryPartReferenceView segment
+                , syntaxToken ", "
+                , geometryPartReferenceView circle
+                , syntaxToken ", "
+                , circleIntersectionBranchView branch
+                ]
+
+        LineIntersection first second ->
+            constructorCall "line-intersection"
+                [ geometryPartReferenceView first
+                , syntaxToken ", "
+                , geometryPartReferenceView second
+                ]
+
+        LineCircleIntersection line circle branch ->
+            constructorCall "line-circle-intersection"
+                [ geometryPartReferenceView line
+                , syntaxToken ", "
+                , geometryPartReferenceView circle
+                , syntaxToken ", "
+                , circleIntersectionBranchView branch
+                ]
+
+        CircleIntersection first second branch ->
+            constructorCall "circle-intersection"
+                [ geometryPartReferenceView first
+                , syntaxToken ", "
+                , geometryPartReferenceView second
+                , syntaxToken ", "
+                , circleIntersectionBranchView branch
+                ]
 
         OnSegment segment parameter ->
             constructorCall "on-segment"
@@ -2193,6 +3499,17 @@ segmentExpressionView expression =
     case expression of
         Between start end ->
             constructorCall "between"
+                [ geometryPartReferenceView start
+                , syntaxToken ", "
+                , geometryPartReferenceView end
+                ]
+
+
+lineExpressionView : LineExpr -> Html Msg
+lineExpressionView expression =
+    case expression of
+        Through start end ->
+            constructorCall "through"
                 [ geometryPartReferenceView start
                 , syntaxToken ", "
                 , geometryPartReferenceView end
@@ -2252,6 +3569,9 @@ geometryPartReferenceView geometryPart =
                     ".end"
 
                 SegmentBody ->
+                    ""
+
+                LineBody ->
                     ""
 
                 CircleBody ->
@@ -2332,6 +3652,7 @@ canvasLayers model =
     in
     List.map viewGuide (guidesFor model)
         ++ List.map viewSegmentPreview (segmentPreviews model)
+        ++ List.map viewLinePreview (linePreviews model)
         ++ List.map viewCirclePreview (circlePreviews model)
         ++ geometryLayers
         ++ attachmentPreview model
@@ -2339,6 +3660,10 @@ canvasLayers model =
                 |> midpointPreview
                 |> Maybe.map viewMidpointPreview
                 |> Maybe.withDefault []
+           )
+        ++ (model
+                |> intersectionPreview
+                |> List.concatMap viewIntersectionPreview
            )
 
 
@@ -2596,27 +3921,36 @@ viewPointerPosition position =
 
 viewMidpointHoverLabel : Model -> Html Msg
 viewMidpointHoverLabel model =
-    case midpointHoverPosition model of
-        Just position ->
-            Svg.text_
-                [ SvgAttr.x (String.fromFloat (Vec2.getX position + 12))
-                , SvgAttr.y
-                    (String.fromFloat
-                        (if Vec2.getY position < 26 then
-                            Vec2.getY position + 22
+    midpointHoverPosition model
+        |> Maybe.map (viewConstructedPointHoverLabel "Midpoint of segment")
+        |> Maybe.withDefault (Svg.g [] [])
 
-                         else
-                            Vec2.getY position - 12
-                        )
-                    )
-                , fill "#f5a623"
-                , SvgAttr.fontFamily "monospace"
-                , SvgAttr.fontSize "12"
-                ]
-                [ Svg.text "Midpoint of segment" ]
 
-        Nothing ->
-            Svg.g [] []
+viewIntersectionHoverLabel : Model -> Html Msg
+viewIntersectionHoverLabel model =
+    intersectionHoverPosition model
+        |> Maybe.map (viewConstructedPointHoverLabel "Intersection")
+        |> Maybe.withDefault (Svg.g [] [])
+
+
+viewConstructedPointHoverLabel : String -> Vec2 -> Html Msg
+viewConstructedPointHoverLabel label position =
+    Svg.text_
+        [ SvgAttr.x (String.fromFloat (Vec2.getX position + 12))
+        , SvgAttr.y
+            (String.fromFloat
+                (if Vec2.getY position < 26 then
+                    Vec2.getY position + 22
+
+                 else
+                    Vec2.getY position - 12
+                )
+            )
+        , fill "#f5a623"
+        , SvgAttr.fontFamily "monospace"
+        , SvgAttr.fontSize "12"
+        ]
+        [ Svg.text label ]
 
 
 geometryToolbar : Model -> Html Msg
@@ -2625,9 +3959,12 @@ geometryToolbar model =
         [ toolButton model SelectTool "fa fa-mouse-pointer" "Select & move" "Select and move existing points"
         , toolButton model PointTool "fa fa-crosshairs" "Add points" "Enable or disable point construction"
         , toolButton model SegmentTool "fa fa-minus" "Add segments" "Enable or disable segment construction"
+        , toolButton model LineTool "fa fa-arrows-h" "Add lines" "Construct an infinite line through two points"
         , toolButton model CircleTool "fa fa-circle-o" "Add circles" "Construct a circle from a center and a passing point"
         , toolButton model MidpointTool "fa fa-circle-o" "Midpoint" "Construct a point at the middle of a segment"
+        , toolButton model IntersectionTool "fa fa-times" "Intersection" "Construct a point where two compatible curves intersect"
         , undoButton model
+        , redoButton model
         ]
 
 
@@ -2667,6 +4004,20 @@ undoButton model =
         ]
         [ span [ class "icon is-small" ] [ i [ class "fa fa-undo" ] [] ]
         , span [] [ text "Undo" ]
+        ]
+
+
+redoButton : Model -> Html Msg
+redoButton model =
+    button
+        [ class "button is-light"
+        , type_ "button"
+        , title "Redo the last undone construction or manipulation"
+        , disabled (List.isEmpty model.redoHistory)
+        , onClick Redo
+        ]
+        [ span [ class "icon is-small" ] [ i [ class "fa fa-repeat" ] [] ]
+        , span [] [ text "Redo" ]
         ]
 
 
@@ -2715,6 +4066,14 @@ cursorFor model =
                         _ ->
                             "crosshair"
 
+                Just LineTool ->
+                    case model.interaction of
+                        Hovering _ ->
+                            "pointer"
+
+                        _ ->
+                            "crosshair"
+
                 Just CircleTool ->
                     case model.interaction of
                         Hovering _ ->
@@ -2724,6 +4083,14 @@ cursorFor model =
                             "crosshair"
 
                 Just MidpointTool ->
+                    case model.interaction of
+                        Hovering _ ->
+                            "pointer"
+
+                        _ ->
+                            "crosshair"
+
+                Just IntersectionTool ->
                     case model.interaction of
                         Hovering _ ->
                             "pointer"
@@ -2769,6 +4136,116 @@ viewSegmentPreview ( start, end ) =
         , opacity "0.8"
         ]
         []
+
+
+linePreviews : Model -> List ( Vec2, Vec2 )
+linePreviews model =
+    case ( model.lineStart, model.linePreviewEnd ) of
+        ( Just startRef, Just end ) ->
+            geometryPartsIn model.world
+                |> List.filter (\geometryPart -> geometryPart.ref == startRef)
+                |> List.head
+                |> Maybe.map (\start -> [ ( start.position, end ) ])
+                |> Maybe.withDefault []
+
+        _ ->
+            []
+
+
+lineViewportEndpoints : Vec2 -> Vec2 -> Maybe ( Vec2, Vec2 )
+lineViewportEndpoints start end =
+    let
+        startX =
+            Vec2.getX start
+
+        startY =
+            Vec2.getY start
+
+        deltaX =
+            Vec2.getX end - startX
+
+        deltaY =
+            Vec2.getY end - startY
+
+        verticalCandidate x =
+            if abs deltaX <= intersectionTolerance then
+                []
+
+            else
+                let
+                    y =
+                        startY + (x - startX) * deltaY / deltaX
+                in
+                if y >= 0 && y <= canvasHeight then
+                    [ vec2 x y ]
+
+                else
+                    []
+
+        horizontalCandidate y =
+            if abs deltaY <= intersectionTolerance then
+                []
+
+            else
+                let
+                    x =
+                        startX + (y - startY) * deltaX / deltaY
+                in
+                if x >= 0 && x <= canvasWidth then
+                    [ vec2 x y ]
+
+                else
+                    []
+
+        candidates =
+            verticalCandidate 0
+                ++ verticalCandidate canvasWidth
+                ++ horizontalCandidate 0
+                ++ horizontalCandidate canvasHeight
+    in
+    case candidates of
+        first :: remaining ->
+            let
+                second =
+                    List.foldl
+                        (\candidate farthest ->
+                            if Vec2.distanceSquared first candidate > Vec2.distanceSquared first farthest then
+                                candidate
+
+                            else
+                                farthest
+                        )
+                        first
+                        remaining
+            in
+            if Vec2.distanceSquared first second <= intersectionTolerance then
+                Nothing
+
+            else
+                Just ( first, second )
+
+        [] ->
+            Nothing
+
+
+viewLinePreview : ( Vec2, Vec2 ) -> Html Msg
+viewLinePreview ( start, end ) =
+    lineViewportEndpoints start end
+        |> Maybe.map
+            (\( first, second ) ->
+                Svg.line
+                    [ x1 (String.fromFloat (Vec2.getX first))
+                    , y1 (String.fromFloat (Vec2.getY first))
+                    , x2 (String.fromFloat (Vec2.getX second))
+                    , y2 (String.fromFloat (Vec2.getY second))
+                    , stroke "#f5a623"
+                    , strokeWidth "2"
+                    , strokeDasharray "6 4"
+                    , opacity "0.8"
+                    ]
+                    []
+            )
+        |> Maybe.withDefault (Svg.g [] [])
 
 
 circlePreviews : Model -> List ( Vec2, Vec2 )
@@ -2838,6 +4315,209 @@ viewMidpointPreview point =
     ]
 
 
+intersectionPreview : Model -> List ( Vec2, Bool )
+intersectionPreview model =
+    case ( model.activeTool, model.intersectionStart, model.interaction ) of
+        ( Just IntersectionTool, Just first, Hovering second ) ->
+            if first == second then
+                []
+
+            else
+                case ( first.kind, second.kind ) of
+                    ( SegmentBody, SegmentBody ) ->
+                        Maybe.map2 segmentIntersection
+                            (segmentBodyFor first model.world)
+                            (segmentBodyFor second model.world)
+                            |> Maybe.andThen Result.toMaybe
+                            |> Maybe.map (\point -> [ ( point, True ) ])
+                            |> Maybe.withDefault []
+
+                    ( SegmentBody, LineBody ) ->
+                        Maybe.map2 segmentLineIntersection
+                            (segmentBodyFor first model.world)
+                            (lineBodyFor second model.world)
+                            |> Maybe.andThen Result.toMaybe
+                            |> Maybe.map (\point -> [ ( point, True ) ])
+                            |> Maybe.withDefault []
+
+                    ( LineBody, SegmentBody ) ->
+                        Maybe.map2 segmentLineIntersection
+                            (segmentBodyFor second model.world)
+                            (lineBodyFor first model.world)
+                            |> Maybe.andThen Result.toMaybe
+                            |> Maybe.map (\point -> [ ( point, True ) ])
+                            |> Maybe.withDefault []
+
+                    ( SegmentBody, CircleBody ) ->
+                        Maybe.map2 segmentCircleIntersectionCandidates
+                            (segmentBodyFor first model.world)
+                            (circleBodyFor second model.world)
+                            |> Maybe.andThen Result.toMaybe
+                            |> Maybe.map
+                                (segmentCircleIntersectionPreviewPoints
+                                    (segmentCircleIntersectionBranchAt
+                                        model.pointerPosition
+                                        first
+                                        second
+                                        model.world
+                                    )
+                                )
+                            |> Maybe.withDefault []
+
+                    ( CircleBody, SegmentBody ) ->
+                        Maybe.map2 segmentCircleIntersectionCandidates
+                            (segmentBodyFor second model.world)
+                            (circleBodyFor first model.world)
+                            |> Maybe.andThen Result.toMaybe
+                            |> Maybe.map
+                                (segmentCircleIntersectionPreviewPoints
+                                    (segmentCircleIntersectionBranchAt
+                                        model.pointerPosition
+                                        second
+                                        first
+                                        model.world
+                                    )
+                                )
+                            |> Maybe.withDefault []
+
+                    ( LineBody, CircleBody ) ->
+                        Maybe.map2 lineCircleIntersectionPoints
+                            (lineBodyFor first model.world)
+                            (circleBodyFor second model.world)
+                            |> Maybe.andThen Result.toMaybe
+                            |> Maybe.map
+                                (circleIntersectionPreviewPoints
+                                    (lineCircleIntersectionBranchAt
+                                        model.pointerPosition
+                                        first
+                                        second
+                                        model.world
+                                    )
+                                )
+                            |> Maybe.withDefault []
+
+                    ( CircleBody, LineBody ) ->
+                        Maybe.map2 lineCircleIntersectionPoints
+                            (lineBodyFor second model.world)
+                            (circleBodyFor first model.world)
+                            |> Maybe.andThen Result.toMaybe
+                            |> Maybe.map
+                                (circleIntersectionPreviewPoints
+                                    (lineCircleIntersectionBranchAt
+                                        model.pointerPosition
+                                        second
+                                        first
+                                        model.world
+                                    )
+                                )
+                            |> Maybe.withDefault []
+
+                    ( LineBody, LineBody ) ->
+                        Maybe.map2 lineIntersection
+                            (lineBodyFor first model.world)
+                            (lineBodyFor second model.world)
+                            |> Maybe.andThen Result.toMaybe
+                            |> Maybe.map (\point -> [ ( point, True ) ])
+                            |> Maybe.withDefault []
+
+                    ( CircleBody, CircleBody ) ->
+                        Maybe.map2 circleIntersectionPoints
+                            (circleBodyFor first model.world)
+                            (circleBodyFor second model.world)
+                            |> Maybe.andThen Result.toMaybe
+                            |> Maybe.map
+                                (circleIntersectionPreviewPoints
+                                    (circleIntersectionBranchAt
+                                        model.pointerPosition
+                                        first
+                                        second
+                                        model.world
+                                    )
+                                )
+                            |> Maybe.withDefault []
+
+                    _ ->
+                        []
+
+        _ ->
+            []
+
+
+circleIntersectionPreviewPoints : CircleIntersectionBranch -> List Vec2 -> List ( Vec2, Bool )
+circleIntersectionPreviewPoints branch points =
+    case points of
+        firstPoint :: secondPoint :: _ ->
+            [ ( firstPoint, branch == FirstCircleIntersection )
+            , ( secondPoint, branch == SecondCircleIntersection )
+            ]
+
+        firstPoint :: [] ->
+            [ ( firstPoint, True ) ]
+
+        [] ->
+            []
+
+
+segmentCircleIntersectionPreviewPoints : CircleIntersectionBranch -> List SegmentCircleIntersectionRoot -> List ( Vec2, Bool )
+segmentCircleIntersectionPreviewPoints branch roots =
+    roots
+        |> List.map
+            (\root ->
+                ( root.position
+                , root.branch == branch
+                )
+            )
+
+
+viewIntersectionPreview : ( Vec2, Bool ) -> List (Html Msg)
+viewIntersectionPreview ( point, selected ) =
+    let
+        color =
+            if selected then
+                "#f5a623"
+
+            else
+                "#94a3b8"
+
+        opacity_ =
+            if selected then
+                "0.9"
+
+            else
+                "0.55"
+    in
+    [ Svg.circle
+        [ cx (String.fromFloat (Vec2.getX point))
+        , cy (String.fromFloat (Vec2.getY point))
+        , r "7"
+        , fill "none"
+        , stroke color
+        , strokeWidth "2"
+        , strokeDasharray "3 2"
+        , opacity opacity_
+        ]
+        []
+    , Svg.line
+        [ x1 (String.fromFloat (Vec2.getX point - 3))
+        , y1 (String.fromFloat (Vec2.getY point))
+        , x2 (String.fromFloat (Vec2.getX point + 3))
+        , y2 (String.fromFloat (Vec2.getY point))
+        , stroke color
+        , strokeWidth "1.5"
+        ]
+        []
+    , Svg.line
+        [ x1 (String.fromFloat (Vec2.getX point))
+        , y1 (String.fromFloat (Vec2.getY point - 3))
+        , x2 (String.fromFloat (Vec2.getX point))
+        , y2 (String.fromFloat (Vec2.getY point + 3))
+        , stroke color
+        , strokeWidth "1.5"
+        ]
+        []
+    ]
+
+
 viewGuide : Guide -> Html Msg
 viewGuide guide =
     let
@@ -2895,12 +4575,71 @@ evaluationErrorDescription error =
         ExpectedPointGeometryPart geometryPart ->
             "Expected point geometry part " ++ geometryPartRefDescription geometryPart
 
+        ExpectedSegmentGeometryPart geometryPart ->
+            "Expected segment geometry part " ++ geometryPartRefDescription geometryPart
+
+        ExpectedCircleGeometryPart geometryPart ->
+            "Expected circle geometry part " ++ geometryPartRefDescription geometryPart
+
+        ExpectedLineGeometryPart geometryPart ->
+            "Expected line geometry part " ++ geometryPartRefDescription geometryPart
+
+        ParallelLines first second ->
+            "Parallel lines " ++ geometryPartPairDescription first second
+
+        CoincidentLines first second ->
+            "Coincident lines " ++ geometryPartPairDescription first second
+
+        ParallelSegmentAndLine segment line ->
+            "Parallel segment and line " ++ geometryPartPairDescription segment line
+
+        CoincidentSegmentAndLine segment line ->
+            "Coincident segment and line " ++ geometryPartPairDescription segment line
+
+        IntersectionOutsideSegment segment line ->
+            "Line meets outside segment " ++ geometryPartPairDescription segment line
+
+        SelectedIntersectionOutsideSegment segment circle ->
+            "Selected intersection lies outside segment " ++ geometryPartPairDescription segment circle
+
+        SegmentDoesNotMeetCircle segment circle ->
+            "Segment does not meet circle " ++ geometryPartPairDescription segment circle
+
+        LineDoesNotMeetCircle line circle ->
+            "Line does not meet circle " ++ geometryPartPairDescription line circle
+
+        ParallelSegments first second ->
+            "Parallel segments " ++ geometryPartPairDescription first second
+
+        CoincidentSegments first second ->
+            "Coincident segments " ++ geometryPartPairDescription first second
+
+        IntersectionOutsideSegments first second ->
+            "Intersection lies outside segments " ++ geometryPartPairDescription first second
+
+        DisjointCircles first second ->
+            "Disjoint circles " ++ geometryPartPairDescription first second
+
+        ContainedCircle first second ->
+            "One circle lies inside the other " ++ geometryPartPairDescription first second
+
+        ConcentricCircles first second ->
+            "Concentric circles " ++ geometryPartPairDescription first second
+
+        CoincidentCircles first second ->
+            "Coincident circles " ++ geometryPartPairDescription first second
+
         CyclicGeometryReference entityIds ->
             "Cyclic geometry reference "
                 ++ (entityIds
                         |> List.map String.fromInt
                         |> String.join " -> "
                    )
+
+
+geometryPartPairDescription : GeometryPartRef -> GeometryPartRef -> String
+geometryPartPairDescription first second =
+    geometryPartRefDescription first ++ " and " ++ geometryPartRefDescription second
 
 
 geometryPartRefDescription : GeometryPartRef -> String
@@ -2926,8 +4665,52 @@ geometryPartKindName geometryPartKind =
         SegmentBody ->
             "SegmentBody"
 
+        LineBody ->
+            "LineBody"
+
         CircleBody ->
             "CircleBody"
+
+
+pointConstructionDetails : Bool -> Bool -> Vec2 -> List (Html Msg)
+pointConstructionDetails isMidpoint isIntersection point =
+    if isMidpoint then
+        [ Svg.title [] [ Svg.text "Midpoint of segment" ]
+        , Svg.circle
+            [ cx (String.fromFloat (Vec2.getX point))
+            , cy (String.fromFloat (Vec2.getY point))
+            , r "2"
+            , fill "#e2e8f0"
+            , stroke "#1f2933"
+            , strokeWidth "1"
+            ]
+            []
+        ]
+
+    else if isIntersection then
+        [ Svg.title [] [ Svg.text "Intersection" ]
+        , Svg.line
+            [ x1 (String.fromFloat (Vec2.getX point - 3))
+            , y1 (String.fromFloat (Vec2.getY point))
+            , x2 (String.fromFloat (Vec2.getX point + 3))
+            , y2 (String.fromFloat (Vec2.getY point))
+            , stroke "#f5a623"
+            , strokeWidth "1.5"
+            ]
+            []
+        , Svg.line
+            [ x1 (String.fromFloat (Vec2.getX point))
+            , y1 (String.fromFloat (Vec2.getY point - 3))
+            , x2 (String.fromFloat (Vec2.getX point))
+            , y2 (String.fromFloat (Vec2.getY point + 3))
+            , stroke "#f5a623"
+            , strokeWidth "1.5"
+            ]
+            []
+        ]
+
+    else
+        []
 
 
 viewGeometry : Model -> EntityId -> Geometry -> Html Msg
@@ -2940,6 +4723,9 @@ viewGeometry model entityId geometry =
 
                 isMidpoint =
                     isMidpointPoint entityId model.world
+
+                isIntersection =
+                    isIntersectionPoint entityId model.world
             in
             Svg.g []
                 (Svg.circle
@@ -2960,22 +4746,7 @@ viewGeometry model entityId geometry =
                     , strokeWidth "2"
                     ]
                     []
-                    :: (if isMidpoint then
-                            [ Svg.title [] [ Svg.text "Midpoint of segment" ]
-                            , Svg.circle
-                                [ cx (String.fromFloat (Vec2.getX point))
-                                , cy (String.fromFloat (Vec2.getY point))
-                                , r "2"
-                                , fill "#e2e8f0"
-                                , stroke "#1f2933"
-                                , strokeWidth "1"
-                                ]
-                                []
-                            ]
-
-                        else
-                            []
-                       )
+                    :: pointConstructionDetails isMidpoint isIntersection point
                 )
 
         GSegment start end ->
@@ -3010,6 +4781,46 @@ viewGeometry model entityId geometry =
                     )
                 ]
                 []
+
+        GLine start end ->
+            lineViewportEndpoints start end
+                |> Maybe.map
+                    (\( first, second ) ->
+                        let
+                            geometryPart =
+                                { owner = entityId, kind = LineBody }
+
+                            strokeColor =
+                                if isHighlighted geometryPart model then
+                                    "#f5a623"
+
+                                else if isDependencyHighlighted geometryPart model then
+                                    "#cbd5e1"
+
+                                else
+                                    "#64748b"
+
+                            lineWidth =
+                                if isHighlighted geometryPart model then
+                                    "4"
+
+                                else if isDependencyHighlighted geometryPart model then
+                                    "3"
+
+                                else
+                                    "2"
+                        in
+                        Svg.line
+                            [ x1 (String.fromFloat (Vec2.getX first))
+                            , y1 (String.fromFloat (Vec2.getY first))
+                            , x2 (String.fromFloat (Vec2.getX second))
+                            , y2 (String.fromFloat (Vec2.getY second))
+                            , stroke strokeColor
+                            , strokeWidth lineWidth
+                            ]
+                            []
+                    )
+                |> Maybe.withDefault (Svg.g [] [])
 
         GCircle center through ->
             let
