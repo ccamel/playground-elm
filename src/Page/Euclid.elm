@@ -108,6 +108,7 @@ type EvaluationError
     | ContainedCircle GeometryPartRef GeometryPartRef
     | ConcentricCircles GeometryPartRef GeometryPartRef
     | CoincidentCircles GeometryPartRef GeometryPartRef
+    | SelectedIntersectionOutsideSegment GeometryPartRef GeometryPartRef
     | SegmentDoesNotMeetCircle GeometryPartRef GeometryPartRef
     | LineDoesNotMeetCircle GeometryPartRef GeometryPartRef
     | CyclicGeometryReference (List EntityId)
@@ -1503,8 +1504,15 @@ circleIntersectionPoint branch first second =
             Err error
 
 
-segmentCircleIntersectionPoints : SegmentHitTarget -> CircleHitTarget -> Result EvaluationError (List Vec2)
-segmentCircleIntersectionPoints segment circle =
+type alias SegmentCircleIntersectionRoot =
+    { branch : CircleIntersectionBranch
+    , parameter : Float
+    , position : Vec2
+    }
+
+
+segmentCircleIntersectionRoots : SegmentHitTarget -> CircleHitTarget -> Result EvaluationError (List SegmentCircleIntersectionRoot)
+segmentCircleIntersectionRoots segment circle =
     let
         deltaX =
             Vec2.getX segment.end - Vec2.getX segment.start
@@ -1517,10 +1525,16 @@ segmentCircleIntersectionPoints segment circle =
 
         squaredSegmentLength =
             deltaX * deltaX + deltaY * deltaY
+
+        root branch parameter =
+            { branch = branch
+            , parameter = parameter
+            , position = pointOnSegment parameter segment.start segment.end
+            }
     in
     if squaredSegmentLength <= intersectionTolerance then
         if abs (Vec2.distanceSquared segment.start circle.center - radiusSquared) <= intersectionTolerance then
-            Ok [ segment.start ]
+            Ok [ root FirstCircleIntersection 0 ]
 
         else
             Err (SegmentDoesNotMeetCircle segment.ref circle.ref)
@@ -1552,41 +1566,52 @@ segmentCircleIntersectionPoints segment circle =
 
                 firstParameter =
                     (-linearCoefficient - discriminantRoot) / (2 * squaredSegmentLength)
-
-                parameters =
-                    if discriminantRoot <= intersectionTolerance then
-                        [ firstParameter ]
-                            |> List.filter isWithinSegmentParameter
-
-                    else
-                        let
-                            secondParameter =
-                                (-linearCoefficient + discriminantRoot) / (2 * squaredSegmentLength)
-                        in
-                        [ firstParameter, secondParameter ]
-                            |> List.filter isWithinSegmentParameter
             in
-            case parameters of
+            if discriminantRoot <= intersectionTolerance then
+                Ok [ root FirstCircleIntersection firstParameter ]
+
+            else
+                Ok
+                    [ root FirstCircleIntersection firstParameter
+                    , root
+                        SecondCircleIntersection
+                        ((-linearCoefficient + discriminantRoot) / (2 * squaredSegmentLength))
+                    ]
+
+
+segmentCircleIntersectionCandidates : SegmentHitTarget -> CircleHitTarget -> Result EvaluationError (List SegmentCircleIntersectionRoot)
+segmentCircleIntersectionCandidates segment circle =
+    case segmentCircleIntersectionRoots segment circle of
+        Ok roots ->
+            case List.filter (.parameter >> isWithinSegmentParameter) roots of
                 [] ->
                     Err (SegmentDoesNotMeetCircle segment.ref circle.ref)
 
-                _ ->
-                    Ok
-                        (parameters
-                            |> List.map (\parameter -> pointOnSegment (clamp 0 1 parameter) segment.start segment.end)
-                        )
+                candidates ->
+                    Ok candidates
+
+        Err error ->
+            Err error
 
 
 segmentCircleIntersectionPoint : CircleIntersectionBranch -> SegmentHitTarget -> CircleHitTarget -> Result EvaluationError Vec2
 segmentCircleIntersectionPoint branch segment circle =
-    case segmentCircleIntersectionPoints segment circle of
-        Ok (firstPoint :: remainingPoints) ->
-            case branch of
-                FirstCircleIntersection ->
-                    Ok firstPoint
+    case segmentCircleIntersectionRoots segment circle of
+        Ok (firstRoot :: remainingRoots) ->
+            let
+                root =
+                    case branch of
+                        FirstCircleIntersection ->
+                            firstRoot
 
-                SecondCircleIntersection ->
-                    Ok (Maybe.withDefault firstPoint (List.head remainingPoints))
+                        SecondCircleIntersection ->
+                            Maybe.withDefault firstRoot (List.head remainingRoots)
+            in
+            if isWithinSegmentParameter root.parameter then
+                Ok root.position
+
+            else
+                Err (SelectedIntersectionOutsideSegment segment.ref circle.ref)
 
         Ok [] ->
             Err (SegmentDoesNotMeetCircle segment.ref circle.ref)
@@ -2392,20 +2417,17 @@ circleIntersectionBranchAt pointer first second world =
 
 segmentCircleIntersectionBranchAt : Vec2 -> GeometryPartRef -> GeometryPartRef -> World -> CircleIntersectionBranch
 segmentCircleIntersectionBranchAt pointer segment circle world =
-    case
-        Maybe.map2 segmentCircleIntersectionPoints
-            (segmentBodyFor segment world)
-            (circleBodyFor circle world)
-    of
-        Just (Ok (firstPoint :: secondPoint :: _)) ->
-            if Vec2.distanceSquared pointer secondPoint < Vec2.distanceSquared pointer firstPoint then
-                SecondCircleIntersection
-
-            else
-                FirstCircleIntersection
-
-        _ ->
-            FirstCircleIntersection
+    Maybe.map2 segmentCircleIntersectionCandidates
+        (segmentBodyFor segment world)
+        (circleBodyFor circle world)
+        |> Maybe.andThen Result.toMaybe
+        |> Maybe.map
+            (List.sortBy (Vec2.distanceSquared pointer << .position)
+                >> List.head
+                >> Maybe.map .branch
+            )
+        |> Maybe.andThen identity
+        |> Maybe.withDefault FirstCircleIntersection
 
 
 lineCircleIntersectionBranchAt : Vec2 -> GeometryPartRef -> GeometryPartRef -> World -> CircleIntersectionBranch
@@ -4327,12 +4349,12 @@ intersectionPreview model =
                             |> Maybe.withDefault []
 
                     ( SegmentBody, CircleBody ) ->
-                        Maybe.map2 segmentCircleIntersectionPoints
+                        Maybe.map2 segmentCircleIntersectionCandidates
                             (segmentBodyFor first model.world)
                             (circleBodyFor second model.world)
                             |> Maybe.andThen Result.toMaybe
                             |> Maybe.map
-                                (circleIntersectionPreviewPoints
+                                (segmentCircleIntersectionPreviewPoints
                                     (segmentCircleIntersectionBranchAt
                                         model.pointerPosition
                                         first
@@ -4343,12 +4365,12 @@ intersectionPreview model =
                             |> Maybe.withDefault []
 
                     ( CircleBody, SegmentBody ) ->
-                        Maybe.map2 segmentCircleIntersectionPoints
+                        Maybe.map2 segmentCircleIntersectionCandidates
                             (segmentBodyFor second model.world)
                             (circleBodyFor first model.world)
                             |> Maybe.andThen Result.toMaybe
                             |> Maybe.map
-                                (circleIntersectionPreviewPoints
+                                (segmentCircleIntersectionPreviewPoints
                                     (segmentCircleIntersectionBranchAt
                                         model.pointerPosition
                                         second
@@ -4434,6 +4456,17 @@ circleIntersectionPreviewPoints branch points =
 
         [] ->
             []
+
+
+segmentCircleIntersectionPreviewPoints : CircleIntersectionBranch -> List SegmentCircleIntersectionRoot -> List ( Vec2, Bool )
+segmentCircleIntersectionPreviewPoints branch roots =
+    roots
+        |> List.map
+            (\root ->
+                ( root.position
+                , root.branch == branch
+                )
+            )
 
 
 viewIntersectionPreview : ( Vec2, Bool ) -> List (Html Msg)
@@ -4565,6 +4598,9 @@ evaluationErrorDescription error =
 
         IntersectionOutsideSegment segment line ->
             "Line meets outside segment " ++ geometryPartPairDescription segment line
+
+        SelectedIntersectionOutsideSegment segment circle ->
+            "Selected intersection lies outside segment " ++ geometryPartPairDescription segment circle
 
         SegmentDoesNotMeetCircle segment circle ->
             "Segment does not meet circle " ++ geometryPartPairDescription segment circle
