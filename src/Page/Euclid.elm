@@ -1,4 +1,4 @@
-module Page.Euclid exposing (CircleExpr, CircleIntersectionBranch, Components, DragBehavior, EntityId, EvaluationError, Geometry, GeometryPartKind, GeometryPartRef, Interaction, LineExpr, Model, Msg, Node, PlacementCandidate, PointExpr, SegmentExpr, Selectable, Singletons, Tool, World, info, init, subscriptions, update, view)
+module Page.Euclid exposing (CircleExpr, CircleIntersectionBranch, Components, DragBehavior, EntityId, EvaluationError, Geometry, GeometryPartKind, GeometryPartRef, HistoryTransition, Interaction, LineExpr, Model, Msg, Node, PlacementCandidate, PointExpr, SegmentExpr, Selectable, Singletons, StateTransition, Tool, World, info, init, subscriptions, update, view)
 
 import Dict exposing (Dict)
 import Ecs
@@ -27,7 +27,7 @@ info =
     , hash = "euclid"
     , date = "2026-08-30"
     , description = Markdown.toHtml [] """
-An experimental, GeoGebra-inspired 2D construction playground: place, attach, and compose live geometric expressions.
+An interactive construction field where points, lines, and circles become luminous artifacts.
        """
     , srcRel = "Page/Euclid.elm"
     }
@@ -255,6 +255,19 @@ type AttachmentAction
 type alias DragState =
     { geometryPart : GeometryPartRef
     , initialWorld : World
+    , previousPosition : Vec2
+    , previousWorld : World
+    }
+
+
+type HistoryTransition
+    = UndoTransition
+    | RedoTransition
+
+
+type alias StateTransition =
+    { direction : HistoryTransition
+    , elapsed : Float
     }
 
 
@@ -276,6 +289,7 @@ type alias Model =
     , circlePreviewThrough : Maybe Vec2
     , intersectionStart : Maybe GeometryPartRef
     , pointerPosition : Vec2
+    , stateTransition : Maybe StateTransition
     }
 
 
@@ -292,6 +306,7 @@ type Msg
     | PointerUp Vec2
     | PointerCancelled
     | AttachmentTick
+    | StateTransitionTick
 
 
 
@@ -313,6 +328,7 @@ init =
       , circlePreviewThrough = Nothing
       , intersectionStart = Nothing
       , pointerPosition = vec2 0 0
+      , stateTransition = Nothing
       }
     , Cmd.none
     )
@@ -373,6 +389,9 @@ update msg model =
 
         AttachmentTick ->
             ( advanceAttachmentAnimation model, Cmd.none )
+
+        StateTransitionTick ->
+            ( advanceStateTransition model, Cmd.none )
 
 
 recordUndoSnapshot : World -> Model -> Model
@@ -439,6 +458,7 @@ undo model =
                 | world = derivedComponentsSystem previousWorld
                 , undoHistory = remainingHistory
                 , redoHistory = model.world :: model.redoHistory
+                , stateTransition = Just { direction = UndoTransition, elapsed = 0 }
             }
                 |> clearTransientInteraction
 
@@ -454,6 +474,7 @@ redo model =
                 | world = derivedComponentsSystem nextWorld
                 , undoHistory = model.world :: model.undoHistory
                 , redoHistory = remainingHistory
+                , stateTransition = Just { direction = RedoTransition, elapsed = 0 }
             }
                 |> clearTransientInteraction
 
@@ -691,8 +712,9 @@ movePointer pointer model =
                             Dragging
                                 { geometryPart = hold.geometryPart
                                 , initialWorld = hold.initialWorld
+                                , previousPosition = model.pointerPosition
+                                , previousWorld = model.world
                                 }
-                        , world = dragSystem hold.geometryPart pointer model.world
                         , pointerPosition = pointer
                     }
 
@@ -709,8 +731,9 @@ movePointer pointer model =
                             Dragging
                                 { geometryPart = hold.geometryPart
                                 , initialWorld = hold.initialWorld
+                                , previousPosition = model.pointerPosition
+                                , previousWorld = model.world
                                 }
-                        , world = dragSystem hold.geometryPart pointer model.world
                         , pointerPosition = pointer
                     }
 
@@ -719,7 +742,13 @@ movePointer pointer model =
 
         Dragging drag ->
             { model
-                | world = dragSystem drag.geometryPart pointer model.world
+                | interaction =
+                    Dragging
+                        { drag
+                            | previousPosition = model.pointerPosition
+                            , previousWorld = model.world
+                        }
+                , world = dragSystem drag.geometryPart pointer model.world
                 , pointerPosition = pointer
             }
 
@@ -2512,7 +2541,12 @@ attachmentProgressDuration =
 
 attachmentNoticeDuration : Float
 attachmentNoticeDuration =
-    600
+    420
+
+
+stateTransitionDuration : Float
+stateTransitionDuration =
+    360
 
 
 attachmentCompletionDelay : Float
@@ -2773,6 +2807,24 @@ advanceAttachmentNotice notice model =
                 AttachmentNotice
                     { notice | elapsed = elapsed }
         }
+
+
+advanceStateTransition : Model -> Model
+advanceStateTransition model =
+    case model.stateTransition of
+        Just transition ->
+            let
+                elapsed =
+                    transition.elapsed + attachmentTickInterval
+            in
+            if elapsed >= stateTransitionDuration then
+                { model | stateTransition = Nothing }
+
+            else
+                { model | stateTransition = Just { transition | elapsed = elapsed } }
+
+        Nothing ->
+            model
 
 
 snapCircleToGuides : GeometryPartRef -> CircleHitTarget -> Vec2 -> World -> Vec2
@@ -3319,37 +3371,45 @@ view : Model -> Html Msg
 view model =
     div [ class "columns is-centered mt-1" ]
         [ div [ class "column is-four-fifths" ]
-            [ geometryToolbar model
-            , div [ class "box has-text-centered" ]
-                [ Svg.svg
-                    ([ SvgAttr.class "euclid-canvas mx-auto"
-                     , width "100%"
-                     , style "max-width" (String.fromFloat canvasWidth ++ "px")
-                     , height "100%"
-                     , viewBox
-                        ("0 0 "
-                            ++ String.fromFloat canvasWidth
-                            ++ " "
-                            ++ String.fromFloat canvasHeight
-                        )
-                     ]
-                        ++ svgInteractionAttributes model
-                    )
-                    [ viewGridDefinitions
-                    , viewCanvasBackground
-                    , Svg.g [ SvgAttr.id "layers" ]
-                        [ Svg.g
-                            [ SvgAttr.id "layer-canvas"
-                            , style "pointer-events" "none"
-                            ]
-                            (canvasLayers model)
-                        , Svg.g
-                            [ SvgAttr.id "layer-graphics"
-                            , style "pointer-events" "none"
-                            ]
-                            [ viewPointerPosition model.pointerPosition
-                            , viewMidpointHoverLabel model
-                            , viewIntersectionHoverLabel model
+            [ div [ class "euclid-chamber" ]
+                [ geometryToolbar model
+                , div [ class "euclid-stage" ]
+                    [ div [ class "euclid-hud" ]
+                        [ div [ class "euclid-hud-label" ] [ text "Active instrument" ]
+                        , div [ class "euclid-hud-status" ] [ text (activeToolLabel model.activeTool) ]
+                        ]
+                    , div [ class "euclid-canvas-frame" ]
+                        [ Svg.svg
+                            ([ SvgAttr.class "euclid-canvas"
+                             , width "100%"
+                             , style "max-width" (String.fromFloat canvasWidth ++ "px")
+                             , height "100%"
+                             , viewBox
+                                ("0 0 "
+                                    ++ String.fromFloat canvasWidth
+                                    ++ " "
+                                    ++ String.fromFloat canvasHeight
+                                )
+                             ]
+                                ++ svgInteractionAttributes model
+                            )
+                            [ viewGridDefinitions
+                            , viewCanvasBackground
+                            , Svg.g [ SvgAttr.id "layers" ]
+                                [ Svg.g
+                                    [ SvgAttr.id "layer-canvas"
+                                    , style "pointer-events" "none"
+                                    ]
+                                    (canvasLayers model)
+                                , Svg.g
+                                    [ SvgAttr.id "layer-graphics"
+                                    , style "pointer-events" "none"
+                                    ]
+                                    [ viewPointerPosition model.pointerPosition
+                                    , viewMidpointHoverLabel model
+                                    , viewIntersectionHoverLabel model
+                                    ]
+                                ]
                             ]
                         ]
                     ]
@@ -3361,19 +3421,37 @@ view model =
 
 worldExpressionView : World -> Html Msg
 worldExpressionView world =
-    pre
-        [ class "has-text-left mt-4 p-3"
-        , style "font-family" "monospace"
-        , style "white-space" "pre-wrap"
-        , style "overflow-wrap" "anywhere"
-        , style "background-color" "#111827"
-        , style "color" "#cbd5e1"
-        , style "border-radius" "0.5rem"
+    let
+        entries =
+            worldExpressionEntries world
+    in
+    div [ class "euclid-ledger" ]
+        [ div [ class "euclid-ledger-head" ]
+            [ div [ class "euclid-ledger-label" ] [ text "Construction ledger" ]
+            , div [ class "euclid-ledger-state" ]
+                [ text <|
+                    case List.length entries of
+                        0 ->
+                            "Awaiting first artifact"
+
+                        1 ->
+                            "1 artifact synchronized"
+
+                        count ->
+                            String.fromInt count ++ " artifacts synchronized"
+                ]
+            ]
+        , pre
+            [ class "has-text-left"
+            , style "font-family" "monospace"
+            , style "white-space" "pre-wrap"
+            , style "overflow-wrap" "anywhere"
+            ]
+            (entries
+                |> List.map worldExpressionEntryView
+                |> List.intersperse (syntaxToken ", ")
+            )
         ]
-        (worldExpressionEntries world
-            |> List.map worldExpressionEntryView
-            |> List.intersperse (syntaxToken ", ")
-        )
 
 
 circleIntersectionBranchView : CircleIntersectionBranch -> Html Msg
@@ -3650,12 +3728,14 @@ canvasLayers model =
                     )
                     []
     in
-    List.map viewGuide (guidesFor model)
+    dragWake model
+        ++ List.map viewGuide (guidesFor model)
         ++ List.map viewSegmentPreview (segmentPreviews model)
         ++ List.map viewLinePreview (linePreviews model)
         ++ List.map viewCirclePreview (circlePreviews model)
         ++ geometryLayers
         ++ attachmentPreview model
+        ++ stateTransitionEffect model
         ++ (model
                 |> midpointPreview
                 |> Maybe.map viewMidpointPreview
@@ -3665,6 +3745,208 @@ canvasLayers model =
                 |> intersectionPreview
                 |> List.concatMap viewIntersectionPreview
            )
+
+
+dragWake : Model -> List (Html Msg)
+dragWake model =
+    case model.interaction of
+        Dragging drag ->
+            Svg.g [ SvgAttr.class "euclid-drag-wake" ]
+                [ Svg.circle
+                    [ cx (String.fromFloat (Vec2.getX drag.previousPosition))
+                    , cy (String.fromFloat (Vec2.getY drag.previousPosition))
+                    , r "15"
+                    , fill "#77f4ff"
+                    , opacity "0.08"
+                    ]
+                    []
+                , Svg.line
+                    [ x1 (String.fromFloat (Vec2.getX drag.previousPosition))
+                    , y1 (String.fromFloat (Vec2.getY drag.previousPosition))
+                    , x2 (String.fromFloat (Vec2.getX model.pointerPosition))
+                    , y2 (String.fromFloat (Vec2.getY model.pointerPosition))
+                    , stroke "#baf8ff"
+                    , strokeWidth "5"
+                    , strokeDasharray "2 7"
+                    , opacity "0.38"
+                    ]
+                    []
+                ]
+                :: dragGeometryWake drag model.world
+
+        _ ->
+            []
+
+
+dragGeometryWake : DragState -> World -> List (Html Msg)
+dragGeometryWake drag currentWorld =
+    currentWorld
+        |> Ecs.EntityComponents.foldFromRight
+            specs.evaluated
+            (\entityId current accumulator ->
+                case
+                    ( current |> Result.toMaybe
+                    , drag.previousWorld
+                        |> Ecs.onEntity entityId
+                        |> Ecs.getComponent specs.evaluated
+                        |> Maybe.andThen Result.toMaybe
+                    )
+                of
+                    ( Just currentGeometry, Just previousGeometry ) ->
+                        if geometryMoved previousGeometry currentGeometry then
+                            viewGeometryWake previousGeometry :: accumulator
+
+                        else
+                            accumulator
+
+                    _ ->
+                        accumulator
+            )
+            []
+
+
+geometryMoved : Geometry -> Geometry -> Bool
+geometryMoved previous current =
+    case ( previous, current ) of
+        ( GPoint previousPoint, GPoint currentPoint ) ->
+            Vec2.distanceSquared previousPoint currentPoint > 0.01
+
+        ( GSegment previousStart previousEnd, GSegment currentStart currentEnd ) ->
+            Vec2.distanceSquared previousStart currentStart
+                > 0.01
+                || Vec2.distanceSquared previousEnd currentEnd
+                > 0.01
+
+        ( GLine previousStart previousEnd, GLine currentStart currentEnd ) ->
+            Vec2.distanceSquared previousStart currentStart
+                > 0.01
+                || Vec2.distanceSquared previousEnd currentEnd
+                > 0.01
+
+        ( GCircle previousCenter previousThrough, GCircle currentCenter currentThrough ) ->
+            Vec2.distanceSquared previousCenter currentCenter
+                > 0.01
+                || Vec2.distanceSquared previousThrough currentThrough
+                > 0.01
+
+        _ ->
+            False
+
+
+viewGeometryWake : Geometry -> Html Msg
+viewGeometryWake geometry =
+    case geometry of
+        GPoint point ->
+            Svg.circle
+                [ SvgAttr.class "euclid-geometry-wake"
+                , cx (String.fromFloat (Vec2.getX point))
+                , cy (String.fromFloat (Vec2.getY point))
+                , r "11"
+                , fill "#77f4ff"
+                , opacity "0.12"
+                ]
+                []
+
+        GSegment start end ->
+            Svg.line
+                [ SvgAttr.class "euclid-geometry-wake"
+                , x1 (String.fromFloat (Vec2.getX start))
+                , y1 (String.fromFloat (Vec2.getY start))
+                , x2 (String.fromFloat (Vec2.getX end))
+                , y2 (String.fromFloat (Vec2.getY end))
+                , stroke "#baf8ff"
+                , strokeWidth "5"
+                , strokeDasharray "3 8"
+                , opacity "0.24"
+                ]
+                []
+
+        GLine start end ->
+            lineViewportEndpoints start end
+                |> Maybe.map
+                    (\( first, second ) ->
+                        Svg.line
+                            [ SvgAttr.class "euclid-geometry-wake"
+                            , x1 (String.fromFloat (Vec2.getX first))
+                            , y1 (String.fromFloat (Vec2.getY first))
+                            , x2 (String.fromFloat (Vec2.getX second))
+                            , y2 (String.fromFloat (Vec2.getY second))
+                            , stroke "#baf8ff"
+                            , strokeWidth "4"
+                            , strokeDasharray "3 8"
+                            , opacity "0.18"
+                            ]
+                            []
+                    )
+                |> Maybe.withDefault (Svg.g [] [])
+
+        GCircle center through ->
+            Svg.circle
+                [ SvgAttr.class "euclid-geometry-wake"
+                , cx (String.fromFloat (Vec2.getX center))
+                , cy (String.fromFloat (Vec2.getY center))
+                , r (String.fromFloat (sqrt (Vec2.distanceSquared center through)))
+                , fill "none"
+                , stroke "#baf8ff"
+                , strokeWidth "5"
+                , strokeDasharray "3 8"
+                , opacity "0.2"
+                ]
+                []
+
+
+stateTransitionEffect : Model -> List (Html Msg)
+stateTransitionEffect model =
+    model.stateTransition
+        |> Maybe.map
+            (\transition ->
+                let
+                    progress =
+                        transition.elapsed / stateTransitionDuration
+
+                    x =
+                        case transition.direction of
+                            UndoTransition ->
+                                canvasWidth + 180 - progress * (canvasWidth + 360)
+
+                            RedoTransition ->
+                                -180 + progress * (canvasWidth + 360)
+
+                    color =
+                        case transition.direction of
+                            UndoTransition ->
+                                "#77f4ff"
+
+                            RedoTransition ->
+                                "#b79aff"
+
+                    opacity_ =
+                        String.fromFloat (0.28 * (1 - abs (2 * progress - 1)))
+                in
+                [ Svg.g [ SvgAttr.class "euclid-state-transition" ]
+                    [ Svg.rect
+                        [ SvgAttr.x (String.fromFloat x)
+                        , SvgAttr.y "0"
+                        , width "150"
+                        , height (String.fromFloat canvasHeight)
+                        , fill color
+                        , opacity opacity_
+                        ]
+                        []
+                    , Svg.line
+                        [ x1 (String.fromFloat (x + 75))
+                        , y1 "0"
+                        , x2 (String.fromFloat (x + 75))
+                        , y2 (String.fromFloat canvasHeight)
+                        , stroke color
+                        , strokeWidth "2"
+                        , opacity "0.75"
+                        ]
+                        []
+                    ]
+                ]
+            )
+        |> Maybe.withDefault []
 
 
 attachmentPreview : Model -> List (Html Msg)
@@ -3777,26 +4059,59 @@ attachmentActionLabel action =
 viewAttachmentNotice : Vec2 -> AttachmentNoticeState -> Html Msg
 viewAttachmentNotice position notice =
     let
-        opacity_ =
-            animationFadeIn (notice.elapsed / 100)
-                * clamp 0 1 (1 - notice.elapsed / attachmentNoticeDuration)
+        progress =
+            clamp 0 1 (notice.elapsed / attachmentNoticeDuration)
+
+        color =
+            case notice.outcome of
+                Attached ->
+                    "#79f5c5"
+
+                Detached ->
+                    "#ffd36e"
+
+        burstRadius =
+            14 + progress * 76
+
+        burstOpacity =
+            String.fromFloat (0.9 * (1 - progress))
     in
-    Svg.g [ opacity (String.fromFloat opacity_) ]
+    Svg.g [ SvgAttr.class "euclid-attachment-burst" ]
         [ Svg.circle
+            [ cx (String.fromFloat (Vec2.getX position))
+            , cy (String.fromFloat (Vec2.getY position))
+            , r (String.fromFloat burstRadius)
+            , fill "none"
+            , stroke color
+            , strokeWidth "2.5"
+            , strokeDasharray "3 7"
+            , opacity burstOpacity
+            ]
+            []
+        , Svg.circle
+            [ cx (String.fromFloat (Vec2.getX position))
+            , cy (String.fromFloat (Vec2.getY position))
+            , r (String.fromFloat (burstRadius * 0.58))
+            , fill color
+            , opacity (String.fromFloat (0.12 * (1 - progress)))
+            ]
+            []
+        , Svg.circle
             [ cx (String.fromFloat (Vec2.getX position))
             , cy (String.fromFloat (Vec2.getY position))
             , r "13"
             , fill "none"
-            , stroke "#48c78e"
+            , stroke color
             , strokeWidth "2"
             ]
             []
         , Svg.text_
             [ SvgAttr.x (String.fromFloat (Vec2.getX position + 16))
             , SvgAttr.y (String.fromFloat (Vec2.getY position - 12))
-            , fill "#48c78e"
+            , fill color
             , SvgAttr.fontFamily "monospace"
             , SvgAttr.fontSize "12"
+            , opacity burstOpacity
             ]
             [ Svg.text (attachmentOutcomeLabel notice.outcome) ]
         ]
@@ -3857,15 +4172,15 @@ viewGridDefinitions =
         [ Svg.pattern
             [ SvgAttr.id "euclid-small-grid"
             , SvgAttr.patternUnits "userSpaceOnUse"
-            , width "10"
-            , height "10"
+            , width "20"
+            , height "20"
             ]
             [ Svg.path
-                [ SvgAttr.d "M 10 0 L 0 0 0 10"
+                [ SvgAttr.d "M 20 0 L 0 0 0 20"
                 , fill "none"
-                , stroke "#334155"
+                , stroke "#77f4ff"
                 , strokeWidth "0.5"
-                , opacity "0.55"
+                , opacity "0.055"
                 ]
                 []
             ]
@@ -3875,14 +4190,13 @@ viewGridDefinitions =
             , width "100"
             , height "100"
             ]
-            [ Svg.rect [ width "100", height "100", fill "#0f172a" ] []
-            , Svg.rect [ width "100", height "100", fill "url(#euclid-small-grid)" ] []
+            [ Svg.rect [ width "100", height "100", fill "url(#euclid-small-grid)" ] []
             , Svg.path
                 [ SvgAttr.d "M 100 0 L 0 0 0 100"
                 , fill "none"
-                , stroke "#64748b"
+                , stroke "#b79aff"
                 , strokeWidth "1"
-                , opacity "0.7"
+                , opacity "0.1"
                 ]
                 []
             ]
@@ -3891,12 +4205,32 @@ viewGridDefinitions =
 
 viewCanvasBackground : Html Msg
 viewCanvasBackground =
-    Svg.rect
-        [ width (String.fromFloat canvasWidth)
-        , height (String.fromFloat canvasHeight)
-        , fill "url(#euclid-grid)"
+    Svg.g [ SvgAttr.class "euclid-atmosphere" ]
+        [ Svg.rect
+            [ width (String.fromFloat canvasWidth)
+            , height (String.fromFloat canvasHeight)
+            , fill "#070a14"
+            ]
+            []
+        , Svg.rect
+            [ width (String.fromFloat canvasWidth)
+            , height (String.fromFloat canvasHeight)
+            , fill "url(#euclid-grid)"
+            ]
+            []
+        , Svg.g [ SvgAttr.class "euclid-starfield" ]
+            [ Svg.circle [ SvgAttr.class "euclid-star", cx "74", cy "116", r "1.5", fill "#d9fcff", opacity "0.34" ] []
+            , Svg.circle [ SvgAttr.class "euclid-star", cx "163", cy "58", r "1", fill "#d9fcff", opacity "0.28" ] []
+            , Svg.circle [ SvgAttr.class "euclid-star", cx "255", cy "185", r "1.5", fill "#b79aff", opacity "0.3" ] []
+            , Svg.circle [ SvgAttr.class "euclid-star", cx "375", cy "80", r "1", fill "#d9fcff", opacity "0.32" ] []
+            , Svg.circle [ SvgAttr.class "euclid-star", cx "485", cy "145", r "1.5", fill "#d9fcff", opacity "0.25" ] []
+            , Svg.circle [ SvgAttr.class "euclid-star", cx "700", cy "170", r "1", fill "#d9fcff", opacity "0.3" ] []
+            , Svg.circle [ SvgAttr.class "euclid-star", cx "754", cy "395", r "1.5", fill "#b79aff", opacity "0.26" ] []
+            , Svg.circle [ SvgAttr.class "euclid-star", cx "574", cy "514", r "1", fill "#d9fcff", opacity "0.3" ] []
+            , Svg.circle [ SvgAttr.class "euclid-star", cx "195", cy "458", r "1.5", fill "#b79aff", opacity "0.28" ] []
+            , Svg.circle [ SvgAttr.class "euclid-star", cx "84", cy "530", r "1", fill "#d9fcff", opacity "0.34" ] []
+            ]
         ]
-        []
 
 
 viewPointerPosition : Vec2 -> Html Msg
@@ -3951,6 +4285,34 @@ viewConstructedPointHoverLabel label position =
         , SvgAttr.fontSize "12"
         ]
         [ Svg.text label ]
+
+
+activeToolLabel : Maybe Tool -> String
+activeToolLabel activeTool =
+    case activeTool of
+        Just SelectTool ->
+            "SELECT / MOVE"
+
+        Just PointTool ->
+            "SUMMON POINT"
+
+        Just SegmentTool ->
+            "BIND SEGMENT"
+
+        Just LineTool ->
+            "CAST LINE"
+
+        Just CircleTool ->
+            "TRACE ORBIT"
+
+        Just MidpointTool ->
+            "REVEAL MIDPOINT"
+
+        Just IntersectionTool ->
+            "FIND CROSSING"
+
+        Nothing ->
+            "FIELD STANDBY"
 
 
 geometryToolbar : Model -> Html Msg
@@ -4713,6 +5075,18 @@ pointConstructionDetails isMidpoint isIntersection point =
         []
 
 
+geometryVisualClass : Model -> String -> String
+geometryVisualClass model geometryKind =
+    "euclid-geometry "
+        ++ geometryKind
+        ++ (if model.stateTransition == Nothing then
+                ""
+
+            else
+                " euclid-state-muted"
+           )
+
+
 viewGeometry : Model -> EntityId -> Geometry -> Html Msg
 viewGeometry model entityId geometry =
     case geometry of
@@ -4727,23 +5101,24 @@ viewGeometry model entityId geometry =
                 isIntersection =
                     isIntersectionPoint entityId model.world
             in
-            Svg.g []
+            Svg.g [ SvgAttr.class (geometryVisualClass model "euclid-point") ]
                 (Svg.circle
-                    [ cx (String.fromFloat (Vec2.getX point))
+                    [ SvgAttr.class "euclid-point-core"
+                    , cx (String.fromFloat (Vec2.getX point))
                     , cy (String.fromFloat (Vec2.getY point))
-                    , r "7"
+                    , r "6"
                     , fill
                         (if isAttachedPoint geometryPart model.world then
-                            "#48c78e"
+                            "#79f5c5"
 
                          else if isHighlighted geometryPart model then
-                            "#f5a623"
+                            "#ffd36e"
 
                          else
-                            "#3273dc"
+                            "#77f4ff"
                         )
-                    , stroke "#1f2933"
-                    , strokeWidth "2"
+                    , stroke "#e8fcff"
+                    , strokeWidth "1.5"
                     ]
                     []
                     :: pointConstructionDetails isMidpoint isIntersection point
@@ -4755,19 +5130,20 @@ viewGeometry model entityId geometry =
                     { owner = entityId, kind = SegmentBody }
             in
             Svg.line
-                [ x1 (String.fromFloat (Vec2.getX start))
+                [ SvgAttr.class (geometryVisualClass model "euclid-segment")
+                , x1 (String.fromFloat (Vec2.getX start))
                 , y1 (String.fromFloat (Vec2.getY start))
                 , x2 (String.fromFloat (Vec2.getX end))
                 , y2 (String.fromFloat (Vec2.getY end))
                 , stroke
                     (if isHighlighted geometryPart model then
-                        "#f5a623"
+                        "#ffd36e"
 
                      else if isDependencyHighlighted geometryPart model then
-                        "#cbd5e1"
+                        "#b79aff"
 
                      else
-                        "#94a3b8"
+                        "#77f4ff"
                     )
                 , strokeWidth
                     (if isHighlighted geometryPart model then
@@ -4811,7 +5187,8 @@ viewGeometry model entityId geometry =
                                     "2"
                         in
                         Svg.line
-                            [ x1 (String.fromFloat (Vec2.getX first))
+                            [ SvgAttr.class (geometryVisualClass model "euclid-line")
+                            , x1 (String.fromFloat (Vec2.getX first))
                             , y1 (String.fromFloat (Vec2.getY first))
                             , x2 (String.fromFloat (Vec2.getX second))
                             , y2 (String.fromFloat (Vec2.getY second))
@@ -4831,13 +5208,14 @@ viewGeometry model entityId geometry =
                 [ cx (String.fromFloat (Vec2.getX center))
                 , cy (String.fromFloat (Vec2.getY center))
                 , r (String.fromFloat (sqrt (Vec2.distanceSquared center through)))
+                , SvgAttr.class (geometryVisualClass model "euclid-circle")
                 , fill "none"
                 , stroke
                     (if isHighlighted geometryPart model then
-                        "#f5a623"
+                        "#ffd36e"
 
                      else
-                        "#94a3b8"
+                        "#b79aff"
                     )
                 , strokeWidth
                     (if isHighlighted geometryPart model then
@@ -4856,7 +5234,15 @@ viewGeometry model entityId geometry =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    case model.interaction of
+    Sub.batch
+        [ attachmentSubscription model.interaction
+        , stateTransitionSubscription model.stateTransition
+        ]
+
+
+attachmentSubscription : Interaction -> Sub Msg
+attachmentSubscription interaction =
+    case interaction of
         Holding hold ->
             case hold.action of
                 Just _ ->
@@ -4869,4 +5255,14 @@ subscriptions model =
             Time.every attachmentTickInterval (\_ -> AttachmentTick)
 
         _ ->
+            Sub.none
+
+
+stateTransitionSubscription : Maybe StateTransition -> Sub Msg
+stateTransitionSubscription transition =
+    case transition of
+        Just _ ->
+            Time.every attachmentTickInterval (\_ -> StateTransitionTick)
+
+        Nothing ->
             Sub.none

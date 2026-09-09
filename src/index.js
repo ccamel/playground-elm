@@ -14,6 +14,7 @@ import './Page/maze.css';
 import './Page/physics.css';
 import './Page/term.css';
 import './Page/dapp.css';
+import './Page/euclid.css';
 import './fonts/font.css';
 import 'font-awesome/css/font-awesome.css';
 
