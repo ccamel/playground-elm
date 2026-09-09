@@ -101,7 +101,10 @@ Examples: `Page.Term` (JavaScript evaluation), `Page.Dapp` (Web3 wallet integrat
 pnpm install          # Install dependencies
 pnpm serve            # Development server (localhost:1234)
 pnpm build            # Production build
-pnpm lint             # Run elm-review + elm-format + eslint
+pnpm lint             # Run all Elm, JavaScript and CSS linting checks
+pnpm lint:elm         # Run Elm linting and formatting checks
+pnpm lint:js          # Run JavaScript linting
+pnpm lint:css         # Run CSS linting
 ```
 
 ### CSS Architecture
@@ -150,9 +153,9 @@ pnpm lint             # Run elm-review + elm-format + eslint
 
 ### Linting Setup
 
-- `elm-review`: Elm code analysis (config in `review/`)
-- `elm-format`: Code formatting
-- `eslint`: JavaScript linting
+- `elm-review` and `elm-format`: Elm linting and formatting (`pnpm lint:elm`)
+- `eslint`: JavaScript linting (`pnpm lint:js`)
+- `stylelint`: CSS linting (`pnpm lint:css`)
 - Run all: `pnpm lint`
 
 ### Deployment

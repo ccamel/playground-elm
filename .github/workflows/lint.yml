@@ -25,7 +25,40 @@ jobs:
       - name: Check commits
         uses: wagoid/commitlint-github-action@v6
 
-  lint-source:
+  lint-css:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Setup node environment
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22.20"
+          package-manager-cache: false
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Get pnpm store path
+        id: pnpm-store
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Fetch dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint CSS
+        run: pnpm lint:css
+
+  lint-elm:
     runs-on: ubuntu-22.04
     env:
       ELM_HOME: ${{ github.workspace }}/.elm
@@ -33,7 +66,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
-      - name: Setup node environment (for building)
+      - name: Setup node environment
         uses: actions/setup-node@v7
         with:
           node-version: "22.20"
@@ -63,12 +96,43 @@ jobs:
             elm-
 
       - name: Fetch dependencies
-        run: |
-          pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
-      - name: Lint project
-        run: |
-          pnpm lint
+      - name: Lint Elm
+        run: pnpm lint:elm
+
+  lint-js:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Setup node environment
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22.20"
+          package-manager-cache: false
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Get pnpm store path
+        id: pnpm-store
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Fetch dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint JavaScript
+        run: pnpm lint:js
 
   lint-markdown:
     runs-on: ubuntu-22.04
