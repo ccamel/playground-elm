@@ -81,6 +81,9 @@ importers:
       parcel-reporter-static-files-copy:
         specifier: ^1.5.3
         version: 1.5.3(@parcel/core@2.16.4(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)
+      posthtml:
+        specifier: ^0.16.6
+        version: 0.16.6
       posthtml-expressions:
         specifier: ^1.11.4
         version: 1.11.4

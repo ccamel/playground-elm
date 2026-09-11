@@ -78,6 +78,7 @@
     "node-elm-compiler": "^5.0.6",
     "parcel": "^2.16.4",
     "parcel-reporter-static-files-copy": "^1.5.3",
+    "posthtml": "^0.16.6",
     "posthtml-expressions": "^1.11.4",
     "prettier": "^3.9.6",
     "release-it": "^21.0.2",
