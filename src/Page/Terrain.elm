@@ -1,23 +1,15 @@
 module Page.Terrain exposing (Model, Msg, info, init, subscriptions, update, view)
 
 import Browser.Events exposing (onAnimationFrameDelta)
-import Color exposing (black, blue, toCssString)
-import Color.Manipulate exposing (darken)
 import Html exposing (Html, div, input, p, section, text)
-import Html.Attributes as Attr exposing (name, size, type_, value)
+import Html.Attributes as Attr exposing (class, name, size, type_, value)
 import Html.Events exposing (onInput)
+import Json.Encode as Encode
 import Lib.Page
 import Lib.String exposing (strToFloatWithMinMax)
 import Markdown
-import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Random exposing (Seed)
-import String exposing (fromFloat, fromInt, join)
-import Svg exposing (Svg, rect)
-import Svg.Attributes as SvgAttr exposing (class, d, fill, points, stroke, strokeWidth, style, transform, version, viewBox, x, y)
-
-
-
--- PAGE INFO
+import String exposing (fromFloat)
 
 
 info : Lib.Page.PageInfo Msg
@@ -25,91 +17,68 @@ info =
     { name = "terrain"
     , hash = "terrain"
     , date = "2024-12-31"
-    , description = Markdown.toHtml [ Attr.class "content" ] """
-A retro-inspired endless terrain flyover, featuring a procedurally generated 1D landscape.
-       """
+    , description = Markdown.toHtml [ Attr.class "content" ] "A retro-inspired endless terrain flyover, rendered in a 320 × 200 pixel framebuffer with palette fog and a minimalist cockpit."
     , srcRel = "Page/Terrain.elm"
     }
 
 
-
--- MODEL
-
-
 type alias Parameters =
-    { width : Int
-    , height : Int
-    , speed : Float
-    , nbCurves : Int
-    , near : Float
-    , offsetFactor : Float
-    , xScale : Float
-    , yScale : Float
-    , depth : Int
-    , hurst : Float
+    { speed : Float
     , mountainProbability : Float
-    , shapeColor : Color.Color
-    , groundColor : Color.Color
     }
 
 
-type alias ModelRecord =
-    { parameters : Parameters
-    , terrain : Terrain -- the terrain to render
-    , time : Float -- for animation, in milliseconds
-    , seed : Seed -- for random
+type alias Slice =
+    { heights : List Float, distance : Float }
+
+
+type alias Landscape =
+    { start : List Float
+    , target : List Float
+    , step : Int
+    , seed : Seed
     }
 
 
 type Model
-    = Model ModelRecord
+    = Model
+        { parameters : Parameters
+        , terrain : List Slice
+        , landscape : Landscape
+        }
+
+
+sliceSpacing : Float
+sliceSpacing =
+    24
+
+
+sliceCount : Int
+sliceCount =
+    18
+
+
+camera : { heading : Int, altitude : Float }
+camera =
+    { heading = 0, altitude = 70 }
 
 
 init : ( Model, Cmd Msg )
 init =
     let
         parameters =
-            initialParameters
+            { speed = 3, mountainProbability = 0.42 }
 
-        initialSeed =
-            Random.initialSeed 40
+        ( start, seed1 ) =
+            Random.step (profile parameters.mountainProbability) (Random.initialSeed 40)
 
-        curveGenerator =
-            generateFractal parameters.depth parameters.hurst (initialCurve parameters.mountainProbability)
+        ( target, seed2 ) =
+            Random.step (profile parameters.mountainProbability) seed1
 
-        ( curves, finalSeed ) =
-            Random.step (terrainGenerator (\idx -> toFloat idx) curveGenerator parameters.nbCurves) initialSeed
+        ( terrain, landscape ) =
+            appendSlices parameters.mountainProbability sliceCount 0 { start = start, target = target, step = 0, seed = seed2 }
     in
-    ( Model
-        { parameters = parameters
-        , terrain = curves
-        , time = 0.0
-        , seed = finalSeed
-        }
-    , Cmd.none
-    )
-
-
-initialParameters : Parameters
-initialParameters =
-    { width = 320
-    , height = 200
-    , speed = 2
-    , nbCurves = 40
-    , near = 300
-    , offsetFactor = 20.0
-    , xScale = 3.5
-    , yScale = 1.5
-    , depth = 4
-    , hurst = 1.2
-    , mountainProbability = 0.1
-    , shapeColor = blue
-    , groundColor = darken 0.3 blue
-    }
-
-
-
--- MESSAGES
+    ( Model { parameters = parameters, terrain = terrain, landscape = landscape }, Cmd.none )
 
 
 type Msg
@@ -118,76 +87,42 @@ type Msg
     | SetMountainProbability String
 
 
-
--- UPDATE
-
-
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg (Model ({ terrain, time, parameters, seed } as model)) =
-    Tuple.mapFirst Model <|
-        case msg of
-            GotAnimationFrameDeltaMilliseconds delta ->
-                let
-                    deltaZ =
-                        -1 * (parameters.speed * delta / 1000)
+update msg (Model model) =
+    let
+        parameters =
+            model.parameters
+    in
+    case msg of
+        GotAnimationFrameDeltaMilliseconds delta ->
+            let
+                -- Discard long pauses when the tab resumes; keep ordinary motion time based.
+                travel =
+                    parameters.speed * 12 * clamp 0 100 delta / 1000
 
-                    updatedTerrain =
-                        terrain
-                            |> moveTerrain deltaZ
-                            |> List.filter (\{ offset } -> offset > 0)
+                remaining =
+                    model.terrain
+                        |> List.map (\slice -> { slice | distance = slice.distance - travel })
+                        |> List.filter (\slice -> slice.distance > 0)
 
-                    terrainSize =
-                        List.length updatedTerrain
+                farthest =
+                    remaining |> List.reverse |> List.head |> Maybe.map .distance |> Maybe.withDefault 0
 
-                    neededLayers =
-                        parameters.nbCurves - terrainSize
+                ( added, landscape ) =
+                    appendSlices parameters.mountainProbability (sliceCount - List.length remaining) farthest model.landscape
+            in
+            ( Model { model | terrain = remaining ++ added, landscape = landscape }, Cmd.none )
 
-                    curveGenerator =
-                        generateFractal parameters.depth parameters.hurst (initialCurve parameters.mountainProbability)
+        SetSpeed raw ->
+            ( Model { model | parameters = { parameters | speed = strToFloatWithMinMax raw 0 25 |> Maybe.withDefault parameters.speed } }, Cmd.none )
 
-                    ( newTerrain, newSeed ) =
-                        Random.step (terrainGenerator (\idx -> toFloat (terrainSize + idx + 1)) curveGenerator neededLayers) seed
-                in
-                ( { model
-                    | time = time + delta
-                    , terrain = updatedTerrain ++ newTerrain
-                    , seed = newSeed
-                  }
-                , Cmd.none
-                )
-
-            SetSpeed newSpeed ->
-                ( case strToFloatWithMinMax newSpeed 0 25 of
-                    Just v ->
-                        { model | parameters = { parameters | speed = v } }
-
-                    Nothing ->
-                        model
-                , Cmd.none
-                )
-
-            SetMountainProbability newPMountain ->
-                ( case strToFloatWithMinMax newPMountain 0 100 of
-                    Just v ->
-                        { model | parameters = { parameters | mountainProbability = v / 100 } }
-
-                    Nothing ->
-                        model
-                , Cmd.none
-                )
-
-
-
--- SUBSCRIPTIONS
+        SetMountainProbability raw ->
+            ( Model { model | parameters = { parameters | mountainProbability = strToFloatWithMinMax raw 0 100 |> Maybe.map (\v -> v / 100) |> Maybe.withDefault parameters.mountainProbability } }, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     onAnimationFrameDelta GotAnimationFrameDeltaMilliseconds
-
-
-
--- VIEW
 
 
 view : Model -> Html Msg
@@ -199,10 +134,8 @@ view (Model { parameters, terrain }) =
                 [ div [ class "columns is-centered mt-1" ]
                     [ div [ class "column is-four-fifths" ]
                         [ div [ class "has-text-centered" ]
-                            [ div
-                                [ style ""
-                                ]
-                                [ viewTerrain parameters terrain
+                            [ div []
+                                [ viewTerrain terrain
                                 ]
                             ]
                         ]
@@ -242,249 +175,184 @@ view (Model { parameters, terrain }) =
         ]
 
 
-type alias ViewTerrainParams a =
-    { a | width : Int, height : Int, near : Float, offsetFactor : Float, xScale : Float, yScale : Float, shapeColor : Color.Color, groundColor : Color.Color }
-
-
-viewTerrain : ViewTerrainParams a -> Terrain -> Svg Msg
-viewTerrain ({ width, height, near, offsetFactor, xScale, yScale } as params) terrain =
+viewTerrain : List Slice -> Html Msg
+viewTerrain terrain =
     let
-        offsetYPct =
-            0.5
-
-        ( offsetX, offsetY ) =
-            ( toFloat width * (1 - xScale) / 2, offsetYPct * toFloat height )
-
-        terrains =
-            terrain
-                |> List.reverse
-                |> List.indexedMap
-                    (\idx { curve, offset } ->
-                        let
-                            z =
-                                offset * offsetFactor
-
-                            ( zoomX, zoomY ) =
-                                ( toFloat width / (toFloat <| List.length curve), yScale )
-
-                            perspectiveFactor =
-                                near / (near + z)
-
-                            ( perspectiveX, perspectiveY ) =
-                                ( perspectiveFactor, perspectiveFactor )
-
-                            ( scaleX, scaleY ) =
-                                ( zoomX * perspectiveX, zoomY * perspectiveY )
-
-                            ( translateX, translateY ) =
-                                ( toFloat width * (1 - perspectiveX) / 2, z * perspectiveY )
-                        in
-                        Svg.g
-                            [ Attr.id ("layer-" ++ fromInt idx)
-                            , transform
-                                ("translate("
-                                    ++ fromFloat translateX
-                                    ++ ","
-                                    ++ fromFloat translateY
-                                    ++ ") "
-                                    ++ "scale("
-                                    ++ fromFloat scaleX
-                                    ++ ","
-                                    ++ fromFloat scaleY
-                                    ++ ")"
-                                )
-                            ]
-                            (viewCurve params curve)
-                    )
+        attributes =
+            [ Attr.style "display" "block"
+            , Attr.style "width" "100%"
+            , Attr.style "max-width" "1024px"
+            , Attr.style "background" "black"
+            , Attr.style "aspect-ratio" "8 / 5"
+            , Attr.class "world mx-auto"
+            , Attr.attribute "role" "img"
+            , Attr.attribute "aria-label" ("Blue terrain with a red reticle. Heading " ++ String.fromInt camera.heading ++ ", camera altitude " ++ fromFloat camera.altitude)
+            ]
     in
-    Svg.svg
-        [ version "1.1"
-        , class "world mx-auto"
-        , SvgAttr.width "100%"
-        , style "max-width: 1024px"
-        , SvgAttr.height "100%"
-        , viewBox (join " " [ "0", "0", fromInt width, fromInt height ])
-        ]
-        [ Svg.g
-            [ Attr.id "background" ]
-            [ rect
-                [ x "0"
-                , y "0"
-                , SvgAttr.width (fromInt width)
-                , SvgAttr.height (fromInt height)
-                , fill <| toCssString black
-                , strokeWidth "0"
+    Html.node "terrain-raster"
+        (Attr.property "scene"
+            (Encode.object
+                [ ( "curves", Encode.list encodeSlice terrain )
+                , ( "heading", Encode.int camera.heading )
+                , ( "altitude", Encode.float camera.altitude )
                 ]
-                []
-            ]
-        , Svg.g
-            [ transform ("translate(" ++ fromFloat offsetX ++ "," ++ fromFloat (toFloat height + offsetY) ++ ") scale(" ++ fromFloat xScale ++ ", -1)") ]
-            [ Svg.g
-                [ Attr.id "terrain" ]
-                terrains
-            ]
-        ]
-
-
-type alias ViewCurveParams a =
-    { a | shapeColor : Color.Color, groundColor : Color.Color }
-
-
-viewCurve : ViewCurveParams a -> Curve -> List (Svg Msg)
-viewCurve { shapeColor, groundColor } curve =
-    let
-        pts =
-            curve
-                |> curvePoints
-                |> List.map (\p -> String.fromFloat (Vec2.getX p) ++ "," ++ String.fromFloat (Vec2.getY p))
-
-        path =
-            "M 0,0 " ++ String.join " L " pts ++ " V 0 Z"
-
-        polyline =
-            String.join " " pts
-
-        groundPath =
-            "M 0,0 L " ++ String.fromInt (List.length curve) ++ ",0"
-    in
-    [ Svg.path [ d path, fill "black", stroke "none" ] []
-    , Svg.polyline [ points polyline, fill "none", stroke <| toCssString shapeColor, strokeWidth "0.5" ]
-        []
-    , Svg.path [ d groundPath, fill "none", stroke <| toCssString groundColor, strokeWidth "2" ] []
-    ]
-
-
-
--- CURVE
-
-
-{-| A curve is a list of floats representing the height of the terrain at each point.
--}
-type alias Curve =
-    List Float
-
-
-{-| A curve located at a specific offset.
--}
-type alias LocatedCurve =
-    { curve : Curve
-    , offset : Float -- the offset of the curve in the z direction. 0 is the front of the screen.
-    }
-
-
-curveAt : Float -> Curve -> LocatedCurve
-curveAt offset curve =
-    { curve = curve
-    , offset = offset
-    }
-
-
-moveCurve : Float -> LocatedCurve -> LocatedCurve
-moveCurve delta { curve, offset } =
-    { curve = curve, offset = offset + delta }
-
-
-curvePointsWith : (Int -> Float) -> Curve -> List Vec2
-curvePointsWith indexToX curve =
-    List.indexedMap (\i y -> vec2 (indexToX i) y) curve
-
-
-curvePoints : Curve -> List Vec2
-curvePoints =
-    curvePointsWith toFloat
-
-
-initialCurve : Float -> Random.Generator Curve
-initialCurve mountainProbability =
-    Random.list 7
-        (Random.float 0 1
-            |> Random.andThen
-                (\p ->
-                    if p < mountainProbability then
-                        Random.float 10 100
-
-                    else
-                        Random.constant 0
-                )
+            )
+            :: attributes
         )
+        []
 
 
-generateFractal : Int -> Float -> Random.Generator Curve -> Random.Generator Curve
-generateFractal depth hurst curveGenerator =
-    fBm depth hurst curveGenerator
+type Fog
+    = Near
+    | Mid
+    | Far
 
 
-
--- TERRAIN
-
-
-{-| A list of curves representing the terrain.
+{-| Three discrete depth bands in world units, with no interpolation.
 -}
-type alias Terrain =
-    List LocatedCurve
+fogForDistance : Float -> Fog
+fogForDistance distance =
+    if distance < 144 then
+        Near
 
-
-moveTerrain : Float -> Terrain -> Terrain
-moveTerrain delta =
-    List.map (moveCurve delta)
-
-
-terrainGenerator : (Int -> Float) -> Random.Generator Curve -> Int -> Random.Generator Terrain
-terrainGenerator indexToOffset curveGenerator nbCurves =
-    Random.list nbCurves curveGenerator
-        |> Random.map (List.indexedMap (\idx curve -> curveAt (indexToOffset idx) curve))
-
-
-
--- FBM
-
-
-fBm : Int -> Float -> Random.Generator Curve -> Random.Generator Curve
-fBm depth hurst genCurve =
-    if depth <= 0 then
-        genCurve
+    else if distance < 288 then
+        Mid
 
     else
-        genCurve
-            |> Random.andThen
-                (\points ->
-                    subdivideAndCombine points (\( a, b ) -> midpointDisplacementGenerator hurst ( a, b ))
-                        |> Random.andThen
-                            (\refinedPoints ->
-                                fBm (depth - 1) hurst (Random.constant refinedPoints)
-                            )
-                )
+        Far
 
 
-midpointDisplacementGenerator : Float -> ( Float, Float ) -> Random.Generator Float
-midpointDisplacementGenerator hurst ( a, b ) =
+fogColor : Fog -> ( Int, Int, Int )
+fogColor fog =
+    case fog of
+        Near ->
+            ( 66, 76, 156 )
+
+        Mid ->
+            ( 48, 56, 112 )
+
+        Far ->
+            ( 28, 32, 72 )
+
+
+encodeSlice : Slice -> Encode.Value
+encodeSlice slice =
     let
-        midpoint =
-            (a + b) / 2
-
-        delta =
-            abs (a - b) * (2 ^ -hurst)
-
-        randomDisplacement =
-            Random.float -delta delta
+        ( red, green, blue ) =
+            fogColor (fogForDistance slice.distance)
     in
-    Random.map (\d -> midpoint + d) randomDisplacement
+    Encode.object
+        [ ( "points", Encode.list (\( x, y ) -> Encode.list Encode.float [ x, y ]) (projectSlice slice) )
+        , ( "color", Encode.list Encode.int [ red, green, blue ] )
+        ]
 
 
-subdivideAndCombine :
-    List Float
-    -> (( Float, Float ) -> Random.Generator Float)
-    -> Random.Generator Curve
-subdivideAndCombine points combine =
-    case points of
-        [] ->
-            Random.constant []
+projectSlice : Slice -> List ( Float, Float )
+projectSlice slice =
+    let
+        -- Camera-space projection, before raster quantization.
+        perspective =
+            120 / (8 + slice.distance)
 
-        [ x ] ->
-            Random.constant [ x ]
+        intervals =
+            toFloat (List.length slice.heights - 1)
+    in
+    slice.heights
+        |> List.indexedMap
+            (\index height ->
+                ( 160 + (toFloat index / intervals - 0.5) * 1800 * perspective
+                , 112 + (camera.altitude - height) * perspective
+                )
+            )
 
-        x :: y :: rest ->
+
+{-| Low control points describe broad hills. Mountain probability adds
+occasional taller relief, without turning the rest of the landscape into flats.
+-}
+profile : Float -> Random.Generator (List Float)
+profile probability =
+    Random.list 17
+        (Random.float 0 1
+            |> Random.andThen
+                (\chance ->
+                    if chance < probability then
+                        Random.float 35 53
+
+                    else
+                        Random.float 5 28
+                )
+        )
+        |> Random.andThen (subdivide 5 12)
+        |> Random.map (List.map (clamp 0 60))
+
+
+{-| Interpolate between target profiles over eight slices. Both adjacent
+segments share their end profile; smoothstep prevents a crease at the join.
+-}
+nextSlice : Float -> Landscape -> ( List Float, Landscape )
+nextSlice probability landscape =
+    if landscape.step >= 8 then
+        let
+            ( target, seed ) =
+                Random.step (profile probability) landscape.seed
+        in
+        nextSlice probability { start = landscape.target, target = target, step = 0, seed = seed }
+
+    else
+        let
+            t =
+                toFloat landscape.step / 8
+
+            blend =
+                t * t * (3 - 2 * t)
+
+            heights =
+                List.map2 (\a b -> a + (b - a) * blend) landscape.start landscape.target
+        in
+        ( heights, { landscape | step = landscape.step + 1 } )
+
+
+{-| Random midpoint displacement at five scales. Amplitude decays at each
+subdivision, independently of the endpoint slope, so flat spans also gain detail.
+Profiles are generated once, then interpolated in depth: no per-frame noise.
+-}
+subdivide : Int -> Float -> List Float -> Random.Generator (List Float)
+subdivide depth amplitude heights =
+    if depth <= 0 then
+        Random.constant heights
+
+    else
+        midpoints amplitude heights
+            |> Random.andThen (subdivide (depth - 1) (amplitude * 0.55))
+
+
+midpoints : Float -> List Float -> Random.Generator (List Float)
+midpoints amplitude heights =
+    case heights of
+        a :: b :: rest ->
             Random.map2
-                (\mid newTail -> x :: mid :: newTail)
-                (combine ( x, y ))
-                (subdivideAndCombine (y :: rest) combine)
+                (\displacement tail -> a :: ((a + b) / 2 + displacement) :: tail)
+                (Random.float -amplitude amplitude)
+                (midpoints amplitude (b :: rest))
+
+        _ ->
+            Random.constant heights
+
+
+appendSlices : Float -> Int -> Float -> Landscape -> ( List Slice, Landscape )
+appendSlices probability count distance landscape =
+    if count <= 0 then
+        ( [], landscape )
+
+    else
+        let
+            ( heights, nextLandscape ) =
+                nextSlice probability landscape
+
+            nextDistance =
+                distance + sliceSpacing
+
+            ( rest, finalLandscape ) =
+                appendSlices probability (count - 1) nextDistance nextLandscape
+        in
+        ( { heights = heights, distance = nextDistance } :: rest, finalLandscape )
