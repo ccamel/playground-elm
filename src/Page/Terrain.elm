@@ -17,7 +17,7 @@ info =
     { name = "terrain"
     , hash = "terrain"
     , date = "2024-12-31"
-    , description = Markdown.toHtml [ Attr.class "content" ] "A retro-inspired endless terrain flyover with a pixel cockpit. CAP is the fixed heading; ALT is the camera height in world units, not ground clearance."
+    , description = Markdown.toHtml [ Attr.class "content" ] "A retro-inspired endless terrain flyover, rendered in a 320 × 200 pixel framebuffer with palette fog and a minimalist cockpit."
     , srcRel = "Page/Terrain.elm"
     }
 
@@ -178,9 +178,6 @@ view (Model { parameters, terrain }) =
 viewTerrain : List Slice -> Html Msg
 viewTerrain terrain =
     let
-        curves =
-            List.map projectSlice terrain
-
         attributes =
             [ Attr.style "display" "block"
             , Attr.style "width" "100%"
@@ -195,7 +192,7 @@ viewTerrain terrain =
     Html.node "terrain-raster"
         (Attr.property "scene"
             (Encode.object
-                [ ( "curves", Encode.list (Encode.list (\( x, y ) -> Encode.list Encode.float [ x, y ])) curves )
+                [ ( "curves", Encode.list encodeSlice terrain )
                 , ( "heading", Encode.int camera.heading )
                 , ( "altitude", Encode.float camera.altitude )
                 ]
@@ -203,6 +200,51 @@ viewTerrain terrain =
             :: attributes
         )
         []
+
+
+type Fog
+    = Near
+    | Mid
+    | Far
+
+
+{-| Three discrete depth bands in world units, with no interpolation.
+-}
+fogForDistance : Float -> Fog
+fogForDistance distance =
+    if distance < 144 then
+        Near
+
+    else if distance < 288 then
+        Mid
+
+    else
+        Far
+
+
+fogColor : Fog -> ( Int, Int, Int )
+fogColor fog =
+    case fog of
+        Near ->
+            ( 66, 76, 156 )
+
+        Mid ->
+            ( 48, 56, 112 )
+
+        Far ->
+            ( 28, 32, 72 )
+
+
+encodeSlice : Slice -> Encode.Value
+encodeSlice slice =
+    let
+        ( red, green, blue ) =
+            fogColor (fogForDistance slice.distance)
+    in
+    Encode.object
+        [ ( "points", Encode.list (\( x, y ) -> Encode.list Encode.float [ x, y ]) (projectSlice slice) )
+        , ( "color", Encode.list Encode.int [ red, green, blue ] )
+        ]
 
 
 projectSlice : Slice -> List ( Float, Float )

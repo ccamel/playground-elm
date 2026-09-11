@@ -38,14 +38,14 @@ class TerrainRaster extends HTMLElement {
     }
     // Near to far: each column remembers the highest foreground pixel.
     const horizon = new Int16Array(320).fill(200);
-    for (const curve of curves) {
+    for (const { points: curve, color } of curves) {
       const nextHorizon = horizon.slice();
       const plot = (x, y) => {
         if (x < 0 || x >= 320 || y < 0 || y >= horizon[x]) return;
         const i = (y * 320 + x) * 4;
-        pixels[i] = 66;
-        pixels[i + 1] = 76;
-        pixels[i + 2] = 156;
+        pixels[i] = color[0];
+        pixels[i + 1] = color[1];
+        pixels[i + 2] = color[2];
         nextHorizon[x] = Math.min(nextHorizon[x], y);
       };
       for (let i = 1; i < curve.length; i++) {
