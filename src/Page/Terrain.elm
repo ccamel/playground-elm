@@ -17,7 +17,7 @@ info =
     { name = "terrain"
     , hash = "terrain"
     , date = "2024-12-31"
-    , description = Markdown.toHtml [ Attr.class "content" ] "A retro-inspired endless terrain flyover, featuring a procedurally generated 1D landscape."
+    , description = Markdown.toHtml [ Attr.class "content" ] "A retro-inspired endless terrain flyover with a pixel cockpit. CAP is the fixed heading; ALT is the camera height in world units, not ground clearance."
     , srcRel = "Page/Terrain.elm"
     }
 
@@ -56,6 +56,11 @@ sliceSpacing =
 sliceCount : Int
 sliceCount =
     18
+
+
+camera : { heading : Int, altitude : Float }
+camera =
+    { heading = 0, altitude = 70 }
 
 
 init : ( Model, Cmd Msg )
@@ -184,18 +189,26 @@ viewTerrain terrain =
             , Attr.style "aspect-ratio" "8 / 5"
             , Attr.class "world mx-auto"
             , Attr.attribute "role" "img"
-            , Attr.attribute "aria-label" "Blue contour lines moving across a black landscape"
+            , Attr.attribute "aria-label" ("Blue terrain with a red reticle. Heading " ++ String.fromInt camera.heading ++ ", camera altitude " ++ fromFloat camera.altitude)
             ]
     in
     Html.node "terrain-raster"
-        (Attr.property "curves" (Encode.list (Encode.list (\( x, y ) -> Encode.list Encode.float [ x, y ])) curves) :: attributes)
+        (Attr.property "scene"
+            (Encode.object
+                [ ( "curves", Encode.list (Encode.list (\( x, y ) -> Encode.list Encode.float [ x, y ])) curves )
+                , ( "heading", Encode.int camera.heading )
+                , ( "altitude", Encode.float camera.altitude )
+                ]
+            )
+            :: attributes
+        )
         []
 
 
 projectSlice : Slice -> List ( Float, Float )
 projectSlice slice =
     let
-        -- Both renderers use this exact projection, before raster quantization.
+        -- Camera-space projection, before raster quantization.
         perspective =
             120 / (8 + slice.distance)
 
@@ -206,7 +219,7 @@ projectSlice slice =
         |> List.indexedMap
             (\index height ->
                 ( 160 + (toFloat index / intervals - 0.5) * 1800 * perspective
-                , 112 + (70 - height) * perspective
+                , 112 + (camera.altitude - height) * perspective
                 )
             )
 
