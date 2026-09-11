@@ -1,4 +1,5 @@
 import 'elm-pep';
+import './Page/terrain-raster.js';
 import 'elm-canvas/elm-canvas.js';
 import 'bulma/css/bulma.min.css';
 import 'animate.css';
