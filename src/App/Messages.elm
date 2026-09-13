@@ -13,6 +13,7 @@ import Page.Lissajous
 import Page.Maze
 import Page.Organic
 import Page.Physics
+import Page.RetroFu
 import Page.SoundWaveToggle
 import Page.Term
 import Page.Terrain
@@ -35,6 +36,7 @@ type Page
     | Organic
     | DoubleHelix
     | Euclid
+    | RetroFu
 
 
 type Msg
@@ -57,3 +59,4 @@ type Msg
     | OrganicPageMsg Page.Organic.Msg
     | DoubleHelixPageMsg Page.DoubleHelix.Msg
     | EuclidPageMsg Page.Euclid.Msg
+    | RetroFuPageMsg Page.RetroFu.Msg

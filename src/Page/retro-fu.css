@@ -1,0 +1,48 @@
+.retro-fu-frame {
+  text-align: center;
+}
+
+.retro-fu-frame elm-canvas.retro-fu,
+.retro-fu-frame elm-canvas.retro-fu canvas {
+  display: block;
+  width: 768px !important;
+  height: 768px !important;
+  margin: 0 auto;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+
+.retro-fu-frame elm-canvas.retro-fu {
+  border: 4px solid #201718;
+  box-sizing: content-box;
+  box-shadow: 0 0 0 2px #c7a346, 0 16px 35px rgb(0 0 0 / 38%);
+}
+
+.retro-fu-frame elm-canvas.retro-fu:focus-visible {
+  outline: 3px solid #ffe786;
+  outline-offset: 5px;
+}
+
+.retro-fu-controls {
+  margin-top: 1rem;
+}
+
+.retro-fu-controls .button {
+  margin: 0.35rem;
+}
+
+@media (width <= 820px) {
+  .retro-fu-frame elm-canvas.retro-fu,
+  .retro-fu-frame elm-canvas.retro-fu canvas {
+    width: 512px !important;
+    height: 512px !important;
+  }
+}
+
+@media (width <= 560px) {
+  .retro-fu-frame elm-canvas.retro-fu,
+  .retro-fu-frame elm-canvas.retro-fu canvas {
+    width: 256px !important;
+    height: 256px !important;
+  }
+}
