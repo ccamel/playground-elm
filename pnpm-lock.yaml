@@ -82,8 +82,8 @@ importers:
         specifier: ^1.5.3
         version: 1.5.3(@parcel/core@2.16.4(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)
       posthtml:
-        specifier: ^0.16.6
-        version: 0.16.6
+        specifier: ^0.16.7
+        version: 0.16.7
       posthtml-expressions:
         specifier: ^1.11.4
         version: 1.11.4
@@ -3173,8 +3173,8 @@ packages:
     resolution: {integrity: sha512-z+16RoxK3fUPgwaIgH9NGnK1HKY9XIDpydky5eQGgAFVXTCSezalv9U2jQuNV+Z9qV1fDWNzldcw4eK0SSbqKA==}
     engines: {node: '>=12'}
 
-  posthtml@0.16.6:
-    resolution: {integrity: sha512-JcEmHlyLK/o0uGAlj65vgg+7LIms0xKXe60lcDOTU7oVX/3LuEuLwrQpW3VJ7de5TaFKiW4kWkaIpJL42FEgxQ==}
+  posthtml@0.16.7:
+    resolution: {integrity: sha512-7Hc+IvlQ7hlaIfQFZnxlRl0jnpWq2qwibORBhQYIb0QbNtuicc5ZxvKkVT71HJ4Py1wSZ/3VR1r8LfkCtoCzhw==}
     engines: {node: '>=12.0.0'}
 
   powershell-utils@0.1.0:
@@ -4645,7 +4645,7 @@ snapshots:
       '@parcel/plugin': 2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)
       htmlnano: 2.1.5(postcss@8.5.28)(svgo@2.8.4)(terser@5.51.2)
       nullthrows: 1.1.1
-      posthtml: 0.16.6
+      posthtml: 0.16.7
       svgo: 2.8.4
     transitivePeerDependencies:
       - '@parcel/core'
@@ -4786,7 +4786,7 @@ snapshots:
       '@parcel/types': 2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)
       '@parcel/utils': 2.12.0
       nullthrows: 1.1.1
-      posthtml: 0.16.6
+      posthtml: 0.16.7
     transitivePeerDependencies:
       - '@parcel/core'
       - '@swc/helpers'
@@ -4848,7 +4848,7 @@ snapshots:
       '@parcel/plugin': 2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)
       '@parcel/types': 2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)
       '@parcel/utils': 2.12.0
-      posthtml: 0.16.6
+      posthtml: 0.16.7
     transitivePeerDependencies:
       - '@parcel/core'
       - '@swc/helpers'
@@ -5149,7 +5149,7 @@ snapshots:
       '@parcel/plugin': 2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)
       '@parcel/rust': 2.12.0
       nullthrows: 1.1.1
-      posthtml: 0.16.6
+      posthtml: 0.16.7
       posthtml-parser: 0.10.2
       posthtml-render: 3.0.0
       semver: 7.8.5
@@ -5275,7 +5275,7 @@ snapshots:
       '@parcel/plugin': 2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)
       '@parcel/utils': 2.12.0
       nullthrows: 1.1.1
-      posthtml: 0.16.6
+      posthtml: 0.16.7
       posthtml-parser: 0.10.2
       posthtml-render: 3.0.0
       semver: 7.8.5
@@ -5330,7 +5330,7 @@ snapshots:
       '@parcel/plugin': 2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)
       '@parcel/rust': 2.12.0
       nullthrows: 1.1.1
-      posthtml: 0.16.6
+      posthtml: 0.16.7
       posthtml-parser: 0.10.2
       posthtml-render: 3.0.0
       semver: 7.8.5
@@ -6696,7 +6696,7 @@ snapshots:
     dependencies:
       '@types/relateurl': 0.2.33
       cosmiconfig: 9.0.2
-      posthtml: 0.16.6
+      posthtml: 0.16.7
     optionalDependencies:
       postcss: 8.5.28
       svgo: 2.8.4
@@ -7420,14 +7420,14 @@ snapshots:
   posthtml-expressions@1.11.4:
     dependencies:
       fclone: 1.0.11
-      posthtml: 0.16.6
-      posthtml-match-helper: 1.0.3(posthtml@0.16.6)
+      posthtml: 0.16.7
+      posthtml-match-helper: 1.0.3(posthtml@0.16.7)
       posthtml-parser: 0.10.2
       posthtml-render: 3.0.0
 
-  posthtml-match-helper@1.0.3(posthtml@0.16.6):
+  posthtml-match-helper@1.0.3(posthtml@0.16.7):
     dependencies:
-      posthtml: 0.16.6
+      posthtml: 0.16.7
 
   posthtml-parser@0.10.2:
     dependencies:
@@ -7441,7 +7441,7 @@ snapshots:
     dependencies:
       is-json: 2.0.1
 
-  posthtml@0.16.6:
+  posthtml@0.16.7:
     dependencies:
       posthtml-parser: 0.11.0
       posthtml-render: 3.0.0
