@@ -1,6 +1,7 @@
 import 'elm-pep';
 import './Page/terrain-raster.js';
 import 'elm-canvas/elm-canvas.js';
+import './Page/retro-fu-canvas.js';
 import 'bulma/css/bulma.min.css';
 import 'animate.css';
 import 'github-fork-ribbon-css/gh-fork-ribbon.css';
@@ -16,6 +17,7 @@ import './Page/physics.css';
 import './Page/term.css';
 import './Page/dapp.css';
 import './Page/euclid.css';
+import './Page/retro-fu.css';
 import './fonts/font.css';
 import 'font-awesome/css/font-awesome.css';
 

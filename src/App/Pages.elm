@@ -33,6 +33,7 @@ import Page.Lissajous
 import Page.Maze
 import Page.Organic
 import Page.Physics
+import Page.RetroFu
 import Page.SoundWaveToggle
 import Page.Term
 import Page.Terrain
@@ -379,6 +380,23 @@ specs =
         )
         (\model -> model.pages.euclidPage)
         (\maybePage -> updatePages (\pageModels -> { pageModels | euclidPage = maybePage }))
+    , toSpec RetroFu
+        Page.RetroFu.info
+        Page.RetroFu.init
+        Page.RetroFu.update
+        Page.RetroFu.view
+        Page.RetroFu.subscriptions
+        RetroFuPageMsg
+        (\msg ->
+            case msg of
+                RetroFuPageMsg subMsg ->
+                    Just subMsg
+
+                _ ->
+                    Nothing
+        )
+        (\model -> model.pages.retroFuPage)
+        (\maybePage -> updatePages (\pageModels -> { pageModels | retroFuPage = maybePage }))
     ]
 
 
@@ -446,6 +464,9 @@ pageSpec target =
 
                 Euclid ->
                     "euclid"
+
+                RetroFu ->
+                    "retro-fu"
     in
     Dict.get slug pageDict
 
