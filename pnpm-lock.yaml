@@ -34,8 +34,8 @@ importers:
         specifier: ^2.12.0
         version: 2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)(postcss@8.5.28)(terser@5.51.2)
       '@parcel/transformer-elm':
-        specifier: 2.12.0
-        version: 2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)(elm@0.19.1-6)
+        specifier: 2.16.4
+        version: 2.16.4(@parcel/core@2.16.4(@swc/helpers@0.5.23))(elm@0.19.1-6)
       bulma:
         specifier: ^1.0.4
         version: 1.0.4
@@ -965,9 +965,9 @@ packages:
     resolution: {integrity: sha512-VG/+DbDci2HKe20GFRDs65ZQf5GUFfnmZAa1BhVl/MO+ijT3XC3eoVUy5cExRkq4VLcPY4ytL0g/1T2D6x7lBQ==}
     engines: {node: '>= 16.0.0', parcel: ^2.16.4}
 
-  '@parcel/transformer-elm@2.12.0':
-    resolution: {integrity: sha512-qqVTsP860FghYTLBrJkrFKD7qbNUq/EqUCofFKLWgWSrMXfzTmsNwMCOStTF4NyclLWcC9KBVjNU+fGS5I519Q==}
-    engines: {node: '>= 12.0.0', parcel: ^2.12.0}
+  '@parcel/transformer-elm@2.16.4':
+    resolution: {integrity: sha512-ruLiVrIYiJaygp3Oqnk7ou7dsnNOVpJn5Z3xv+M4H9sE6A3+ZSDvrpJe5Cvs/yglY4795RQ6P3CIuri1f3sXRA==}
+    engines: {node: '>= 16.0.0', parcel: ^2.16.4}
     peerDependencies:
       elm: ^0.19.1-5
 
@@ -5135,10 +5135,10 @@ snapshots:
       - '@parcel/core'
       - napi-wasm
 
-  '@parcel/transformer-elm@2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)(elm@0.19.1-6)':
+  '@parcel/transformer-elm@2.16.4(@parcel/core@2.16.4(@swc/helpers@0.5.23))(elm@0.19.1-6)':
     dependencies:
-      '@parcel/diagnostic': 2.12.0
-      '@parcel/plugin': 2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)
+      '@parcel/diagnostic': 2.16.4
+      '@parcel/plugin': 2.16.4(@parcel/core@2.16.4(@swc/helpers@0.5.23))
       command-exists: 1.2.9
       cross-spawn: 7.0.6
       elm: 0.19.1-6
@@ -5148,7 +5148,7 @@ snapshots:
       terser: 5.51.2
     transitivePeerDependencies:
       - '@parcel/core'
-      - '@swc/helpers'
+      - napi-wasm
 
   '@parcel/transformer-html@2.12.0(@parcel/core@2.16.4(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)':
     dependencies:
