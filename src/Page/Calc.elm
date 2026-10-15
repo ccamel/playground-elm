@@ -481,10 +481,10 @@ view (Model model) =
 
 calc : ModelRecord -> Html Msg
 calc model =
-    div [ class "pl-5 pb-5 has-background-grey-dark br-10" ]
+    div [ class "pl-5 pr-5 pb-5 has-background-grey-dark br-10" ]
         [ -- display
           div [ class "columns is-mobile" ]
-            [ div [ class "column is-11 control has-icons-right" ]
+            [ div [ class "column is-12 control has-icons-right" ]
                 [ input [ class "input has-text-right is-family-monospace", attribute "readOnly" "", type_ "Text", value (display model) ]
                     []
                 , span []
