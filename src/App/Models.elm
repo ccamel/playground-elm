@@ -15,6 +15,7 @@ import Page.Lissajous
 import Page.Maze
 import Page.Organic
 import Page.Physics
+import Page.RetroFu
 import Page.SoundWaveToggle
 import Page.Term
 import Page.Terrain
@@ -36,6 +37,7 @@ type alias PagesModel =
     , organicPage : Maybe Page.Organic.Model
     , doubleHelixPage : Maybe Page.DoubleHelix.Model
     , euclidPage : Maybe Page.Euclid.Model
+    , retroFuPage : Maybe Page.RetroFu.Model
     }
 
 
@@ -49,7 +51,7 @@ type alias Model =
     }
 
 
-emptyPagesModel : { aboutPage : Maybe a, calcPage : Maybe b, lissajousPage : Maybe c, digitalClockPage : Maybe d, mazePage : Maybe e, physicsPage : Maybe f, termPage : Maybe g, asteroidsPage : Maybe h, dappPage : Maybe i, soundWaveTogglePage : Maybe j, glslPage : Maybe k, terrainPage : Maybe l, organicPage : Maybe m, doubleHelixPage : Maybe n, euclidPage : Maybe o }
+emptyPagesModel : { aboutPage : Maybe a, calcPage : Maybe b, lissajousPage : Maybe c, digitalClockPage : Maybe d, mazePage : Maybe e, physicsPage : Maybe f, termPage : Maybe g, asteroidsPage : Maybe h, dappPage : Maybe i, soundWaveTogglePage : Maybe j, glslPage : Maybe k, terrainPage : Maybe l, organicPage : Maybe m, doubleHelixPage : Maybe n, euclidPage : Maybe o, retroFuPage : Maybe p }
 emptyPagesModel =
     { aboutPage = Nothing
     , calcPage = Nothing
@@ -66,4 +68,5 @@ emptyPagesModel =
     , organicPage = Nothing
     , doubleHelixPage = Nothing
     , euclidPage = Nothing
+    , retroFuPage = Nothing
     }
